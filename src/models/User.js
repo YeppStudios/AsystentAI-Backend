@@ -25,7 +25,7 @@ const BalanceSnapshotSchema = new mongoose.Schema({
     balance: {
         type: Number,
         required: true,
-        default: 1500
+        default: 1400
     }
 });
 
