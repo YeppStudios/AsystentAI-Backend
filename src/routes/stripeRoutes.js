@@ -32,7 +32,7 @@ router.post('/create-checkout-session', async (req, res) => {
       automatic_tax: {enabled: true},
     });
   } catch (e) {
-    res.status(400).json({message: "Error creating session for price"})
+    res.status(500).json({message: "Error creating session for price"})
   }
 
     res.status(200).json({ url: session.url });
