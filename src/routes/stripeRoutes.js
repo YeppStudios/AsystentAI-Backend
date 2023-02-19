@@ -13,7 +13,9 @@ const router = express.Router();
 
 router.post('/create-checkout-session', async (req, res) => {
     const { priceId, mode, successURL, cancelURL, email, tokensAmount } = req.body;
-    const session = await stripe.checkout.sessions.create({
+    let session;
+    try{
+    session = await stripe.checkout.sessions.create({
       customer_email: `${email}`,
       line_items: [
         {
@@ -29,6 +31,9 @@ router.post('/create-checkout-session', async (req, res) => {
       cancel_url: `${cancelURL}`,
       automatic_tax: {enabled: true},
     });
+  } catch (e) {
+    res.status(400).json({message: "Error creating session for price"})
+  }
 
     res.status(200).json({ url: session.url });
 });
