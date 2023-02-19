@@ -7,7 +7,7 @@ const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
 
 const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_KEY);
-const endpointSecret = 'whsec_fe0e42230aa34c7144b0e88040ddf05780490aba5b7cfc9d1e5e0df0213fbdd8';
+const endpointSecret = 'whsec_zIaEafJHy90LpByMV1k3MEvCHE7pDkfx';
 
 const router = express.Router();
 
