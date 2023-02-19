@@ -7,14 +7,14 @@ const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const endpointSecret = 'whsec_zIaEafJHy90LpByMV1k3MEvCHE7pDkfx';
+const endpointSecret = 'whsec_zH1GDQ1qOC357w1gR2JeVuTcZv8yCFd6';
 
 const router = express.Router();
 
 router.post('/create-checkout-session', async (req, res) => {
     const { priceId, mode, successURL, cancelURL, email, tokensAmount } = req.body;
     let session;
-    try{
+    try {
     session = await stripe.checkout.sessions.create({
       customer_email: `${email}`,
       line_items: [
