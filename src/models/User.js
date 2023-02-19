@@ -25,16 +25,24 @@ const BalanceSnapshotSchema = new mongoose.Schema({
     balance: {
         type: Number,
         required: true,
-        default: 1400
+        default: 1500
     }
 });
 
 const UserSchema = new mongoose.Schema({
     name: String,
+    fullName: { 
+        type: String, 
+        default: ""
+    },
     email: { 
         type: String, 
         unique: true,
         require:true
+    },
+    contactEmail: {
+        type: String, 
+        default: ""
     },
     password: {
         type: String,
@@ -67,9 +75,21 @@ const UserSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
-    updatedAt: {
-        type: Date,
-        default: Date.now
+    street: {
+        type: String,
+        default: ""
+    },
+    apartmentNumber: {
+        type: String,
+        default: ""
+    },
+    companyName: {
+        type: String,
+        default: ""
+    },
+    nip: {
+        type: String,
+        default: ""
     },
     purchases: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Payment'}],
     transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction'}],

@@ -44,7 +44,55 @@ router.patch('/updateUser/:id', requireAdmin, async (req, res) => {
     }
 });
 
+router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    const { contactEmail, profilePicture, fullName, street, apartmentNumber, companyName, nip } = req.body;
+    
+    try {
+      const user = await User.findById(id);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      if (contactEmail) {
+        user.contactEmail = contactEmail;
+      }
 
+      if (fullName) {
+        user.fullName = fullName;
+      }
+
+      if (apartmentNumber) {
+        user.apartmentNumber = apartmentNumber;
+      }
+      
+      if (profilePicture) {
+        user.profilePicture = profilePicture;
+      }
+      
+      if (street) {
+        user.street = street;
+      }
+      
+      if (companyName) {
+        user.companyName = companyName;
+      }
+      
+      if (nip) {
+        user.nip = nip;
+      }
+      
+      const updatedUser = await user.save();
+      
+      res.json(updatedUser);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  
 // Delete a user
 router.delete('/deleteUser/:id', requireAuth, async (req, res) => {
     try {
