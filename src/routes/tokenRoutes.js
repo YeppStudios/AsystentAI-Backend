@@ -188,5 +188,27 @@ router.get('/:userId/planInfo', async (req, res) => {
     }
   });
 
+  router.patch('/addTestTokens/:userId', requireAdmin, async (req, res) => {
+    const { userId } = req.params;
+    const { amount } = req.body;
+  
+    try {
+      const user = await User.findById(userId);
+  
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      user.testTokenBalance += amount;
+  
+      await user.save();
+  
+      res.json(user);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+  
 
 module.exports = router;
