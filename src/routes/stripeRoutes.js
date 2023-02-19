@@ -6,7 +6,7 @@ const User = mongoose.model('User');
 const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
 
-const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_KEY);
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const endpointSecret = 'whsec_zIaEafJHy90LpByMV1k3MEvCHE7pDkfx';
 
 const router = express.Router();
@@ -33,7 +33,7 @@ router.post('/create-checkout-session', async (req, res) => {
     res.status(200).json({ url: session.url });
 });
 
-router.post('/webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
+router.post('/token-checkout-webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
   const payload = request.rawBody;
   const parsedPayload = request.body;
   const sig = request.headers['stripe-signature'];
