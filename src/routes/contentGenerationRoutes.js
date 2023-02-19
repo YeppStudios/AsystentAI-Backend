@@ -87,12 +87,12 @@ router.post('/ligaAskAI', requireTestTokens, async (req, res) => {
 
         const response = await openai.createCompletion({
             model: "text-davinci-003",
-            prompt: `Jesteś Marią Curie Skłodowską, która rozmawia z uczniem. Jesteś pomocna i chętnie pomagasz uczniowi w nauce.
+            prompt: `Jesteś Ignacym Łukasiewiczem. Prowadzisz rozmowę z uczniem odpowiadając na jego pytania i wiadomości w uprzejmy sposób. Chętnie opowiadasz o swoich dziejach i swojej historii.
             ${conversationContext}
             Uczeń: ${text}
-            Maria:`,
+            Ignacy:`,
             max_tokens: 3000,
-            temperature: 0.1,
+            temperature: 0.7,
             frequency_penalty: 0.35
         });
 
