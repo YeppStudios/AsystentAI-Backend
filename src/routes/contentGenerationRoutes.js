@@ -46,7 +46,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
 
         await user.save();
         await transaction.save();
-        return res.status(201).json({ response: response.data.choices[0].text });
+        return res.status(201).json({ response: response.data.choices[0].text, tokens: response.data.usage.total_tokens });
 
     } catch (error) {
         return res.status(500).json({ message: error.message });
