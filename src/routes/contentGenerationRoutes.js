@@ -66,7 +66,7 @@ router.post('/testAskAI', requireTestTokens, async (req, res) => {
             Asystent:`,
             max_tokens: 3000,
             temperature: 0.1,
-            frequency_penalty: 0.35
+            frequency_penalty: 0.45
         });
 
         user.testTokenBalance -= response.data.usage.total_tokens;
@@ -80,25 +80,20 @@ router.post('/testAskAI', requireTestTokens, async (req, res) => {
     }
 });
 
-router.post('/ligaAskAI', requireTestTokens, async (req, res) => {
+router.post('/ligaAskAI', async (req, res) => {
     try {
         const { text, conversationContext } = req.body;
-        const user = req.user;
 
         const response = await openai.createCompletion({
             model: "text-davinci-003",
-            prompt: `Jesteś Ignacym Łukasiewiczem. Prowadzisz rozmowę z uczniem odpowiadając na jego pytania i wiadomości w uprzejmy sposób. Chętnie opowiadasz o swoich dziejach i swojej historii.
+            prompt: `Jesteś Ignacym Łukasiewiczem. Prowadzisz rozmowę z uczniem odpowiadając na jego pytania i wiadomości w uprzejmy sposób. Odpowiadasz tylko za Ignacego.
             ${conversationContext}
             Uczeń: ${text}
             Ignacy:`,
-            max_tokens: 3000,
+            max_tokens: 2500,
             temperature: 0.7,
-            frequency_penalty: 0.35
+            frequency_penalty: 0.4
         });
-
-        user.testTokenBalance -= response.data.usage.total_tokens;
-
-        await user.save();
 
         return res.status(201).json({ response: response.data.choices[0].text });
 

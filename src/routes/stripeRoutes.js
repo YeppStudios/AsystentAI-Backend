@@ -3,86 +3,182 @@ require('dotenv').config()
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
+const Plan = mongoose.model('Plan');
 const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const endpointSecret = 'whsec_zH1GDQ1qOC357w1gR2JeVuTcZv8yCFd6';
+const purchaseEndpointSecret = 'whsec_NKIX7ahLbstNif0WGd7AIsIy170RqOzc';
+const subscriptionEndpointSecret = 'whsec_aHNEFJ3R9CIuNn2H96jzm8wlMwGbKp97';
 
 const router = express.Router();
 
 router.post('/create-checkout-session', async (req, res) => {
-    const { priceId, mode, successURL, cancelURL, email, tokensAmount } = req.body;
-    let session;
+    const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId } = req.body;
     try {
-    session = await stripe.checkout.sessions.create({
-      customer_email: `${email}`,
-      line_items: [
-        {
-          price: `${priceId}`,
-          quantity: 1,
+      const session = await stripe.checkout.sessions.create({
+        customer_email: `${email}`,
+        line_items: [
+          {
+            price: `${priceId}`,
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          tokens_to_add: `${tokensAmount}`,
+          plan_id: `${planId}`//plan id
         },
-      ],
-      metadata: {
-        tokens_to_add: `${tokensAmount}`,
-      },
-      mode: `${mode}`,
-      success_url: `${successURL}`,
-      cancel_url: `${cancelURL}`,
-      automatic_tax: {enabled: true},
-    });
+        mode: `${mode}`,
+        success_url: `${successURL}`,
+        cancel_url: `${cancelURL}`,
+        automatic_tax: {enabled: true},
+      });
+
+      res.status(200).json({ url: session.url });
   } catch (e) {
     res.status(500).json({message: "Error creating session for price"})
   }
-
-    res.status(200).json({ url: session.url });
 });
 
-router.post('/token-checkout-webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
+
+//listening for one-time purchases as well as first payment of subscription
+router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
   const payload = request.rawBody;
-  const parsedPayload = request.body;
   const sig = request.headers['stripe-signature'];
 
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(payload, sig, endpointSecret);
+    event = stripe.webhooks.constructEvent(payload, sig, purchaseEndpointSecret);
   } catch (err) {
     return response.status(400).send(`Webhook Error: ${err.message}`);
   }
+  const transactionData = event.data.object;
 
-  // Handle the checkout.session.completed event
   if (event.type === 'checkout.session.completed') {
-    const transactionData = event.data.object;
+    try{
+      User.findOne({ email: transactionData.customer_email }, async (err, user) => {
+
+        if(user){
+
+          let transaction;
+
+          if (transactionData.metadata.plan_id) { //initial subscription purchase
+            try {
+              const planId = transactionData.metadata.plan_id;
+              const plan = await Plan.findById(planId);
+              user.plan = plan;
+              user.tokenBalance += plan.monthlyTokens;
+
+              // Create a new purchase
+              const purchase = new Payment({
+                price: plan.price,
+                tokens: plan.monthlyTokens,
+                title: `Aktywacja subskrypcji ${plan.name}`,
+                type: "one-time",
+                timestamp: new Date()
+              });
+              user.purchases.push(purchase);
+
+              // Create a new transaction
+              transaction = new Transaction({
+                  value: plan.monthlyTokens,
+                  title: `Aktywacja subskrypcji ${plan.name}`,
+                  type: 'income',
+                  timestamp: Date.now()
+              });
+              user.transactions.push(transaction);
+            } catch (err) {
+              return response.status(400).send(`Webhook Error: ${err.message}`);
+            }
+
+          } else { //one-time purchase
+            const tokensToAdd = parseInt(transactionData.metadata.tokens_to_add);
+            user.tokenBalance += tokensToAdd;
+
+            // Create a new purchase
+            const purchase = new Payment({
+              price: transactionData.amount_total / 100,
+              tokens: tokensToAdd,
+              title: `Doładowanie ${tokensToAdd} tokenów`,
+              type: "one-time",
+              timestamp: new Date()
+            });
+            user.purchases.push(purchase);
+
+            // Create a new transaction
+            transaction = new Transaction({
+                value: tokensToAdd,
+                title: `Doładowanie ${tokensToAdd} tokenów`,
+                type: 'income',
+                timestamp: Date.now()
+            });
+            user.transactions.push(transaction);
+          }
+
+          // Create a new balance snapshot and add it to the user's tokenHistory
+          const balanceSnapshot = {
+              timestamp: Date.now(),
+              balance: user.tokenBalance
+          };
+          user.tokenHistory.push(balanceSnapshot);
+
+          // Save the user
+          try {
+            await user.save();
+            await transaction.save();
+          } catch (error) {
+            console.error(`Error saving user: ${error.message}`);
+          }
+        }
+      });
+    } catch (e) {
+      return response.status(400).send(`Webhook Error: ${e.message}`);
+    }
+  }
+
+  response.status(200).send('Webhook received');
+});
+
+
+//listening for subscription renewals
+router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
+  const payload = request.rawBody;
+  const sig = request.headers['stripe-signature'];
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(payload, sig, subscriptionEndpointSecret);
+  } catch (err) {
+    return response.status(400).send(`Webhook Error: ${err.message}`);
+  }
+  const transactionData = event.data.object;
+
+  if (event.type === 'invoice.payment_succeeded') {
+    try {
     User.findOne({ email: transactionData.customer_email }, async (err, user) => {
-      if(user){
-        console.log(user)
-        console.log(transactionData.metadata.tokens_to_add)
+      if(user) {
+        let transaction;
+        try {
+          const planId = transactionData.metadata.plan_id;
+          const plan = await Plan.findById(planId);
 
-        // Add tokens to user's balance
-        const tokensToAdd = parseInt(transactionData.metadata.tokens_to_add);
-        user.tokenBalance += tokensToAdd;
+          user.tokenBalance += plan.monthlyTokens;
+  
+          // Create a new transaction
+          transaction = new Transaction({
+              value: plan.monthlyTokens,
+              title: `Miesięczne doładowanie ${tokensToAdd} tokenów`,
+              type: 'income',
+              timestamp: Date.now()
+          });
+          user.transactions.push(transaction);
 
-        // Create a new purchase
-        const purchase = new Payment({
-            price: transactionData.amount_total / 100,
-            tokens: tokensToAdd,
-            title: 'Stripe Purchase',
-            type: "one-time",
-            timestamp: new Date()
-        });
+        } catch (error) {
+          console.error(`Error saving user: ${error.message}`);
+        }
 
-        user.purchases.push(purchase);
-
-        // Create a new transaction
-        const transaction = new Transaction({
-            value: tokensToAdd,
-            title: `Doładowanie ${tokensToAdd} tokenów`,
-            type: 'income',
-            timestamp: Date.now()
-        });
-
-        user.transactions.push(transaction);
 
         // Create a new balance snapshot and add it to the user's tokenHistory
         const balanceSnapshot = {
@@ -100,7 +196,10 @@ router.post('/token-checkout-webhook', bodyParser.raw({type: 'application/json'}
         }
       }
     });
-  }
+    } catch (e) {
+      return response.status(400).send(`Webhook Error: ${e.message}`);
+    }
+  } 
 
   response.status(200).send('Webhook received');
 });
