@@ -83,33 +83,36 @@ router.patch('/updateUserPlan', requireTester, async (req, res) => {
     if (!plan) {
         return res.status(404).json({ message: 'Plan not found' });
     }
-
-    User.findByIdAndUpdate(req.user._id, { $set: { plan: req.body.planId } }, { new: true }, async (err, user) => {
-        if (err) {
-            return res.status(500).send(err);
-        }
-
-         // Create a new transaction
-         const transaction = new Transaction({
-            value: plan.monthlyTokens,
-            title: `Aktywacja subskrypcji ${plan.name}`,
-            type: 'income',
-            timestamp: Date.now()
+    try {
+        User.findByIdAndUpdate(req.user._id, { $set: { plan: req.body.planId } }, { new: true }, async (err, user) => {
+            if (err) {
+                return res.status(500).send(err);
+            }
+    
+             // Create a new transaction
+             const transaction = new Transaction({
+                value: plan.monthlyTokens,
+                title: `Aktywacja subskrypcji ${plan.name}`,
+                type: 'income',
+                timestamp: Date.now()
+            });
+            user.transactions.push(transaction);
+    
+            user.tokenBalance = plan.monthlyTokens;
+    
+            const balanceSnapshot = {
+                timestamp: Date.now(),
+                balance: user.tokenBalance
+            };
+            user.tokenHistory.push(balanceSnapshot);
+    
+            await user.save();
+            await transaction.save();
+            return res.json(user);
         });
-        user.transactions.push(transaction);
-
-        user.tokenBalance = plan.monthlyTokens;
-
-        const balanceSnapshot = {
-            timestamp: Date.now(),
-            balance: user.tokenBalance
-        };
-        user.tokenHistory.push(balanceSnapshot);
-
-        await user.save();
-        await transaction.save();
-        return res.json(user);
-    });
+    } catch (e) {
+        return res.status(500).json({ message: error.message });
+    }
 });
 
 
