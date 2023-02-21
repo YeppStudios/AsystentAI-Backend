@@ -62,6 +62,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
         if(user){
 
           let transaction;
+          let purchase;
 
           if (transactionData.metadata.plan_id) { //initial subscription purchase
             try {
@@ -127,6 +128,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           try {
             await user.save();
             await transaction.save();
+            await purchase.save();
           } catch (error) {
             console.error(`Error saving user: ${error.message}`);
           }

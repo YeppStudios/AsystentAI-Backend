@@ -5,6 +5,8 @@ const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');
 const Plan = mongoose.model('Plan');
 const User = mongoose.model('User');
+const Payment = mongoose.model('Payment');
+const Transaction = mongoose.model('Transaction');
 
 router.get('/getPlans', async (req, res) => {
     try {
@@ -85,9 +87,25 @@ router.patch('/updateUserPlan', requireAuth, async (req, res) => {
             return res.status(500).send(err);
         }
 
+         // Create a new transaction
+         const transaction = new Transaction({
+            value: plan.monthlyTokens,
+            title: `Aktywacja subskrypcji ${plan.name}`,
+            type: 'income',
+            timestamp: Date.now()
+        });
+        user.transactions.push(transaction);
+
         user.tokenBalance = plan.monthlyTokens;
 
+        const balanceSnapshot = {
+            timestamp: Date.now(),
+            balance: user.tokenBalance
+        };
+        user.tokenHistory.push(balanceSnapshot);
+
         await user.save();
+        await transaction.save();
         return res.json(user);
     });
 });
