@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 const requireAuth = require('../middlewares/requireAuth');
+const requireTester = require('../middlewares/requireTester');
 const requireAdmin = require('../middlewares/requireAdmin');
 const Plan = mongoose.model('Plan');
 const User = mongoose.model('User');
@@ -74,7 +75,8 @@ router.delete('/deletePlan/:id', requireAdmin, async (req, res) => {
     }
 });
 
-router.patch('/updateUserPlan', requireAuth, async (req, res) => {
+
+router.patch('/updateUserPlan', requireTester, async (req, res) => {
 
     const plan = await Plan.findById(req.body.planId);
 
