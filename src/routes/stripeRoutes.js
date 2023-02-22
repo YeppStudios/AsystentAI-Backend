@@ -61,7 +61,6 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
     return response.status(400).send(`Webhook Error: ${err.message}`);
   }
   const transactionData = event.data.object;
-  console.log.apply(transactionData)
   if (event.type === 'checkout.session.completed') {
     try{
       User.findOne({ email: transactionData.customer_email }, async (err, user) => {
@@ -105,8 +104,6 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               user.transactions.push(transaction);
 
               if(!(user.companyName.trim().length === 0)){
-                console.log(user);
-                console.log(user.companyName);
                 invoiceData = { //for companies
                   async_invoice: {
                     "client_company_name": user.companyName, 
