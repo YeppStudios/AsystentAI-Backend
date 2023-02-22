@@ -38,7 +38,7 @@ router.post('/login', async (req, res) => {
 
       await user.comparePassword(password);
       
-      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
       return res.json({ token, user });
   } catch (error) {
       return res.status(500).json({ message: error.message });
