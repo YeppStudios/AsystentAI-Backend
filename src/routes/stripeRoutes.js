@@ -6,10 +6,17 @@ const User = mongoose.model('User');
 const Plan = mongoose.model('Plan');
 const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
+const axios = require('axios');
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const purchaseEndpointSecret = 'whsec_NKIX7ahLbstNif0WGd7AIsIy170RqOzc';
-const subscriptionEndpointSecret = 'whsec_aHNEFJ3R9CIuNn2H96jzm8wlMwGbKp97';
+const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
+const infaktConfig = {
+  headers: {
+    'X-inFakt-ApiKey': `${process.env.INFAKT_KEY}`,
+    'Content-Type': 'application/json',
+  },
+};
 
 const router = express.Router();
 
@@ -63,6 +70,14 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
 
           let transaction;
           let purchase;
+          let invoiceData;
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          const name = user.fullName;
+          const lastName = name.split(" ")[1];
+          const firstname = name.split(" ")[0];
 
           if (transactionData.metadata.plan_id) { //initial subscription purchase
             try {
@@ -72,7 +87,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               user.tokenBalance += plan.monthlyTokens;
 
               // Create a new purchase
-              const purchase = new Payment({
+              purchase = new Payment({
                 price: plan.price,
                 tokens: plan.monthlyTokens,
                 title: `Aktywacja subskrypcji ${plan.name}`,
@@ -89,6 +104,59 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                   timestamp: Date.now()
               });
               user.transactions.push(transaction);
+
+              if(user.companyName){
+                invoiceData = { //for companies
+                  async_invoice: {
+                    "client_company_name": user.companyName, 
+                    "invoice_date": `${year}-${month}-${day}`,
+                    "sale_date": `${year}-${month}-${day}`,
+                    "status": "paid",
+                    "client_first_name": firstname,
+                    "client_last_name": lastName,
+                    "client_street": user.street,
+                    "client_street_number": user.apartmentNumber,
+                    "client_city": user.city,
+                    "client_post_code": user.postalCode,
+                    "client_tax_code": user.nip,
+                    "client_country": "Polska",
+                    "paid_price": plan.price * 100, 
+                    "services":[
+                      {
+                         "name": `Zakup subskrypcji ${plan.name}`, 
+                         "pkwiu": "62.01", 
+                         "tax_symbol": 23,
+                         "gross_price": plan.price * 100, 
+                      }
+                    ]
+                  },
+                };
+              } else { //for individuals
+                invoiceData = {
+                  async_invoice: {
+                    "invoice_date": `${year}-${month}-${day}`,
+                    "sale_date": `${year}-${month}-${day}`,
+                    "status": "paid",
+                    "client_first_name": firstname,
+                    "client_last_name": lastName,
+                    "client_street": user.street,
+                    "client_street_number": user.apartmentNumber,
+                    "client_city": user.city,
+                    "client_post_code": user.postalCode,
+                    "client_country": "Polska",
+                    "paid_price": plan.price * 100, 
+                    "services":[
+                      {
+                         "name": `Zakup subskrypcji ${plan.name}`, 
+                         "pkwiu": "62.01", 
+                         "tax_symbol": 23,
+                         "gross_price": plan.price * 100, 
+                      }
+                    ]
+                  },
+                };
+              }
+
             } catch (err) {
               return response.status(400).send(`Webhook Error: ${err.message}`);
             }
@@ -98,7 +166,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
             user.tokenBalance += tokensToAdd;
 
             // Create a new purchase
-            const purchase = new Payment({
+            purchase = new Payment({
               price: transactionData.amount_total / 100,
               tokens: tokensToAdd,
               title: `Doładowanie ${tokensToAdd} tokenów`,
@@ -115,6 +183,60 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                 timestamp: Date.now()
             });
             user.transactions.push(transaction);
+
+          //generate infakt invoice object
+          if(user.companyName){
+            invoiceData = { //for companies
+              async_invoice: {
+                "client_company_name": user.companyName, 
+                "invoice_date": `${year}-${month}-${day}`,
+                "sale_date": `${year}-${month}-${day}`,
+                "status": "paid",
+                "client_first_name": firstname,
+                "client_last_name": lastName,
+                "client_street": user.street,
+                "client_street_number": user.apartmentNumber,
+                "client_city": user.city,
+                "client_post_code": user.postalCode,
+                "client_tax_code": user.nip,
+                "client_country": "Polska",
+                "paid_price": transactionData.amount_total, 
+                "services":[
+                  {
+                     "name": `Zakup dóbr wirtualnych: ${tokensToAdd} tokenów`, 
+                     "pkwiu": "62.01", 
+                     "tax_symbol": 23,
+                     "gross_price": transactionData.amount_total, 
+                  }
+                ]
+              },
+            };
+          } else { //for individuals
+            invoiceData = {
+              async_invoice: {
+                "invoice_date": `${year}-${month}-${day}`,
+                "sale_date": `${year}-${month}-${day}`,
+                "status": "paid",
+                "client_first_name": firstname,
+                "client_last_name": lastName,
+                "client_street": user.street,
+                "client_street_number": user.apartmentNumber,
+                "client_city": user.city,
+                "client_post_code": user.postalCode,
+                "client_country": "Polska",
+                "paid_price": transactionData.amount_total, 
+                "services":[
+                  {
+                     "name": `Zakup dóbr wirtualnych: ${tokensToAdd} tokenów`, 
+                     "pkwiu": "62.01", 
+                     "tax_symbol": 23,
+                     "gross_price": transactionData.amount_total, 
+                  }
+                ]
+              },
+            };
+          }
+
           }
 
           // Create a new balance snapshot and add it to the user's tokenHistory
@@ -124,11 +246,12 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           };
           user.tokenHistory.push(balanceSnapshot);
 
-          // Save the user
+          // Save the user and send invoice
           try {
             await user.save();
             await transaction.save();
             await purchase.save();
+            await axios.post('https://api.infakt.pl/v3/async/invoices/send.json', invoiceData, infaktConfig);
           } catch (error) {
             console.error(`Error saving user: ${error.message}`);
           }
@@ -157,11 +280,15 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
   }
   const transactionData = event.data.object;
 
-  if (event.type === 'invoice.payment_succeeded') {
+  if (event.type === 'invoice.paid' && event.data.object.billing_reason === 'subscription_cycle') {
     try {
+
     User.findOne({ email: transactionData.customer_email }, async (err, user) => {
       if(user) {
+        
         let transaction;
+        let invoiceData;
+
         try {
           const planId = transactionData.metadata.plan_id;
           const plan = await Plan.findById(planId);
@@ -171,11 +298,72 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
           // Create a new transaction
           transaction = new Transaction({
               value: plan.monthlyTokens,
-              title: `Miesięczne doładowanie ${tokensToAdd} tokenów`,
+              title: `Miesięczne doładowanie ${plan.monthlyTokens} tokenów`,
               type: 'income',
               timestamp: Date.now()
           });
           user.transactions.push(transaction);
+
+          //generate infakt invoice for first subscription payment
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          const name = user.fullName;
+          const lastName = name.split(" ")[1];
+          const firstname = name.split(" ")[0]; 
+
+          if(user.companyName){
+            invoiceData = { //for companies
+              async_invoice: {
+                "client_company_name": user.companyName, 
+                "invoice_date": `${year}-${month}-${day}`,
+                "sale_date": `${year}-${month}-${day}`,
+                "status": "paid",
+                "client_first_name": firstname,
+                "client_last_name": lastName,
+                "client_street": user.street,
+                "client_street_number": user.apartmentNumber,
+                "client_city": user.city,
+                "client_post_code": user.postalCode,
+                "client_tax_code": user.nip,
+                "client_country": "Polska",
+                "paid_price": plan.price * 100, 
+                "services":[
+                  {
+                     "name": `Odnowienie subskrypcji ${plan.name}`, 
+                     "pkwiu": "62.01", 
+                     "tax_symbol": 23,
+                     "gross_price": plan.price * 100, 
+                  }
+                ]
+              },
+            };
+          } else { //for individuals
+            invoiceData = {
+              async_invoice: {
+                "invoice_date": `${year}-${month}-${day}`,
+                "sale_date": `${year}-${month}-${day}`,
+                "status": "paid",
+                "client_first_name": firstname,
+                "client_last_name": lastName,
+                "client_street": user.street,
+                "client_street_number": user.apartmentNumber,
+                "client_city": user.city,
+                "client_post_code": user.postalCode,
+                "client_country": "Polska",
+                "paid_price": plan.price * 100, 
+                "services":[
+                  {
+                     "name": `Odnowienie subskrypcji ${plan.name}`, 
+                     "pkwiu": "62.01", 
+                     "tax_symbol": 23,
+                     "gross_price": plan.price * 100, 
+                  }
+                ]
+              },
+            };
+          }
 
         } catch (error) {
           console.error(`Error saving user: ${error.message}`);
@@ -193,6 +381,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
         try {
           await user.save();
           await transaction.save();
+          await axios.post('https://api.infakt.pl/v3/async/invoices/send.json', invoiceData, infaktConfig);
         } catch (error) {
           console.error(`Error saving user: ${error.message}`);
         }

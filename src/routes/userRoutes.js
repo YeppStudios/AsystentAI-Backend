@@ -46,13 +46,21 @@ router.patch('/updateUser/:id', requireAdmin, async (req, res) => {
 
 router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
-    const { contactEmail, profilePicture, fullName, street, apartmentNumber, companyName, nip } = req.body;
+    const { contactEmail, profilePicture, fullName, street, apartmentNumber, companyName, nip, city, postalCode } = req.body;
     
     try {
       const user = await User.findById(id);
       
       if (!user) {
         return res.status(404).json({ message: 'User not found.' });
+      }
+
+      if (postalCode) {
+        user.postalCode = postalCode;
+      }
+
+      if (city) {
+        user.city = city;
       }
       
       if (contactEmail) {

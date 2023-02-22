@@ -79,6 +79,14 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    city: {
+        type: String,
+        default: ""
+    },
+    postalCode: {
+        type: String,
+        default: ""
+    },
     apartmentNumber: {
         type: String,
         default: ""
