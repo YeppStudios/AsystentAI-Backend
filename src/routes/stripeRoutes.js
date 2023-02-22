@@ -7,6 +7,8 @@ const Plan = mongoose.model('Plan');
 const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
 const axios = require('axios');
+const nodemailer = require('nodemailer');
+const fs = require('fs');
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const purchaseEndpointSecret = 'whsec_NKIX7ahLbstNif0WGd7AIsIy170RqOzc';
@@ -105,11 +107,13 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
 
               if(!(user.companyName.trim().length === 0)){
                 invoiceData = { //for companies
-                  async_invoice: {
+                  invoice: {
                     "client_company_name": user.companyName, 
                     "invoice_date": `${year}-${month}-${day}`,
                     "sale_date": `${year}-${month}-${day}`,
+                    "payment_method": "card",
                     "status": "paid",
+                    "paid_date": `${year}-${month}-${day}`,
                     "client_first_name": firstname,
                     "client_last_name": lastName,
                     "client_street": user.street,
@@ -131,11 +135,13 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                 };
               } else { //for individuals
                 invoiceData = {
-                  async_invoice: {
+                  invoice: {
                     "client_company_name": user.fullName, 
                     "invoice_date": `${year}-${month}-${day}`,
                     "sale_date": `${year}-${month}-${day}`,
                     "status": "paid",
+                    "paid_date": `${year}-${month}-${day}`,
+                    "payment_method": "card",
                     "client_first_name": firstname,
                     "client_last_name": lastName,
                     "client_street": user.street,
@@ -186,11 +192,13 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           //generate infakt invoice object
           if(!(user.companyName.trim().length === 0)){
             invoiceData = { //for companies
-              async_invoice: {
+              invoice: {
                 "client_company_name": user.companyName, 
                 "invoice_date": `${year}-${month}-${day}`,
                 "sale_date": `${year}-${month}-${day}`,
                 "status": "paid",
+                "paid_date": `${year}-${month}-${day}`,
+                "payment_method": "card",
                 "client_first_name": firstname,
                 "client_last_name": lastName,
                 "client_street": user.street,
@@ -212,11 +220,13 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
             };
           } else { //for individuals
             invoiceData = {
-              async_invoice: {
+              invoice: {
                 "client_company_name": user.fullName, 
                 "invoice_date": `${year}-${month}-${day}`,
                 "sale_date": `${year}-${month}-${day}`,
                 "status": "paid",
+                "paid_date": `${year}-${month}-${day}`,
+                "payment_method": "card",
                 "client_first_name": firstname,
                 "client_last_name": lastName,
                 "client_street": user.street,
@@ -249,12 +259,16 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
 
           // Save the user and send invoice
           try {
+            await axios.post('https://api.infakt.pl/v3/invoices.json', invoiceData, infaktConfig);
+            await new Promise(resolve => setTimeout(resolve, 2000));
             await user.save();
             await transaction.save();
             await purchase.save();
-            await axios.post('https://api.infakt.pl/v3/async/invoices/send.json', invoiceData, infaktConfig);
+            const latestInvoice = await axios.get('https://api.infakt.pl/v3/invoices.json?limit=1', infaktConfig);
+            const lastInvoiceID = latestInvoice.data.entities[0].id;
+            await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/paid.json`, {invoice: {"status": "paid"}}, infaktConfig);
           } catch (error) {
-            console.error(`Error saving user: ${error.message}`);
+            console.error(`Error: ${error.response.data}`);
           }
         }
       });
@@ -316,11 +330,13 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
 
           if(!(user.companyName.trim().length === 0)){
             invoiceData = { //for companies
-              async_invoice: {
+              invoice: {
                 "client_company_name": user.companyName, 
                 "invoice_date": `${year}-${month}-${day}`,
                 "sale_date": `${year}-${month}-${day}`,
                 "status": "paid",
+                "paid_date": `${year}-${month}-${day}`,
+                "payment_method": "card",
                 "client_first_name": firstname,
                 "client_last_name": lastName,
                 "client_street": user.street,
@@ -342,11 +358,13 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
             };
           } else { //for individuals
             invoiceData = {
-              async_invoice: {
+              invoice: {
                 "client_company_name": user.fullName, 
                 "invoice_date": `${year}-${month}-${day}`,
                 "sale_date": `${year}-${month}-${day}`,
                 "status": "paid",
+                "paid_date": `${year}-${month}-${day}`,
+                "payment_method": "card",
                 "client_first_name": firstname,
                 "client_last_name": lastName,
                 "client_street": user.street,
@@ -382,9 +400,13 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
 
         // Save the user
         try {
+          await axios.post('https://api.infakt.pl/v3/invoices.json', invoiceData, infaktConfig);
+          await new Promise(resolve => setTimeout(resolve, 2000));
           await user.save();
           await transaction.save();
-          await axios.post('https://api.infakt.pl/v3/async/invoices/send.json', invoiceData, infaktConfig);
+          const latestInvoice = await axios.get('https://api.infakt.pl/v3/invoices.json?limit=1', infaktConfig);
+          const lastInvoiceID = latestInvoice.data.entities[0].id;
+          await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/paid.json`, {invoice: {"status": "paid"}}, infaktConfig);
         } catch (error) {
           console.error(`Error saving user: ${error.message}`);
         }
