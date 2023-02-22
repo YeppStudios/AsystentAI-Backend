@@ -1,4 +1,3 @@
-
 require('./src/models/User');
 require('./src/models/Conversation');
 require('./src/models/Message');
@@ -16,7 +15,6 @@ const tokenRoutes =  require('./src/routes/tokenRoutes');
 const statsRoutes =  require('./src/routes/statsRoutes');
 const planRoutes =  require('./src/routes/planRoutes');
 const whitelistRoutes =  require('./src/routes/whitelistRoutes');
-const infaktRoutes =  require('./src/routes/infaktRoutes');
 const stripeRoutes =  require('./src/routes/stripeRoutes');
 const contentGenerationRoutes =  require('./src/routes/contentGenerationRoutes');
 const userRoutes =  require('./src/routes/userRoutes');
@@ -42,7 +40,6 @@ app.use(statsRoutes);
 app.use(contentGenerationRoutes);
 app.use(userRoutes);
 app.use(planRoutes);
-app.use(infaktRoutes);
 app.use(stripeRoutes);
 app.use(whitelistRoutes);
 
