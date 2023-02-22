@@ -61,13 +61,12 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
     return response.status(400).send(`Webhook Error: ${err.message}`);
   }
   const transactionData = event.data.object;
-
+  console.log.apply(transactionData)
   if (event.type === 'checkout.session.completed') {
     try{
       User.findOne({ email: transactionData.customer_email }, async (err, user) => {
 
         if(user){
-
           let transaction;
           let purchase;
           let invoiceData;
@@ -78,7 +77,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           const name = user.fullName;
           const lastName = name.split(" ")[1];
           const firstname = name.split(" ")[0];
-
+          console.log(transactionData.metadata.plan_id)
           if (transactionData.metadata.plan_id) { //initial subscription purchase
             try {
               const planId = transactionData.metadata.plan_id;
@@ -105,7 +104,9 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               });
               user.transactions.push(transaction);
 
-              if(user.companyName){
+              if(!(user.companyName.trim().length === 0)){
+                console.log(user);
+                console.log(user.companyName);
                 invoiceData = { //for companies
                   async_invoice: {
                     "client_company_name": user.companyName, 
@@ -134,6 +135,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               } else { //for individuals
                 invoiceData = {
                   async_invoice: {
+                    "client_company_name": user.fullName, 
                     "invoice_date": `${year}-${month}-${day}`,
                     "sale_date": `${year}-${month}-${day}`,
                     "status": "paid",
@@ -145,6 +147,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                     "client_post_code": user.postalCode,
                     "client_country": "Polska",
                     "paid_price": plan.price * 100, 
+                    "client_tax_code": "",
                     "services":[
                       {
                          "name": `Zakup subskrypcji ${plan.name}`, 
@@ -156,7 +159,6 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                   },
                 };
               }
-
             } catch (err) {
               return response.status(400).send(`Webhook Error: ${err.message}`);
             }
@@ -185,7 +187,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
             user.transactions.push(transaction);
 
           //generate infakt invoice object
-          if(user.companyName){
+          if(!(user.companyName.trim().length === 0)){
             invoiceData = { //for companies
               async_invoice: {
                 "client_company_name": user.companyName, 
@@ -214,6 +216,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           } else { //for individuals
             invoiceData = {
               async_invoice: {
+                "client_company_name": user.fullName, 
                 "invoice_date": `${year}-${month}-${day}`,
                 "sale_date": `${year}-${month}-${day}`,
                 "status": "paid",
@@ -225,6 +228,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                 "client_post_code": user.postalCode,
                 "client_country": "Polska",
                 "paid_price": transactionData.amount_total, 
+                "client_tax_code": "",
                 "services":[
                   {
                      "name": `Zakup dóbr wirtualnych: ${tokensToAdd} tokenów`, 
@@ -313,7 +317,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
           const lastName = name.split(" ")[1];
           const firstname = name.split(" ")[0]; 
 
-          if(user.companyName){
+          if(!(user.companyName.trim().length === 0)){
             invoiceData = { //for companies
               async_invoice: {
                 "client_company_name": user.companyName, 
@@ -342,6 +346,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
           } else { //for individuals
             invoiceData = {
               async_invoice: {
+                "client_company_name": user.fullName, 
                 "invoice_date": `${year}-${month}-${day}`,
                 "sale_date": `${year}-${month}-${day}`,
                 "status": "paid",
@@ -353,6 +358,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
                 "client_post_code": user.postalCode,
                 "client_country": "Polska",
                 "paid_price": plan.price * 100, 
+                "client_tax_code": "",
                 "services":[
                   {
                      "name": `Odnowienie subskrypcji ${plan.name}`, 

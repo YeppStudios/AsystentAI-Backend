@@ -12,7 +12,7 @@ router.post('/generateInvoice', (req, res) => {
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
-    const name = "Piotr Gerke";
+    const name = "Marcin Kliszczak";
     const lastName = name.split(" ")[1];
     const firstname = name.split(" ")[0];
     const config = {
@@ -24,17 +24,17 @@ router.post('/generateInvoice', (req, res) => {
   
     const data = {
       async_invoice: {
-        "client_company_name": "Company", 
+        // "client_company_name": "Company", 
         "invoice_date": `${year}-${month}-${day}`,
         "sale_date": `${year}-${month}-${day}`,
         "status": "paid",
         "client_first_name": firstname,
         "client_last_name": lastName,
-        "client_street": "ul. Szwajcarska",
-        "client_street_number": "4",
-        "client_city": "Warszawa",
-        "client_post_code": "62-080",
-        "client_tax_code": "7812043227",
+        "client_street": "ul. Pawiana",
+        "client_street_number": "44",
+        "client_city": "Kraków",
+        "client_post_code": "34-040",
+        // "client_tax_code": "7812043227",
         "client_country": "Polska",
         "paid_price": 4999, 
         "services":[
