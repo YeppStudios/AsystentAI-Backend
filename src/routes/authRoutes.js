@@ -2,9 +2,10 @@ const jwt = require('jsonwebtoken');
 const express = require('express');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
+const Whitelist = mongoose.model('Whitelist');
 const requireAuth = require('../middlewares/requireAuth');
 require('dotenv').config();
-
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const router = express.Router();
 
 
@@ -29,21 +30,53 @@ router.post('/register', async (req, res) => {
   }
 });
 
-
 router.post('/login', async (req, res) => {
   try {
-      const { email, password } = req.body;
-      const user = await User.findOne({ email });
-      if (!user) return res.status(400).json({ message: 'User not found' });
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: 'User not found' });
 
-      await user.comparePassword(password);
+    // Check if user's email is on the whitelist
+    const isWhitelisted = await Whitelist.exists({ email: email });
+    
+    if (!isWhitelisted) {
+      // Check if user's email is associated with a customer in Stripe
+      const customers = await stripe.customers.list({ email: email });
+      const isSubscribed = customers.data.length > 0;
+      if (!isSubscribed) return res.status(400).json({ message: 'User is not a subscriber' });
       
-      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-      return res.json({ token, user });
+    } else {
+      //if user is a subscriber but did not finish registration
+      if(!(user.street)){
+        return res.status(400).json({ message: 'User did not complete registration' });
+      }
+    }
+
+    await user.comparePassword(password);
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    return res.json({ token, user });
   } catch (error) {
-      return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
+
+router.post('/login-onboarding', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: 'User not found' });
+
+    await user.comparePassword(password);
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    return res.json({ token, user });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+
 
 router.post('/logout', async (req, res) => {
   try {

@@ -21,10 +21,10 @@ router.post('/askAI', requireTokens, async (req, res) => {
         const user = req.user;
         const response = await openai.createCompletion({
             model: "text-davinci-003",
-            prompt: `Generujesz genialne treści. ${prompt}`,
+            prompt: `Jesteś copywriterem i generujesz genialne treści. ${prompt}`,
             max_tokens: 3000,
             temperature: 0.7,
-            frequency_penalty: 0.35
+            frequency_penalty: 0.4
         });
 
         // Decrease token balance

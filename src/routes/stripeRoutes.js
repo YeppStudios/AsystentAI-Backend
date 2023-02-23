@@ -125,7 +125,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                     "paid_price": plan.price * 100, 
                     "services":[
                       {
-                         "name": `Zakup subskrypcji ${plan.name}`, 
+                         "name": `Miesięczna Subskrypcja Oprogramowania Aplikacji AsystentAI (Pakiet ${plan.name})`, 
                          "pkwiu": "62.01", 
                          "tax_symbol": 23,
                          "gross_price": plan.price * 100, 
@@ -153,7 +153,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                     "client_tax_code": "",
                     "services":[
                       {
-                         "name": `Zakup subskrypcji ${plan.name}`, 
+                         "name": `Miesięczna Subskrypcja Oprogramowania Aplikacji AsystentAI (Pakiet ${plan.name})`,
                          "pkwiu": "62.01", 
                          "tax_symbol": 23,
                          "gross_price": plan.price * 100, 
@@ -266,7 +266,6 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
             await purchase.save();
             const latestInvoice = await axios.get('https://api.infakt.pl/v3/invoices.json?limit=1', infaktConfig);
             const lastInvoiceID = latestInvoice.data.entities[0].id;
-            console.log(latestInvoice.data.entities[0].number)
             await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/paid.json`, {invoice: {"status": "paid"}}, infaktConfig);
             await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/deliver_via_email.json`, {"print_type": "original"}, infaktConfig);
           } catch (error) {
@@ -350,7 +349,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
                 "paid_price": plan.price * 100, 
                 "services":[
                   {
-                     "name": `Odnowienie subskrypcji ${plan.name}`, 
+                     "name": `Miesięczna Subskrypcja Oprogramowania Aplikacji AsystentAI (Pakiet ${plan.name})`, 
                      "pkwiu": "62.01", 
                      "tax_symbol": 23,
                      "gross_price": plan.price * 100, 
@@ -378,7 +377,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
                 "client_tax_code": "",
                 "services":[
                   {
-                     "name": `Odnowienie subskrypcji ${plan.name}`, 
+                     "name": `Miesięczna Subskrypcja Oprogramowania Aplikacji AsystentAI (Pakiet ${plan.name})`, 
                      "pkwiu": "62.01", 
                      "tax_symbol": 23,
                      "gross_price": plan.price * 100, 
