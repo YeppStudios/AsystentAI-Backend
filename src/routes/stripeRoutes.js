@@ -210,7 +210,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                 "paid_price": transactionData.amount_total, 
                 "services":[
                   {
-                     "name": `Zakup dóbr wirtualnych: ${tokensToAdd} tokenów`, 
+                     "name": `Jednorazowe doładowanie miesięcznej Subskrypcji - "Elixir ${tokensToAdd}ml`, 
                      "pkwiu": "62.01", 
                      "tax_symbol": 23,
                      "gross_price": transactionData.amount_total, 
@@ -238,7 +238,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                 "client_tax_code": "",
                 "services":[
                   {
-                     "name": `Zakup dóbr wirtualnych: ${tokensToAdd} tokenów`, 
+                    "name": `Jednorazowe doładowanie miesięcznej Subskrypcji - "Elixir ${tokensToAdd}ml`,
                      "pkwiu": "62.01", 
                      "tax_symbol": 23,
                      "gross_price": transactionData.amount_total, 
