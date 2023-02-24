@@ -74,7 +74,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
   const transactionData = event.data.object;
   if (event.type === 'checkout.session.completed') {
     try{
-      User.findOne({ email: transactionData.customer_email }, async (err, user) => {
+      User.findOne({ email: transactionData.customer_details.email }, async (err, user) => {
 
         if(user){
           let transaction;
@@ -308,7 +308,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
   if (event.type === 'invoice.paid' && event.data.object.billing_reason === 'subscription_cycle') {
     try {
 
-    User.findOne({ email: transactionData.customer_email }, async (err, user) => {
+    User.findOne({ email: transactionData.customer_details.email }, async (err, user) => {
       if(user) {
         
         let transaction;
