@@ -1,14 +1,13 @@
 const express = require('express');
 require('dotenv').config()
 const bodyParser = require('body-parser');
+const requireAuth = require('../middlewares/requireAuth');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
 const Plan = mongoose.model('Plan');
 const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
 const axios = require('axios');
-const nodemailer = require('nodemailer');
-const fs = require('fs');
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const purchaseEndpointSecret = 'whsec_NKIX7ahLbstNif0WGd7AIsIy170RqOzc';
@@ -23,29 +22,39 @@ const infaktConfig = {
 const router = express.Router();
 
 router.post('/create-checkout-session', async (req, res) => {
-    const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId } = req.body;
-    try {
+  const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId } = req.body;
+  try {
+      let customer = await stripe.customers.list({ email: email, limit: 1 });
+      if (customer.data.length > 0) {
+          // Use existing customer object
+          customer = customer.data[0];
+      } else {
+          // Create new customer object
+          customer = await stripe.customers.create({
+              email: email
+          });
+      }
       const session = await stripe.checkout.sessions.create({
-        customer_email: `${email}`,
-        line_items: [
-          {
-            price: `${priceId}`,
-            quantity: 1,
+          customer: customer.id,
+          line_items: [
+              {
+                  price: `${priceId}`,
+                  quantity: 1,
+              },
+          ],
+          metadata: {
+              tokens_to_add: `${tokensAmount}`,
+              plan_id: `${planId}`//plan id
           },
-        ],
-        metadata: {
-          tokens_to_add: `${tokensAmount}`,
-          plan_id: `${planId}`//plan id
-        },
-        mode: `${mode}`,
-        success_url: `${successURL}`,
-        cancel_url: `${cancelURL}`,
-        automatic_tax: {enabled: true},
+          mode: `${mode}`,
+          success_url: `${successURL}`,
+          cancel_url: `${cancelURL}`,
+          automatic_tax: {enabled: true},
       });
 
       res.status(200).json({ url: session.url });
   } catch (e) {
-    res.status(500).json({message: "Error creating session for price"})
+      res.status(500).json({message: "Error creating session for price"})
   }
 });
 
@@ -421,5 +430,62 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
 
   response.status(200).send('Webhook received');
 });
+
+router.post('/cancel-subscription', requireAuth, async (req, res) => {
+  const user = req.user;
+  try {
+    const customer = await stripe.customers.list({ email: user.contactEmail });
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.data[0].id,
+    });
+    const currentSubscriptionID = subscriptions.data[0].id;
+    const deleted = await stripe.subscriptions.del(
+      currentSubscriptionID
+    );
+    res.status(200).json({ message: "Subscription cancelled", deletedSubscription: deleted });
+} catch (e) {
+  res.status(500).json({message: "Error cancelling subscripiton", error: e})
+}
+});
+
+
+router.post('/update-subscription', requireAuth, async (req, res) => {
+  const user = req.user;
+  const { priceId, planId } = req.body;
+
+  try {
+    const customer = await stripe.customers.list({ email: user.contactEmail });
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.data[0].id,
+    });
+
+    if(subscriptions.data.length > 0){
+      await stripe.subscriptions.del( //delete previous subscription
+        subscriptions.data[0].id
+      );
+      console.log(subscriptions)
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 2000)); //wait for stripe
+    
+    const paymentMethods = await stripe.paymentMethods.list({
+      customer: customer.data[0].id,
+      type: 'card',
+    });
+
+    const subscription = await stripe.subscriptions.create({ //subscribe to new price
+      customer: customer.data[0].id,
+      default_payment_method: paymentMethods.data[0].id, // use the first card in the list
+      items: [
+        {price: `${priceId}`},
+      ],
+    });
+
+    res.status(200).json({ message: "Subscription updated" });
+} catch (e) {
+  res.status(500).json({message: "Error updating subscripiton", error: e})
+}
+});
+
 
 module.exports = router;
