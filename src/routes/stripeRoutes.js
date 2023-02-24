@@ -9,7 +9,7 @@ const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
 const axios = require('axios');
 
-const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_KEY);
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const purchaseEndpointSecret = 'whsec_NKIX7ahLbstNif0WGd7AIsIy170RqOzc';
 const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
 const infaktConfig = {
@@ -585,7 +585,7 @@ router.post('/update-subscription', requireAuth, async (req, res) => {
     } catch (error) {
       console.error(`Error: ${JSON.stringify(error.response.data)}`);
     }
-    
+
     res.status(200).json({ message: "Subscription updated", subscription });
 } catch (e) {
   res.status(500).json({message: "Error updating subscripiton", error: e})
