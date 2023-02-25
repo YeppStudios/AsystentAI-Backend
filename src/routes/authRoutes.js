@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
 const Whitelist = mongoose.model('Whitelist');
+const Transaction = mongoose.model('Transaction');
 const requireAuth = require('../middlewares/requireAuth');
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -11,7 +12,7 @@ const router = express.Router();
 
 router.post('/register', async (req, res) => {
   try {
-      const { email, password, name } = req.body;
+      const { email, password, name, referrerId } = req.body;
       const user = await User.findOne({ email });
       if (user) return res.status(400).json({ message: 'User already exists' });
 
@@ -21,6 +22,50 @@ router.post('/register', async (req, res) => {
           name,
           accountType: 'individual',
       });
+
+      if(referrerId){
+        try {
+            const referrer = await User.findOne({ _id: referrerId });
+            if(referrer){
+
+            newUser.tokenBalance += 5000;
+            referrer.tokenBalance += 5000;
+
+            const transaction = new Transaction({
+                value: 5000,
+                title: "Doładowanie 5000 elixiru za polecenie",
+                type: "income",
+                timestamp: Date.now()
+            });
+            newUser.transactions.push(transaction);
+            referrer.transactions.push(transaction);
+
+            const newUserBalanceSnapshot = {
+                timestamp: new Date(),
+                balance: newUser.tokenBalance
+            };
+            const reffererBalanceSnapshot = {
+              timestamp: new Date(),
+              balance: referrer.tokenBalance
+            };
+            newUser.tokenHistory.push(newUserBalanceSnapshot);
+            referrer.tokenHistory.push(reffererBalanceSnapshot);
+
+            User.findOneAndUpdate(
+              { _id: referrerId },
+              { $inc: { "referralCount": 1 } },
+              { upsert: true },
+              function(err, user) {
+                if (err) throw err;
+              }
+            );
+
+            await referrer.save();
+          }
+        } catch (e) {
+          console.log(e)
+        }
+      }
 
       await newUser.save();
       const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });

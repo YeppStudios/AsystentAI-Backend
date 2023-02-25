@@ -444,10 +444,11 @@ router.post('/cancel-subscription', requireAuth, async (req, res) => {
       currentSubscriptionID
     );
     await User.updateOne({ _id: user._id }, { plan: null });
+    
     res.status(200).json({ message: "Subscription cancelled", deletedSubscription: deleted });
-} catch (e) {
+  } catch (e) {
   res.status(500).json({message: "Error cancelling subscripiton", error: e})
-}
+  }
 });
 
 

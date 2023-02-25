@@ -99,6 +99,10 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    referralCount: {
+        type: Number,
+        default: 0
+    },
     purchases: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Payment'}],
     transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction'}],
     tokenHistory: [{BalanceSnapshotSchema}],
