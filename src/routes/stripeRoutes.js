@@ -24,40 +24,47 @@ const router = express.Router();
 router.post('/create-checkout-session', async (req, res) => {
   const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId, referrerId } = req.body;
   try {
-      let customer = await stripe.customers.list({ email: email, limit: 1 });
-      if (customer.data.length > 0) {
-          // Use existing customer object
-          customer = customer.data[0];
+    let customer;
+    try {
+      const customerList = await stripe.customers.list({ email: email, limit: 1 });
+      if (customerList.data.length > 0) {
+        // Use existing customer object
+        customer = customerList.data[0];
       } else {
-          // Create new customer object
-          customer = await stripe.customers.create({
-              email: email
-          });
+        // Create new customer object
+        customer = await stripe.customers.create({
+          email: email
+        });
       }
-      const session = await stripe.checkout.sessions.create({
-          customer: customer.id,
-          line_items: [
-              {
-                  price: `${priceId}`,
-                  quantity: 1,
-              },
-          ],
-          metadata: {
-              tokens_to_add: `${tokensAmount}`,
-              plan_id: `${planId}`,//plan id
-              referrer_id: `${referrerId}`
-          },
-          mode: `${mode}`,
-          success_url: `${successURL}`,
-          cancel_url: `${cancelURL}`,
-          automatic_tax: {enabled: true},
-      });
+    } catch (e) {
+      console.log(e)
+    }
 
-      res.status(200).json({ url: session.url });
+    const session = await stripe.checkout.sessions.create({
+      customer: customer.id,
+      line_items: [
+        {
+          price: `${priceId}`,
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        tokens_to_add: `${tokensAmount}`,
+        plan_id: `${planId}`, //plan id
+        referrer_id: `${referrerId}`
+      },
+      mode: `${mode}`,
+      success_url: `${successURL}`,
+      cancel_url: `${cancelURL}`,
+    });
+
+    res.status(200).json({ url: session.url });
   } catch (e) {
-      res.status(500).json({message: "Error creating session for price"})
+    res.status(500).json({ message: "Error creating session for price" });
+    console.log(e);
   }
 });
+
 
 
 //listening for one-time purchases as well as first payment of subscription
@@ -116,28 +123,29 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               user.transactions.push(transaction);
 
               //checking if transaction was referred
-              if (transactionData.metadata.referrer_id) {
+              if (transactionData.metadata.referrer_id.length > 0) {
               try {
                 const referrer = await User.findOne({ _id: transactionData.metadata.referrer_id });
                 if(referrer){
     
-                user.tokenBalance += 5000;
-                referrer.tokenBalance += 5000;
+                user.tokenBalance += 7500;
+                referrer.tokenBalance += 7500;
     
-                const transaction = new Transaction({
-                    value: 5000,
-                    title: "Doładowanie 5000 elixiru za polecenie",
+                const referralTransaction = new Transaction({
+                    value: 7500,
+                    title: "7500 elixiru w prezencie za polecenie",
                     type: "income",
                     timestamp: Date.now()
                 });
-                user.transactions.push(transaction);
-                referrer.transactions.push(transaction);
+
+                user.transactions.push(referralTransaction);
+                referrer.transactions.push(referralTransaction);
     
-                const reffererBalanceSnapshot = {
+                const referrerBalanceSnapshot = {
                   timestamp: new Date(),
                   balance: referrer.tokenBalance
                 };
-                referrer.tokenHistory.push(reffererBalanceSnapshot);
+                referrer.tokenHistory.push(referrerBalanceSnapshot);
     
                 User.findOneAndUpdate(
                   { _id: transactionData.metadata.referrer_id },
@@ -147,8 +155,8 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                     if (err) throw err;
                   }
                 );
-    
                 await referrer.save();
+                await referralTransaction.save();
               }
             } catch (e) {
               console.log(e)
