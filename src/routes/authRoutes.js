@@ -23,50 +23,6 @@ router.post('/register', async (req, res) => {
           accountType: 'individual',
       });
 
-      if(referrerId){
-        try {
-            const referrer = await User.findOne({ _id: referrerId });
-            if(referrer){
-
-            newUser.tokenBalance += 5000;
-            referrer.tokenBalance += 5000;
-
-            const transaction = new Transaction({
-                value: 5000,
-                title: "Doładowanie 5000 elixiru za polecenie",
-                type: "income",
-                timestamp: Date.now()
-            });
-            newUser.transactions.push(transaction);
-            referrer.transactions.push(transaction);
-
-            const newUserBalanceSnapshot = {
-                timestamp: new Date(),
-                balance: newUser.tokenBalance
-            };
-            const reffererBalanceSnapshot = {
-              timestamp: new Date(),
-              balance: referrer.tokenBalance
-            };
-            newUser.tokenHistory.push(newUserBalanceSnapshot);
-            referrer.tokenHistory.push(reffererBalanceSnapshot);
-
-            User.findOneAndUpdate(
-              { _id: referrerId },
-              { $inc: { "referralCount": 1 } },
-              { upsert: true },
-              function(err, user) {
-                if (err) throw err;
-              }
-            );
-
-            await referrer.save();
-          }
-        } catch (e) {
-          console.log(e)
-        }
-      }
-
       await newUser.save();
       const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
       return res.status(201).json({ token, newUser });

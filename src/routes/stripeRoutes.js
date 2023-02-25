@@ -22,7 +22,7 @@ const infaktConfig = {
 const router = express.Router();
 
 router.post('/create-checkout-session', async (req, res) => {
-  const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId } = req.body;
+  const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId, referrerId } = req.body;
   try {
       let customer = await stripe.customers.list({ email: email, limit: 1 });
       if (customer.data.length > 0) {
@@ -44,7 +44,8 @@ router.post('/create-checkout-session', async (req, res) => {
           ],
           metadata: {
               tokens_to_add: `${tokensAmount}`,
-              plan_id: `${planId}`//plan id
+              plan_id: `${planId}`,//plan id
+              referrer_id: `${referrerId}`
           },
           mode: `${mode}`,
           success_url: `${successURL}`,
@@ -87,7 +88,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           const name = user.fullName;
           const lastName = name.split(" ")[1];
           const firstname = name.split(" ")[0];
-          console.log(transactionData.metadata.plan_id)
+
           if (transactionData.metadata.plan_id) { //initial subscription purchase
             try {
               const planId = transactionData.metadata.plan_id;
@@ -113,6 +114,46 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                   timestamp: Date.now()
               });
               user.transactions.push(transaction);
+
+              //checking if transaction was referred
+              if (transactionData.metadata.referrer_id) {
+              try {
+                const referrer = await User.findOne({ _id: transactionData.metadata.referrer_id });
+                if(referrer){
+    
+                user.tokenBalance += 5000;
+                referrer.tokenBalance += 5000;
+    
+                const transaction = new Transaction({
+                    value: 5000,
+                    title: "Doładowanie 5000 elixiru za polecenie",
+                    type: "income",
+                    timestamp: Date.now()
+                });
+                user.transactions.push(transaction);
+                referrer.transactions.push(transaction);
+    
+                const reffererBalanceSnapshot = {
+                  timestamp: new Date(),
+                  balance: referrer.tokenBalance
+                };
+                referrer.tokenHistory.push(reffererBalanceSnapshot);
+    
+                User.findOneAndUpdate(
+                  { _id: transactionData.metadata.referrer_id },
+                  { $inc: { "referralCount": 1 } },
+                  { upsert: true },
+                  function(err, user) {
+                    if (err) throw err;
+                  }
+                );
+    
+                await referrer.save();
+              }
+            } catch (e) {
+              console.log(e)
+            }
+            }
 
               if(!(user.companyName.trim().length === 0)){
                 invoiceData = { //for companies
@@ -444,7 +485,7 @@ router.post('/cancel-subscription', requireAuth, async (req, res) => {
       currentSubscriptionID
     );
     await User.updateOne({ _id: user._id }, { plan: null });
-    
+
     res.status(200).json({ message: "Subscription cancelled", deletedSubscription: deleted });
   } catch (e) {
   res.status(500).json({message: "Error cancelling subscripiton", error: e})
