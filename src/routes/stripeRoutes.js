@@ -89,6 +89,7 @@ router.post('/create-checkout-session', async (req, res) => {
           tokens_to_add: `${tokensAmount}`,
           plan_id: `${planId}`, //plan id
           referrer_id: `${referrerId}`,
+          trial: false
         },
         mode: `${mode}`,
         success_url: `${successURL}`,
@@ -206,7 +207,8 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               console.log(e)
             }
             }
-
+            //generate invoices only if it's not trial
+            if(!(transactionData.metadata.trial)){
               if(!(user.companyName.trim().length === 0)){
                 invoiceData = { //for companies
                   invoice: {
@@ -264,6 +266,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                   },
                 };
               }
+            }
             } catch (err) {
               return response.status(400).send(`Webhook Error: ${err.message}`);
             }
@@ -361,15 +364,17 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
 
           // Save the user and send invoice
           try {
-            await axios.post('https://api.infakt.pl/v3/invoices.json', invoiceData, infaktConfig);
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            if (!(transactionData.metadata.trial)) {
+              await axios.post('https://api.infakt.pl/v3/invoices.json', invoiceData, infaktConfig);
+              await new Promise(resolve => setTimeout(resolve, 2500));
+              const latestInvoice = await axios.get('https://api.infakt.pl/v3/invoices.json?limit=1', infaktConfig);
+              const lastInvoiceID = latestInvoice.data.entities[0].id;
+              await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/paid.json`, {invoice: {"status": "paid"}}, infaktConfig);
+              await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/deliver_via_email.json`, {"print_type": "original"}, infaktConfig);
+            }
             await user.save();
             await transaction.save();
             await purchase.save();
-            const latestInvoice = await axios.get('https://api.infakt.pl/v3/invoices.json?limit=1', infaktConfig);
-            const lastInvoiceID = latestInvoice.data.entities[0].id;
-            await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/paid.json`, {invoice: {"status": "paid"}}, infaktConfig);
-            await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/deliver_via_email.json`, {"print_type": "original"}, infaktConfig);
           } catch (error) {
             console.error(`Error: ${JSON.stringify(error.response.data)}`);
           }
