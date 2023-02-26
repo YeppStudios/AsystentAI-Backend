@@ -7,6 +7,7 @@ const User = mongoose.model('User');
 const Plan = mongoose.model('Plan');
 const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
+const Whitelist = mongoose.model('Whitelist');
 const axios = require('axios');
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -22,7 +23,7 @@ const infaktConfig = {
 const router = express.Router();
 
 router.post('/create-checkout-session', async (req, res) => {
-  const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId, referrerId } = req.body;
+  const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId, referrerId, isTrial } = req.body;
   try {
     let customer;
     try {
@@ -36,27 +37,65 @@ router.post('/create-checkout-session', async (req, res) => {
           email: email
         });
       }
+
     } catch (e) {
       console.log(e)
     }
 
-    const session = await stripe.checkout.sessions.create({
-      customer: customer.id,
-      line_items: [
-        {
-          price: `${priceId}`,
-          quantity: 1,
+    let session;
+
+    //if trial check planId(assistant) and mode to create trial stripe checkout
+    if(isTrial && planId == "63f0e7d075de0ef12bb8c484" && mode === "subscription"){
+      try {
+        const whitelist = await Whitelist.findOne({ email });
+    
+        if (whitelist) {
+          session = await stripe.checkout.sessions.create({
+            customer: customer.id,
+            line_items: [
+              {
+                price: `${priceId}`,
+                quantity: 1,
+              },
+            ],
+            metadata: {
+              tokens_to_add: `${tokensAmount}`,
+              plan_id: `${planId}`, //plan id
+              referrer_id: `${referrerId}`,
+              trial: true
+            },
+            mode: `${mode}`,
+            subscription_data: {
+              trial_period_days: 30,
+            },
+            success_url: `${successURL}`,
+            cancel_url: `${cancelURL}`,
+          });
+        } 
+
+      } catch (error) {
+        console.error(error);
+      }
+    } else {
+      session = await stripe.checkout.sessions.create({
+        customer: customer.id,
+        line_items: [
+          {
+            price: `${priceId}`,
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          tokens_to_add: `${tokensAmount}`,
+          plan_id: `${planId}`, //plan id
+          referrer_id: `${referrerId}`,
         },
-      ],
-      metadata: {
-        tokens_to_add: `${tokensAmount}`,
-        plan_id: `${planId}`, //plan id
-        referrer_id: `${referrerId}`
-      },
-      mode: `${mode}`,
-      success_url: `${successURL}`,
-      cancel_url: `${cancelURL}`,
-    });
+        mode: `${mode}`,
+        success_url: `${successURL}`,
+        cancel_url: `${cancelURL}`,
+      });
+    }
+
 
     res.status(200).json({ url: session.url });
   } catch (e) {
@@ -81,8 +120,9 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
   }
   const transactionData = event.data.object;
   if (event.type === 'checkout.session.completed') {
+    let email = transactionData.customer_details.email;
     try{
-      User.findOne({ email: transactionData.customer_details.email }, async (err, user) => {
+      User.findOne({ email: email }, async (err, user) => {
 
         if(user){
           let transaction;
@@ -102,6 +142,10 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               const plan = await Plan.findById(planId);
               user.plan = plan;
               user.tokenBalance += plan.monthlyTokens;
+
+              if(transactionData.metadata.trial){
+                await Whitelist.deleteOne({ email });
+              }
 
               // Create a new purchase
               purchase = new Payment({

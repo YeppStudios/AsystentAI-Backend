@@ -64,16 +64,14 @@ router.put('/:userId/deduct', requireAdmin, async (req, res) => {
     }
 });
 
-router.put('/users/:userId/addTokens', requireAdmin, async (req, res) => {
+router.patch('/users/:userId/addTokens', requireAdmin, async (req, res) => {
     try {
         const { amount, title } = req.body;
         const user = await User.findById(req.params.userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        if (user._id.toString() !== req.user._id.toString()) {
-            return res.status(401).json({ message: 'Not authorized' });
-        }
+
         // Get the user's plan
         const plan = await Plan.findById(user.plan);
         if (!plan) {
@@ -114,6 +112,7 @@ router.put('/users/:userId/addTokens', requireAdmin, async (req, res) => {
 
         // Save the user
         await user.save();
+        await transaction.save();
         return res.json({ balance: user.tokenBalance });
     } catch (error) {
         return res.status(500).json({ message: error.message });
