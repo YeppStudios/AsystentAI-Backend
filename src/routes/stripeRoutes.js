@@ -66,8 +66,10 @@ router.post('/create-checkout-session', async (req, res) => {
             },
             mode: `${mode}`,
             subscription_data: {
+              trial_settings: {end_behavior: {missing_payment_method: 'cancel'}},
               trial_period_days: 30,
             },
+            payment_method_collection: 'if_required',
             success_url: `${successURL}`,
             cancel_url: `${cancelURL}`,
           });
@@ -675,7 +677,7 @@ router.post('/update-subscription', requireAuth, async (req, res) => {
 
     try {
       await axios.post('https://api.infakt.pl/v3/invoices.json', invoiceData, infaktConfig);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 2500));
       await user.save();
       await transaction.save();
       await purchase.save();
