@@ -31,38 +31,40 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'User not found' });
+//login only for whitelisted and with stripe plans
+// router.post('/login', async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+//     const user = await User.findOne({ email });
+//     if (!user) return res.status(400).json({ message: 'User not found' });
 
-    // Check if user's email is on the whitelist
-    const isWhitelisted = await Whitelist.exists({ email: email });
+//     // Check if user's email is on the whitelist
+//     const isWhitelisted = await Whitelist.exists({ email: email });
     
-    if (!isWhitelisted) {
-      // Check if user's email is associated with a customer in Stripe
-      const customers = await stripe.customers.list({ email: email });
-      const isSubscribed = customers.data.length > 0;
-      if (!isSubscribed) return res.status(400).json({ message: 'User is not a subscriber' });
+//     if (!isWhitelisted) {
+//       // Check if user's email is associated with a customer in Stripe
+//       const customers = await stripe.customers.list({ email: email });
+//       const isSubscribed = customers.data.length > 0;
+//       if (!isSubscribed) return res.status(400).json({ message: 'User is not a subscriber' });
       
-    } else {
-      //if user is a subscriber but did not finish registration
-      if(!(user.street)){
-        return res.status(400).json({ message: 'User did not complete registration' });
-      }
-    }
+//     } else {
+//       //if user is a subscriber but did not finish registration
+//       if(!(user.street)){
+//         return res.status(400).json({ message: 'User did not complete registration' });
+//       }
+//     }
 
-    await user.comparePassword(password);
+//     await user.comparePassword(password);
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    return res.json({ token, user });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
+//     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+//     return res.json({ token, user });
+//   } catch (error) {
+//     return res.status(500).json({ message: error.message });
+//   }
+// });
 
-router.post('/login-onboarding', async (req, res) => {
+//open login
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
