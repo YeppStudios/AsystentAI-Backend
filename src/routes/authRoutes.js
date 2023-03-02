@@ -31,6 +31,41 @@ router.post('/register', async (req, res) => {
   }
 });
 
+router.post('/register-free-trial', async (req, res) => {
+  try {
+      const { email, password, name, referrerId } = req.body;
+      const user = await User.findOne({ email });
+      if (user) return res.status(400).json({ message: 'User already exists' });
+
+      const newUser = new User({
+          email,
+          password,
+          name,
+          accountType: 'individual',
+      });
+
+      const transaction = new Transaction({
+        value: 10000,
+        title: "10 000 elixiru na start",
+        type: "income",
+        timestamp: Date.now()
+    });
+
+    user.transactions.push(transaction);
+
+    // Add the new purchase to the user's purchases
+    user.purchases.push(purchase);
+    user.tokenBalance += amount;
+
+      await newUser.save();
+      const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      return res.status(201).json({ token, newUser });
+  } catch (error) {
+      return res.status(500).json({ message: error.message });
+  }
+});
+
+
 //login only for whitelisted and with stripe plans
 // router.post('/login', async (req, res) => {
 //   try {

@@ -7,7 +7,7 @@ const MessageSchema = new mongoose.Schema({
     },
     sender: {
         type: String,
-        enum: ["User", "Assistant"]
+        enum: ["user", "assistant"]
     },
     text: String,
     timestamp: { 

@@ -15,6 +15,16 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
+router.post('/send',async (req, res) => {
+    const completion = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo-0301",
+        messages: [  { role: 'system', content: 'Jesteś pomocnym asystentem.' },
+        { role: 'user', content: 'Cześć' }
+      ],
+      });
+      console.log(completion.data.choices[0].message);
+});
+
 
 router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
     try {
@@ -37,22 +47,19 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
             return res.status(401).json({ message: 'Not authorized' });
         }
 
-        const latestMessages = conversation.messages.slice(-2);
+        const latestMessages = conversation.messages.slice(-4);
+        const messages = [  { role: "system", content: "Jesteś pomocnym asystentem." },  ...latestMessages.map((message) => {    
+            return {role: message.sender,  content: message.text,};
+        }), { role: "user", content: text },];
 
-        let conversationContext = '';
-        latestMessages.forEach(message => conversationContext += `\n ${message.text}`);
-        const response = await openai.createCompletion({
-            model: "text-davinci-003",
-            prompt: `Jesteś wszechwiedzącym, przyjaznym asystentem AI i rozmawiasz ze znajomym. 
-            ${conversationContext}
-            Znajomy: ${text}
-            Asystent: `,
-            max_tokens: 3000,
+        const completion = await openai.createChatCompletion({
+            model: "gpt-3.5-turbo-0301",
+            messages,
             temperature: 0.7,
             frequency_penalty: 0.35
         });
         // Decrease token balance
-        user.tokenBalance -= response.data.usage.total_tokens;
+        user.tokenBalance -= completion.data.usage.total_tokens;
 
         user.tokenHistory.push({
             timestamp: Date.now(),
@@ -60,15 +67,15 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         });
 
         const userMessage = new Message({
-            text: "Znajomy: " + text,
+            text: text,
             conversation,
-            sender: "User"
+            sender: "user"
         });
 
         const assistantResponse = new Message({
-            text: "Asystent: " + response.data.choices[0].text,
+            text: completion.data.choices[0].message.content,
             conversation,
-            sender: "Assistant"
+            sender: "assistant"
         });
         
         await user.save();
@@ -79,7 +86,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         conversation.lastUpdated = Date.now();
         await conversation.save();
 
-        return res.status(201).json({ response: response.data.choices[0].text });
+        return res.status(201).json({ response: completion.data.choices[0].message.content });
 
     } catch (error) {
         return res.status(500).json({ message: error.message });
