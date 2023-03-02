@@ -51,13 +51,14 @@ router.post('/register-free-trial', async (req, res) => {
         timestamp: Date.now()
     });
 
-    user.transactions.push(transaction);
+    newUser.transactions.push(transaction);
 
     // Add the new purchase to the user's purchases
-    user.purchases.push(purchase);
-    user.tokenBalance += amount;
+    newUser.purchases.push(purchase);
+    newUser.tokenBalance += amount;
 
       await newUser.save();
+      await transaction.save();
       const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
       return res.status(201).json({ token, newUser });
   } catch (error) {
