@@ -52,7 +52,7 @@ router.post('/register-free-trial', async (req, res) => {
     });
 
     newUser.transactions.push(transaction);
-    newUser.tokenBalance += amount;
+    newUser.tokenBalance += 10000;
 
       await newUser.save();
       await transaction.save();
