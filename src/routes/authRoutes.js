@@ -12,15 +12,20 @@ const router = express.Router();
 
 router.post('/register', async (req, res) => {
   try {
-      const { email, password, name, referrerId } = req.body;
+      const { email, password, name, isCompany } = req.body;
       const user = await User.findOne({ email });
       if (user) return res.status(400).json({ message: 'User already exists' });
+
+      let accountType = 'individual';
+      if(isCompany){
+        accountType = 'company';
+      }
 
       const newUser = new User({
           email,
           password,
           name,
-          accountType: 'individual',
+          accountType: accountType,
       });
 
       await newUser.save();
@@ -33,15 +38,20 @@ router.post('/register', async (req, res) => {
 
 router.post('/register-free-trial', async (req, res) => {
   try {
-      const { email, password, name, referrerId } = req.body;
+      const { email, password, name, isCompany } = req.body;
       const user = await User.findOne({ email });
       if (user) return res.status(400).json({ message: 'User already exists' });
+
+      let accountType = 'individual';
+      if(isCompany){
+        accountType = 'company';
+      }
 
       const newUser = new User({
           email,
           password,
           name,
-          accountType: 'individual',
+          accountType: accountType,
       });
 
       const transaction = new Transaction({

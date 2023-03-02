@@ -65,7 +65,7 @@ const UserSchema = new mongoose.Schema({
     accountType: {
         type: String,
         required: true,
-        enum: ['employee', 'individual']
+        enum: ['company', 'individual']
     },
     company: {
         type: mongoose.Schema.Types.ObjectId,
