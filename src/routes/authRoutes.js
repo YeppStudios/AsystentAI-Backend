@@ -52,9 +52,6 @@ router.post('/register-free-trial', async (req, res) => {
     });
 
     newUser.transactions.push(transaction);
-
-    // Add the new purchase to the user's purchases
-    newUser.purchases.push(purchase);
     newUser.tokenBalance += amount;
 
       await newUser.save();
