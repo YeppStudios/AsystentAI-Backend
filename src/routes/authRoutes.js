@@ -56,7 +56,7 @@ router.post('/register-free-trial', async (req, res) => {
 
       const transaction = new Transaction({
         value: 10000,
-        title: "10 000 elixiru na start",
+        title: "+10 000 elixiru na start",
         type: "income",
         timestamp: Date.now()
     });

@@ -72,24 +72,6 @@ router.patch('/users/:userId/addTokens', requireAdmin, async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Get the user's plan
-        const plan = await Plan.findById(user.plan);
-        if (!plan) {
-            return res.status(404).json({ message: 'Plan not found' });
-        }
-
-        // Calculate the price of the purchase
-        const price = amount * plan.tokenPrice;
-
-        // Create a new purchase
-        const purchase = new Payment({
-            price: price,
-            tokens: amount,
-            title: title,
-            type: "one-time",
-            timestamp: Date.now()
-        })
-
         const transaction = new Transaction({
             value: amount,
             title: title,
@@ -100,7 +82,6 @@ router.patch('/users/:userId/addTokens', requireAdmin, async (req, res) => {
         user.transactions.push(transaction);
 
         // Add the new purchase to the user's purchases
-        user.purchases.push(purchase);
         user.tokenBalance += amount;
 
         // Create a new balance snapshot and add it to the user's tokenHistory
