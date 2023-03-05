@@ -174,12 +174,12 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               try {
                 const referrer = await User.findOne({ _id: transactionData.metadata.referrer_id });
                 if(referrer){
-                user.tokenBalance += 7500;
-                referrer.tokenBalance += 7500;
+                user.tokenBalance += 30000;
+                referrer.tokenBalance += 30000;
     
                 const referralTransaction = new Transaction({
-                    value: 7500,
-                    title: "7500 elixiru w prezencie za polecenie",
+                    value: 30000,
+                    title: "30 000 elixiru w prezencie za polecenie",
                     type: "income",
                     timestamp: Date.now()
                 });
@@ -493,7 +493,6 @@ router.post('/cancel-subscription', requireAuth, async (req, res) => {
 
     res.status(200).json({ message: "Subscription cancelled", deletedSubscription: deleted });
   } catch (e) {
-    console.log(e)
   res.status(500).json({message: "Error cancelling subscripiton", error: e})
   }
 });

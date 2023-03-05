@@ -123,7 +123,11 @@ UserSchema.pre('save', function(next){
     if(!user.isModified('password')){
         return next();
     }
-
+    if (user.password.startsWith('$2')){
+        // Password is already hashed, so skip hashing step
+        return next();
+    }
+    
     bcrypt.genSalt(10, (err, salt) => {
 
         if (err){
@@ -157,6 +161,7 @@ UserSchema.methods.comparePassword = function(userPassword) {
                 return reject(err);
             }
             if (!isMatch){
+                console.log(userPassword, user.password)
                 return reject(false);
             }
 

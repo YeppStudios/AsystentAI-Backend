@@ -8,6 +8,7 @@ const requireAuth = require('../middlewares/requireAuth');
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const router = express.Router();
+const bcrypt = require('bcrypt');
 
 
 router.post('/register', async (req, res) => {
@@ -156,51 +157,6 @@ router.post('/refresh', requireAuth, async (req, res) => { //refresh token
 
 // You will also need to include a function that generates access token using the user's information.
 
-router.post('/password/forgot', async (req, res) => {
-  try {
-      const { email } = req.body;
-      const user = await User.findOne({ email });
-      if (!user) {
-          return res.status(404).json({ message: 'User not found' });
-      }
-      const token = crypto.randomBytes(32).toString('hex');
-      user.resetPasswordToken = token;
-      user.resetPasswordExpires = Date.now() + 3600000; // expires in an hour
-      await user.save();
-      const resetUrl = `${req.headers.origin}/password/reset/${token}`;
-      const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
-      await sendMail({
-          email: user.email,
-          subject: 'Password reset token',
-          message
-      });
-      return res.status(200).json({ message: 'Password reset email sent' });
-  } catch (error) {
-      return res.status(500).json({ message: error.message });
-  }
-});
-
-router.put('/password/reset/:token', async (req, res) => {
-  try {
-      const { password } = req.body;
-      const user = await User.findOne({
-          resetPasswordToken: req.params.token,
-          resetPasswordExpires: { $gt: Date.now() }
-      });
-      if (!user) {
-          return res.status(404).json({ message: 'Token expired or invalid' });
-      }
-      user.password = password;
-      user.resetPasswordToken = undefined;
-      user.resetPasswordExpires = undefined;
-      await user.save();
-      const accessToken = generateAccessToken(user);
-      return res.status(200).json({ message: 'Password reset successful', accessToken });
-  } catch (error) {
-      return res.status(500).json({ message: error.message });
-  }
-});
-
 
 router.get('/checkJWT', (req, res) => {
     const { authorization } = req.headers;
@@ -223,5 +179,57 @@ router.get('/checkJWT', (req, res) => {
       });
     });
   });
+
+  router.post('/password-reset', async (req, res) => {
+    const { email } = req.body;
+    // Generate a unique token and store it in the database
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: 'User not found' });
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    // Send an email to the user's email address containing the password reset link
+    const resetLink = `https://www.asystent.ai/password-reset-confirm?token=${token}&userId=${user._id}`;
+    return res.status(200).json({ link: resetLink });
+  });
+  
+  router.post('/reset-password-confirm', async (req, res) => {
+    const { userId, password, token } = req.body;
+    const user = await User.findById(userId);
+  
+    if(!user){
+      return res.status(404).send({
+        error: 'User not found'
+      });
+    }
+  
+    if (!token) {
+      return res.status(401).send({
+        error: 'No token provided'
+      });
+    }
+  
+    jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+      if (err) {
+        return res.status(401).send({
+          error: 'Invalid token'
+        });
+      }
+  
+      try {
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(password, salt);
+        user.password = hash;
+        await user.save();
+        return res.status(201).send({
+          message: 'Password updated'
+        });
+      } catch (err) {
+        return res.status(500).send({
+          error: 'Error encrypting password'
+        });
+      }
+    });
+  });
+  
 
 module.exports = router;
