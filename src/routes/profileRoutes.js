@@ -8,18 +8,18 @@ const requireAuth = require("../middlewares/requireAuth");
 
 
 // Get profiles for user
-router.get('/getProfiles', requireAdmin, async (req, res) => {
+router.get('/getProfiles', requireAuth, async (req, res) => {
     try {
-      const user = req.user;
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        const user = await User.findById(req.user.id).populate('profiles');
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+    
+        res.json(user.profiles);
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
       }
-  
-      res.json(user.profiles);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: 'Server Error' });
-    }
   });
   
   // Get profile by ID for user
