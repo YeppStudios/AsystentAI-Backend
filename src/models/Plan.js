@@ -13,6 +13,11 @@ const PlanSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    maxProfiles: {
+        type: Number,
+        required: true,
+        default: 1
+    }
 });
 
 mongoose.model('Plan', PlanSchema);

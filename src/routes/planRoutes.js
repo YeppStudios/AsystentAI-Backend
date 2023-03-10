@@ -50,10 +50,19 @@ router.patch('/updatePlan/:id', requireAdmin, async (req, res) => {
         if (!plan) {
             return res.status(404).json({ message: 'Plan not found' });
         }
-        const { name, monthlyTokens, price } = req.body;
-        plan.name = name;
-        plan.monthlyTokens = monthlyTokens;
-        plan.price = price;
+        const { name, monthlyTokens, price, maxProfiles } = req.body;
+        if (name) {
+            plan.name = name;
+        }
+        if (monthlyTokens) {
+            plan.monthlyTokens = monthlyTokens;
+        }
+        if (price) {
+            plan.price = price;
+        }
+        if(maxProfiles){
+            plan.maxProfiles = maxProfiles;
+        }
 
         await plan.save();
         res.json(plan);

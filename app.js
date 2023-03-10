@@ -5,6 +5,7 @@ require('./src/models/Plan');
 require('./src/models/Transaction');
 require('./src/models/Payment');
 require('./src/models/Whitelist');
+require('./src/models/Profile');
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser =  require('body-parser');
@@ -18,7 +19,8 @@ const whitelistRoutes =  require('./src/routes/whitelistRoutes');
 const stripeRoutes =  require('./src/routes/stripeRoutes');
 const contentGenerationRoutes =  require('./src/routes/contentGenerationRoutes');
 const userRoutes =  require('./src/routes/userRoutes');
-const job = require('./src/cron');
+const profileRoutes =  require('./src/routes/profileRoutes');
+// const job = require('./src/cron');
 const cors = require('cors');
 require('dotenv').config()
 
@@ -42,14 +44,15 @@ app.use(userRoutes);
 app.use(planRoutes);
 app.use(stripeRoutes);
 app.use(whitelistRoutes);
+app.use(profileRoutes);
 
 const mongoUri = process.env.MONGO_URI;
 mongoose.connect(mongoUri);
 
-mongoose.connection.on('connected', () => {
-    console.log("Connected to mongo instance");
-    job.start();
-});
+// mongoose.connection.on('connected', () => {
+//     console.log("Connected to mongo instance");
+//     job.start();
+// });
 
 mongoose.connection.on('error', (err) => {
     console.log("Error connecting to mongo ", err);

@@ -103,6 +103,7 @@ const UserSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    profiles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Profile'}],
     purchases: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Payment'}],
     transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction'}],
     tokenHistory: [{BalanceSnapshotSchema}],
