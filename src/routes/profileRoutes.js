@@ -49,7 +49,6 @@ router.post('/addProfile', requireAuth, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
     const newProfile = new Profile(req.body);
     user.profiles.push(newProfile);
     await user.save();

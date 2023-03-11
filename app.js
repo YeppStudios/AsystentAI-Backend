@@ -28,6 +28,7 @@ require('dotenv').config()
 const app = express();
 app.set('port', (process.env.PORT || 3004));
 
+app.use(express.static('public'));
 app.use(cors());
 app.use(bodyParser.json({
     verify: (req, res, buf) => {
