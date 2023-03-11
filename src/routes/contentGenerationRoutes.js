@@ -9,7 +9,7 @@ require('dotenv').config();
 const Transaction = mongoose.model('Transaction');
 
 const configuration = new Configuration({
-    organization: "org-BurBlbC5xPRFDGqoCf19IkW8",
+    organization: "org-oP1kxBXnJo6VGoYOLxzHnNSV",
     apiKey: process.env.OPENAI_API_KEY
 });
 

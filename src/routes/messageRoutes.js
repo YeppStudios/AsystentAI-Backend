@@ -10,7 +10,7 @@ const Conversation = mongoose.model('Conversation');
 require('dotenv').config();
 
 const configuration = new Configuration({
-    organization: "org-BurBlbC5xPRFDGqoCf19IkW8",
+    organization: "org-oP1kxBXnJo6VGoYOLxzHnNSV",
     apiKey: process.env.OPENAI_API_KEY
 });
 const openai = new OpenAIApi(configuration);
