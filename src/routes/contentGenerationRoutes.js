@@ -17,15 +17,25 @@ const openai = new OpenAIApi(configuration);
 
 router.post('/askAI', requireTokens, async (req, res) => {
     try {
-        const { prompt, title } = req.body;
-        console.log(prompt)
+        const { prompt, title, preprompt } = req.body;
         const text = prompt.replace(/[\u{1F600}-\u{1F64F}]/gu, '');
+        let messages = [];
 
         const user = req.user;
-        const messages = [
-            { role: 'system', content: 'Jesteś pomocnym asystentem.' },
-            { role: 'user', content: text }
-        ]
+        if(preprompt) {
+            messages = [
+                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem.' },
+                { role: 'user', content: preprompt },
+                { role: 'assistant', content: "Brzmi fascynująco, w czym mogę Ci pomóc?" },
+                { role: 'user', content: text },
+            ]
+        } else {
+            messages = [
+                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem.' },
+                { role: 'user', content: text }
+            ]
+        }
+        
         const completion = await openai.createChatCompletion({
             model: "gpt-3.5-turbo-0301",
             messages,

@@ -21,19 +21,20 @@ router.get('/getProfiles', requireAuth, async (req, res) => {
       }
   });
   
-  // Get profile by ID for user
+// Get profile by ID for user
 router.get('/getProfile/:profileId', requireAuth, async (req, res) => {
     try {
-      const user = req.user;
+      const user = await User.findById(req.user._id);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
   
-      const profile = user.profiles.id(req.params.profileId);
+      const profileId = req.params.profileId;
+      const profile = await Profile.findById(profileId);
       if (!profile) {
         return res.status(404).json({ message: 'Profile not found' });
       }
-  
+
       res.json(profile);
     } catch (err) {
       console.error(err);
@@ -53,8 +54,11 @@ router.post('/addProfile', requireAuth, async (req, res) => {
     user.profiles.push(newProfile);
     await user.save();
     await newProfile.save();
-
-    res.json(newProfile);
+    const userWithProfiles = await User.findById(req.user._id).populate('profiles');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(userWithProfiles.profiles);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server Error' });
@@ -69,7 +73,7 @@ router.patch('/updateProfile/:profileId', requireAuth, async (req, res) => {
         return res.status(404).json({ message: 'User not found' });
       }
   
-      const profile = user.profiles.id(req.params.profileId);
+      const profile = await Profile.findById(req.params.profileId);
       if (!profile) {
         return res.status(404).json({ message: 'Profile not found' });
       }
@@ -92,9 +96,13 @@ router.patch('/updateProfile/:profileId', requireAuth, async (req, res) => {
       if (req.body.image) {
         profile.image = req.body.image;
       }
+      if (req.body.name) {
+        profile.name = req.body.name;
+      }
   
       await user.save();
-  
+      await profile.save();
+
       res.json(profile);
     } catch (err) {
       console.error(err);
