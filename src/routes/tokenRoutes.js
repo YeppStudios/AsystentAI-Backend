@@ -149,10 +149,15 @@ router.get('/:userId/planInfo', async (req, res) => {
     try {
       // Get the user by id
       const user = await User.findById(req.params.userId);
-  
+      if(!user){
+        return res.status(404).json({ message: 'User not found' });
+      }
       // Find the plan by id stored in the "plan" field of the User model
       const plan = await Plan.findById(user.plan);
-  
+
+      if(!plan){
+        return res.status(404).json({ message: 'Plan not found' });
+      }
       // Calculate the percentage of available tokens
       let percentage = 0;
       if (user.tokenBalance > 0) {
