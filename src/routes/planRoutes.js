@@ -85,7 +85,7 @@ router.delete('/deletePlan/:id', requireAdmin, async (req, res) => {
 });
 
 
-router.patch('/updateUserPlan', requireAuth, async (req, res) => {
+router.patch('/updateUserPlan/:userId', requireAdmin, async (req, res) => {
 
     const plan = await Plan.findById(req.body.planId);
 
@@ -93,7 +93,7 @@ router.patch('/updateUserPlan', requireAuth, async (req, res) => {
         return res.status(404).json({ message: 'Plan not found' });
     }
     try {
-        User.findByIdAndUpdate(req.user._id, { $set: { plan: req.body.planId } }, { new: true }, async (err, user) => {
+        User.findByIdAndUpdate(req.params.userId, { $set: { plan: req.body.planId } }, { new: true }, async (err, user) => {
             if (err) {
                 return res.status(500).send(err);
             }

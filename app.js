@@ -29,7 +29,9 @@ const app = express();
 app.set('port', (process.env.PORT || 3004));
 
 app.use(express.static('public'));
-app.use(cors());
+app.use(cors({
+  origin: 'https://www.asystent.ai'
+}));
 app.use(bodyParser.json({
     verify: (req, res, buf) => {
       req.rawBody = buf
