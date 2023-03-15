@@ -58,6 +58,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
             temperature: 0.7,
             frequency_penalty: 0.35
         });
+        console.log(completion.data.choices[0].message.content)
         // Decrease token balance
         user.tokenBalance -= completion.data.usage.total_tokens;
 
@@ -89,6 +90,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         return res.status(201).json({ response: completion.data.choices[0].message.content });
 
     } catch (error) {
+        console.log(error)
         return res.status(500).json({ message: error.message });
     }
 });

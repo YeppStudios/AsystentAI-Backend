@@ -13,29 +13,37 @@ const bcrypt = require('bcrypt');
 
 router.post('/register', async (req, res) => {
   try {
-      const { email, password, name, isCompany } = req.body;
-      const user = await User.findOne({ email });
-      if (user) return res.status(400).json({ message: 'User already exists' });
+    const { email, password, name, isCompany } = req.body;
 
-      let accountType = 'individual';
-      if(isCompany){
-        accountType = 'company';
-      }
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    if (user) {
+      // User already exists, log them in
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      return res.status(200).json({ token, user });
+    }
 
-      const newUser = new User({
-          email,
-          password,
-          name,
-          accountType: accountType,
-      });
+    // User doesn't exist, register them
+    let accountType = 'individual';
+    if (isCompany) {
+      accountType = 'company';
+    }
 
-      await newUser.save();
-      const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      return res.status(201).json({ token, newUser });
+    user = new User({
+      email,
+      password,
+      name,
+      accountType,
+    });
+
+    await user.save();
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    return res.status(201).json({ token, user });
   } catch (error) {
-      return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
+
 
 router.post('/register-free-trial', async (req, res) => {
   try {

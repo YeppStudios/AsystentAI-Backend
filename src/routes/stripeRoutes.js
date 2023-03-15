@@ -330,9 +330,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               },
             };
           }
-
           }
-
           // Create a new balance snapshot and add it to the user's tokenHistory
           const balanceSnapshot = {
               timestamp: Date.now(),
