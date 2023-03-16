@@ -94,6 +94,30 @@ router.post('/testAskAI', requireTestTokens, async (req, res) => {
     }
 });
 
+router.post('/promptConversation', requireTokens, async (req, res) => {
+    try {
+        const { conversationContext } = req.body;
+        const user = req.user;
+
+        let messages = conversationContext;
+
+        const completion = await openai.createChatCompletion({
+            model: "gpt-3.5-turbo-0301",
+            messages,
+            temperature: 0.7,
+            frequency_penalty: 0.35
+        });
+
+        user.tokenBalance -= completion.data.usage.total_tokens;
+
+        await user.save();
+        return res.status(201).json({ response: completion.data.choices[0].message.content });
+
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+});
+
 router.post('/ligaAskAI', async (req, res) => {
     try {
         const { text, conversationContext } = req.body;
