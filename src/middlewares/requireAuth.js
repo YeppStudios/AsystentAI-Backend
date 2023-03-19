@@ -9,7 +9,6 @@ module.exports = async (req, res, next) => {
     if(!authorization){
         return res.status(401).send({error: 'You must be logged in.'});
     }
-
     const token = authorization.replace('Bearer ', '');
     jsonwebtoken.verify(token, process.env.JWT_SECRET, async (err, payload) => {
         if(err){

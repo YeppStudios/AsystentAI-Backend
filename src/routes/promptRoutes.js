@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const User = mongoose.model('User');
 const Prompt = mongoose.model('Prompt');
 const requireAuth = require('../middlewares/requireAuth');
 
@@ -29,10 +28,24 @@ router.post('/addPrompt', requireAuth, async (req, res) => {
   });
 
   router.get('/getPrompts', async (req, res) => {
-    const { page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 20, category, searchTerm } = req.query;
   
     try {
-      const prompts = await Prompt.find()
+      let query = category
+        ? { category: { $regex: new RegExp(category, 'i') } }
+        : {};
+  
+      if (searchTerm) {
+        query = {
+          $or: [
+            { title: { $regex: new RegExp(searchTerm, 'i') } },
+            { text: { $regex: new RegExp(searchTerm, 'i') } },
+          ],
+          ...query,
+        };
+      }
+  
+      const prompts = await Prompt.find(query)
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(parseInt(limit));
@@ -43,7 +56,8 @@ router.post('/addPrompt', requireAuth, async (req, res) => {
       res.status(500).send('Internal server error');
     }
   });
-
+  
+  
 router.get('/user/:userId/likedPrompts', (req, res) => {
     const userId = req.params.userId;
   
@@ -57,8 +71,8 @@ router.get('/user/:userId/likedPrompts', (req, res) => {
     });
   });
 
-  // Liking endpoint
-router.put('/prompts/:id/like', requireAuth, async (req, res) => {
+// Liking/Disliking endpoint
+router.patch('/prompts/:id/like', requireAuth, async (req, res) => {
     try {
       const prompt = await Prompt.findById(req.params.id);
       if (!prompt) {
@@ -70,21 +84,24 @@ router.put('/prompts/:id/like', requireAuth, async (req, res) => {
         return res.status(400).json({ message: 'User ID is required' });
       }
   
-      // Check if the user has already liked the prompt
+      // Toggle the like/dislike status based on whether the user has already liked the prompt
       if (prompt.likes.includes(userId)) {
-        return res.status(400).json({ message: 'User has already liked the prompt' });
+        // User has already liked the prompt, so remove the like
+        prompt.likes = prompt.likes.filter((id) => !id.equals(userId));
+        await prompt.save();
+        res.json({ message: 'Prompt disliked', prompt });
+      } else {
+        // User has not liked the prompt yet, so add the like
+        prompt.likes.push(userId);
+        await prompt.save();
+        res.json({ message: 'Prompt liked', prompt });
       }
-  
-      // Add the user ID to the likes array and save the prompt
-      prompt.likes.push(userId);
-      await prompt.save();
-  
-      res.json({ message: 'Prompt liked', prompt });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+  
 
   router.delete('/prompts/:id', requireAuth, async (req, res) => {
     try {
@@ -99,7 +116,7 @@ router.put('/prompts/:id/like', requireAuth, async (req, res) => {
     }
   });
   
-    // PUT endpoint to update a prompt by ID
+
     router.patch('/prompts/:id', requireAuth, async (req, res) => {
     try {
       const prompt = await Prompt.findById(req.params.id);
