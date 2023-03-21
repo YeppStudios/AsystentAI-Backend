@@ -18,21 +18,20 @@ const openai = new OpenAIApi(configuration);
 router.post('/askAI', requireTokens, async (req, res) => {
     try {
         const { prompt, title, preprompt, model } = req.body;
-        const text = prompt.replace(/[\u{1F600}-\u{1F64F}]/gu, '');
         let messages = [];
 
         const user = req.user;
         if(preprompt) {
             messages = [
-                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem.' },
+                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczaj ilość emoji w generowanym tekście.' },
                 { role: 'user', content: preprompt },
                 { role: 'assistant', content: "Brzmi fascynująco, w czym mogę Ci pomóc?" },
-                { role: 'user', content: text },
+                { role: 'user', content: prompt },
             ]
         } else {
             messages = [
-                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem.' },
-                { role: 'user', content: text }
+                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczaj ilość emoji w generowanym tekście.' },
+                { role: 'user', content: prompt }
             ]
         }
         
@@ -112,28 +111,6 @@ router.post('/promptConversation', requireTokens, async (req, res) => {
 
         await user.save();
         return res.status(201).json({ response: completion.data.choices[0].message.content });
-
-    } catch (error) {
-        return res.status(500).json({ message: error.message });
-    }
-});
-
-router.post('/ligaAskAI', async (req, res) => {
-    try {
-        const { text, conversationContext } = req.body;
-
-        const response = await openai.createCompletion({
-            model: "text-davinci-003",
-            prompt: `Jesteś Ignacym Łukasiewiczem. Prowadzisz rozmowę z uczniem odpowiadając na jego pytania i wiadomości w uprzejmy sposób. Odpowiadasz tylko za Ignacego.
-            ${conversationContext}
-            Uczeń: ${text}
-            Ignacy:`,
-            max_tokens: 2500,
-            temperature: 0.7,
-            frequency_penalty: 0.4
-        });
-
-        return res.status(201).json({ response: response.data.choices[0].text });
 
     } catch (error) {
         return res.status(500).json({ message: error.message });
