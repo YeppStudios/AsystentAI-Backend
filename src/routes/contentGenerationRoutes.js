@@ -37,7 +37,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
         }
         
         const completion = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo-0301",
+            model: "gpt-4",
             messages,
             temperature: 0.8,
             frequency_penalty: 0.4
