@@ -17,7 +17,7 @@ const openai = new OpenAIApi(configuration);
 
 router.post('/askAI', requireTokens, async (req, res) => {
     try {
-        const { prompt, title, preprompt } = req.body;
+        const { prompt, title, preprompt, model } = req.body;
         const text = prompt.replace(/[\u{1F600}-\u{1F64F}]/gu, '');
         let messages = [];
 
@@ -37,7 +37,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
         }
         
         const completion = await openai.createChatCompletion({
-            model: "gpt-4",
+            model: model,
             messages,
             temperature: 0.8,
             frequency_penalty: 0.4
@@ -77,7 +77,7 @@ router.post('/testAskAI', requireTestTokens, async (req, res) => {
         let messages = conversationContext;
 
         const completion = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo-0301",
+            model: "gpt-3.5-turbo",
             messages,
             temperature: 0.7,
             frequency_penalty: 0.35
@@ -102,7 +102,7 @@ router.post('/promptConversation', requireTokens, async (req, res) => {
         let messages = conversationContext;
 
         const completion = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo-0301",
+            model: "gpt-3.5-turbo",
             messages,
             temperature: 0.7,
             frequency_penalty: 0.35
