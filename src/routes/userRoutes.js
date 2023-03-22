@@ -129,4 +129,16 @@ router.get('/get-refferal-link', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/getEmails', requireAdmin, async (req, res) => {
+  try {
+      // 4. Query the MongoDB database to fetch all users and return only their email addresses
+      const emailList = await User.find({}, 'email'); // project only the email field
+
+      // 5. Send the response as an array of email addresses
+      res.status(200).json(emailList.map(user => user.email));
+  } catch (err) {
+      res.status(500).json({ message: 'An error occurred while fetching email addresses', error: err.message });
+  }
+});
+
 module.exports = router;

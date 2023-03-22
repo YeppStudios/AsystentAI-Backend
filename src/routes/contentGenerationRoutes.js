@@ -19,7 +19,6 @@ router.post('/askAI', requireTokens, async (req, res) => {
     try {
         const { prompt, title, preprompt, model } = req.body;
         let messages = [];
-
         const user = req.user;
         if(preprompt) {
             messages = [
@@ -63,7 +62,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
         return res.status(201).json({ response: completion.data.choices[0].message.content, tokens: completion.data.usage.total_tokens });
 
     } catch (error) {
-        console.log(error.response)
+        console.log(error)
         return res.status(500).json({ message: error.message });
     }
 });
