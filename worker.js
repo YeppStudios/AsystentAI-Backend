@@ -2,8 +2,21 @@
 const jobQueue = require('./src/queues/jobQueue');
 const User = require('./src/models/User');
 const Transaction = require('./src/models/Transaction');
-const { attemptCompletion } = require('./src/yourCompletionFunction'); // Replace with the correct path to attemptCompletion function
 
+async function attemptCompletion(params, retries = 2, delay = 350) {
+    try {
+        return await openai.createChatCompletion(params);
+    } catch (error) {
+        if (retries > 0) {
+            console.log(`Retrying OpenAI API request (${retries} retries left)...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return await attemptCompletion(params, retries - 1, delay);
+        } else {
+            throw error;
+        }
+    }
+}
+ 
 async function processJob(job) {
   const { userId, prompt, title, preprompt, model } = job.data;
 

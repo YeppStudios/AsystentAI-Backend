@@ -16,20 +16,6 @@ const configuration = new Configuration({
 
 const openai = new OpenAIApi(configuration);
 
-async function attemptCompletion(params, retries = 2, delay = 350) {
-    try {
-        return await openai.createChatCompletion(params);
-    } catch (error) {
-        if (retries > 0) {
-            console.log(`Retrying OpenAI API request (${retries} retries left)...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return await attemptCompletion(params, retries - 1, delay);
-        } else {
-            throw error;
-        }
-    }
-}
-
 router.post('/askAI', requireTokens, async (req, res) => {
     try {
       const { prompt, title, preprompt, model } = req.body;
