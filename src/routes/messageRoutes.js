@@ -58,7 +58,6 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
             temperature: 0.7,
             frequency_penalty: 0.35
         });
-        console.log(completion.data.choices[0].message.content)
         // Decrease token balance
         user.tokenBalance -= completion.data.usage.total_tokens;
 
