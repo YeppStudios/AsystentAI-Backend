@@ -16,7 +16,23 @@ const configuration = new Configuration({
 
 const openai = new OpenAIApi(configuration);
 
-router.post('/askAI', requireTokens, async (req, res) => {
+async function attemptCompletion(params, retries = 2, delay = 350) {
+    try {
+        return await openai.createChatCompletion(params);
+    } catch (error) {
+        if (retries > 0) {
+            console.log(`Retrying OpenAI API request (${retries} retries left)...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return await attemptCompletion(params, retries - 1, delay);
+        } else {
+            throw error;
+        }
+    }
+}
+ 
+
+router.post('/askAI-job', requireTokens, async (req, res) => {
+    console.log("call")
     try {
       const { prompt, title, preprompt, model } = req.body;
       const user = req.user;
@@ -40,6 +56,57 @@ router.post('/askAI', requireTokens, async (req, res) => {
       return res.status(500).json({ message: error.message });
     }
   });
+
+  router.post('/askAI', requireTokens, async (req, res) => {
+    try {
+        const { prompt, title, preprompt, model } = req.body;
+        let messages = [];
+        const user = req.user;
+        if(preprompt) {
+            messages = [
+                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczaj ilość emoji w generowanym tekście.' },
+                { role: 'user', content: preprompt },
+                { role: 'assistant', content: "Brzmi fascynująco, w czym mogę Ci pomóc?" },
+                { role: 'user', content: prompt },
+            ]
+        } else {
+            messages = [
+                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczaj ilość emoji w generowanym tekście.' },
+                { role: 'user', content: prompt }
+            ]
+        }
+        const completion = await attemptCompletion({
+            model: model,
+            messages,
+            temperature: 0.8,
+            frequency_penalty: 0.4
+        });
+        // Decrease token balance
+        user.tokenBalance -= completion.data.usage.total_tokens;
+
+        const transaction = new Transaction({
+            value: completion.data.usage.total_tokens,
+            title: title,
+            type: "expense",
+            timestamp: Date.now()
+        });
+
+        user.transactions.push(transaction);
+        
+        user.tokenHistory.push({
+            timestamp: Date.now(),
+            balance: user.tokenBalance
+        });
+
+        await user.save();
+        await transaction.save();
+        return res.status(201).json({ response: completion.data.choices[0].message.content, tokens: completion.data.usage.total_tokens });
+
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: error.message });
+    }
+});
   
 router.post('/testAskAI', requireTestTokens, async (req, res) => {
     try {

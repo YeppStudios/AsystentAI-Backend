@@ -21,7 +21,7 @@ async function processJob(job) {
   const { userId, prompt, title, preprompt, model } = job.data;
 
   const user = await User.findById(userId);
-
+  console.log("me")
   let messages = [];
   if (preprompt) {
     messages = [
