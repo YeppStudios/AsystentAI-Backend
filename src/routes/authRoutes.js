@@ -9,7 +9,12 @@ require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const router = express.Router();
 const bcrypt = require('bcrypt');
+const mailchimp = require('@mailchimp/mailchimp_marketing');
 
+mailchimp.setConfig({
+  apiKey: process.env.MAILCHIMP_API_KEY,
+  server: process.env.MAILCHIMP_SERVER_PREFIX,
+});
 
 router.post('/register', async (req, res) => {
   try {
@@ -23,6 +28,18 @@ router.post('/register', async (req, res) => {
       return res.status(200).json({ token, user });
     }
 
+    try {
+      await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
+        email_address: email,
+        status: 'subscribed',
+        merge_fields: {
+          FNAME: name,
+      },
+      });
+    } catch (error) {
+      console.error('Failed to add user to Mailchimp audience:', error.message);
+    }
+    
     // User doesn't exist, register them
     let accountType = 'individual';
     if (isCompany) {
@@ -56,6 +73,18 @@ router.post('/register-free-trial', async (req, res) => {
         accountType = 'company';
       }
 
+      try {
+        await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
+          email_address: email,
+          status: 'subscribed',
+          merge_fields: {
+            FNAME: name,
+        },
+        });
+      } catch (error) {
+        console.error('Failed to add user to Mailchimp audience:', error);
+      }
+      
       const newUser = new User({
           email,
           password,
