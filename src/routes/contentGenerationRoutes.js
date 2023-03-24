@@ -52,9 +52,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
             model: model,
             messages,
             temperature: 0.8,
-            frequency_penalty: 0.4,
-            max_tokens: 2000,
-            stream: true
+            frequency_penalty: 0.4
         });
         // Decrease token balance
         user.tokenBalance -= completion.data.usage.total_tokens;
