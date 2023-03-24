@@ -151,7 +151,7 @@ router.post('/promptConversation', requireTokens, async (req, res) => {
         user.tokenBalance -= completion.data.usage.total_tokens;
 
         await user.save();
-        return res.status(201).json({ response: completion.data.choices[0].message.content });
+        return res.status(201).json({ response: completion.data.choices[0].message.content, tokens: completion.data.usage.total_tokens });
 
     } catch (error) {
         return res.status(500).json({ message: error.message });
