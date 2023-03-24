@@ -141,4 +141,26 @@ router.get('/getEmails', requireAdmin, async (req, res) => {
   }
 });
 
+router.put('/displayElixirInfo', requireAuth, async (req, res) => {
+  const userId = req.user._id;
+
+  try {
+      const updatedUser = await User.findByIdAndUpdate(
+          userId,
+          { $set: { elixirAware: true } },
+          { new: true }
+      );
+
+      if (!updatedUser) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({ message: 'User elixir aware', user: updatedUser });
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Error updating user reminder state' });
+  }
+});
+
+
 module.exports = router;

@@ -29,35 +29,8 @@ async function attemptCompletion(params, retries = 2, delay = 350) {
         }
     }
 }
- 
 
-router.post('/askAI-job', requireTokens, async (req, res) => {
-    console.log("call")
-    try {
-      const { prompt, title, preprompt, model } = req.body;
-      const user = req.user;
-  
-      const job = await jobQueue.add({
-        userId: user._id, // Pass the user ID to the worker
-        prompt,
-        title,
-        preprompt,
-        model,
-      });
-  
-      console.log(`Job added to the queue: ${job.id}`);
-  
-      res.status(200).json({
-        message: 'Job added to the queue',
-        jobId: job.id,
-      });
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: error.message });
-    }
-  });
-
-  router.post('/askAI', requireTokens, async (req, res) => {
+router.post('/askAI', requireTokens, async (req, res) => {
     try {
         const { prompt, title, preprompt, model } = req.body;
         let messages = [];
@@ -75,11 +48,13 @@ router.post('/askAI-job', requireTokens, async (req, res) => {
                 { role: 'user', content: prompt }
             ]
         }
-        const completion = await attemptCompletion({
+        const completion = await createChatCompletion({
             model: model,
             messages,
             temperature: 0.8,
-            frequency_penalty: 0.4
+            frequency_penalty: 0.4,
+            max_tokens: 2000,
+            stream: true
         });
         // Decrease token balance
         user.tokenBalance -= completion.data.usage.total_tokens;
@@ -108,6 +83,34 @@ router.post('/askAI-job', requireTokens, async (req, res) => {
     }
 });
   
+
+router.post('/askAI-job', requireTokens, async (req, res) => {
+    console.log("call")
+    try {
+      const { prompt, title, preprompt, model } = req.body;
+      const user = req.user;
+  
+      const job = await jobQueue.add({
+        userId: user._id, // Pass the user ID to the worker
+        prompt,
+        title,
+        preprompt,
+        model,
+      });
+  
+      console.log(`Job added to the queue: ${job.id}`);
+  
+      res.status(200).json({
+        message: 'Job added to the queue',
+        jobId: job.id,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+
 router.post('/testAskAI', requireTestTokens, async (req, res) => {
     try {
         const { conversationContext } = req.body;
