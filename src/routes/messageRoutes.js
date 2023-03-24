@@ -86,7 +86,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         conversation.lastUpdated = Date.now();
         await conversation.save();
 
-        return res.status(201).json({ response: completion.data.choices[0].message.content });
+        return res.status(201).json({ response: completion.data.choices[0].message.content, tokens: completion.data.usage.total_tokens });
 
     } catch (error) {
         console.log(error)
