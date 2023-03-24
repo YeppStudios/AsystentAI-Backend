@@ -48,7 +48,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
                 { role: 'user', content: prompt }
             ]
         }
-        const completion = await createChatCompletion({
+        const completion = await attemptCompletion({
             model: model,
             messages,
             temperature: 0.8,
