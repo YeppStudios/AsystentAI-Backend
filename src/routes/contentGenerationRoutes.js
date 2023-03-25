@@ -113,7 +113,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
                 { role: 'user', content: prompt }
             ]
         }
-        completion.data.on('data', data => {
+        completion.data.on('data', async data => {
             const lines = data.toString().split('\n').filter(line => line.trim() !== '');
             for (const line of lines) {
               const message = line.replace(/^data: /, '');
