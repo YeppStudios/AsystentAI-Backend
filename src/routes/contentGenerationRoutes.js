@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+router.use(express.json());
 const OpenAI = require('openai');
 const { Configuration, OpenAIApi } = OpenAI;
 const requireTokens = require('../middlewares/requireTokens');
@@ -227,7 +228,7 @@ router.post('/promptConversation', requireTokens, async (req, res) => {
     }
 });
 
-router.get('/message-stream', async (req, res) => {
+router.post('/message-stream', async (req, res) => {
     try {
         const user = req.user;
         let messages = [
