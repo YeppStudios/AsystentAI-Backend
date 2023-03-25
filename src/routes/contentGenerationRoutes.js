@@ -81,6 +81,75 @@ router.post('/askAI', requireTokens, async (req, res) => {
     }
 });
   
+router.get('/askAI', requireTokens, async (req, res) => {
+    try {
+        const { prompt, title, preprompt, model } = req.query;
+        let messages = [];
+        const user = req.user;
+        if(preprompt) {
+            messages = [
+                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczaj ilość emoji w generowanym tekście.' },
+                { role: 'user', content: preprompt },
+                { role: 'assistant', content: "Brzmi fascynująco, w czym mogę Ci pomóc?" },
+                { role: 'user', content: prompt },
+            ]
+        } else {
+            messages = [
+                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczaj ilość emoji w generowanym tekście.' },
+                { role: 'user', content: prompt }
+            ]
+        }
+
+        res.writeHead(200, {
+            'Content-Type': 'text/html',
+            'Transfer-Encoding': 'chunked'
+        });
+
+        const completion = await openai.createChatCompletion({
+            model: model,
+            messages,
+            temperature: 0.8,
+            frequency_penalty: 0.4,
+            stream: true
+        });
+
+        const responseStream = completion.data.choices[0].text.stream();
+
+        for await (const chunk of responseStream) {
+            if (!res.writableEnded) {
+                const response = `<html><body><p>${chunk}</p></body></html>`;
+                res.write(response);
+            }
+        }
+
+        // Decrease token balance
+        user.tokenBalance -= completion.data.usage.total_tokens;
+
+        const transaction = new Transaction({
+            value: completion.data.usage.total_tokens,
+            title: title,
+            type: "expense",
+            timestamp: Date.now()
+        });
+
+        user.transactions.push(transaction);
+        
+        user.tokenHistory.push({
+            timestamp: Date.now(),
+            balance: user.tokenBalance
+        });
+
+        await user.save();
+        await transaction.save();
+
+        res.end();
+
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: error.message });
+    }
+});
+
 
 router.post('/askAI-job', requireTokens, async (req, res) => {
     console.log("call")
@@ -157,5 +226,61 @@ router.post('/promptConversation', requireTokens, async (req, res) => {
         return res.status(500).json({ message: error.message });
     }
 });
+
+router.post('/message-stream', requireTokens, async (req, res) => {
+    try {
+        const user = req.user;
+        let messages = [
+            { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczaj ilość emoji w generowanym tekście.' },
+            { role: 'user', content: "Cześć, jak się masz?" }
+        ]
+        const completion = await openai.createChatCompletion({
+            model: "gpt-3.5-turbo",
+            messages,
+            temperature: 0.7,
+            frequency_penalty: 0.35,
+            stream: true,
+        }, { responseType: 'stream' });
+        
+        completion.data.on('data', data => {
+            const lines = data.toString().split('\n').filter(line => line.trim() !== '');
+            for (const line of lines) {
+              const message = line.replace(/^data: /, '');
+              if (message === '[DONE]') {
+                completion.data.destroy();
+                res.write('\n\n');
+                return;
+              } else {
+                try {
+                  const parsed = JSON.parse(message);
+                  if(parsed.choices[0].delta.content) {
+                    console.log(parsed.choices[0].delta.content);
+                    res.write(parsed.choices[0].delta.content);
+                  }
+                } catch(error) {
+                  console.error('Could not JSON parse stream message', message, error);
+                }
+              }
+            }
+          });
+          
+    } catch (error) {
+        if (error.response?.status) {
+            console.error(error.response.status, error.message);
+            error.response.data.on('data', data => {
+                const message = data.toString();
+                try {
+                    const parsed = JSON.parse(message);
+                    console.error('An error occurred during OpenAI request: ', parsed);
+                } catch(error) {
+                    console.error('An error occurred during OpenAI request: ', message);
+                }
+            });
+        } else {
+            console.error('An error occurred during OpenAI request', error);
+        }
+    }
+});
+
 
 module.exports = router;
