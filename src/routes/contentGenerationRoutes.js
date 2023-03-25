@@ -261,7 +261,7 @@ router.get('/message-stream', async (req, res) => {
                   const parsed = JSON.parse(message);
                   if(parsed.choices[0].delta.content) {
                     console.log(parsed.choices[0].delta.content);
-                    res.write(parsed.choices[0].delta.content);
+                    res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}`);
                   }
                 } catch(error) {
                   console.error('Could not JSON parse stream message', message, error);
