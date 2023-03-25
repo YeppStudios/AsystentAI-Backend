@@ -227,7 +227,7 @@ router.post('/promptConversation', requireTokens, async (req, res) => {
     }
 });
 
-router.get('/message-stream', requireTokens, async (req, res) => {
+router.get('/message-stream', async (req, res) => {
     try {
         const user = req.user;
         let messages = [
