@@ -82,11 +82,24 @@ router.post('/askAI', requireTokens, async (req, res) => {
     }
 });
   
-router.get('/askAI', requireTokens, async (req, res) => {
+router.post('/askAI', requireTokens, async (req, res) => {
     try {
         const { prompt, title, preprompt, model } = req.query;
-        let messages = [];
         const user = req.user;
+        let messages = [];
+
+        const completion = await openai.createChatCompletion({
+            model: model,
+            messages,
+            temperature: 0.8,
+            frequency_penalty: 0.4,
+            stream: true,
+        }, { responseType: 'stream' });
+        res.set({
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+        });
         if(preprompt) {
             messages = [
                 { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczaj ilość emoji w generowanym tekście.' },
@@ -100,54 +113,61 @@ router.get('/askAI', requireTokens, async (req, res) => {
                 { role: 'user', content: prompt }
             ]
         }
-
-        res.writeHead(200, {
-            'Content-Type': 'text/html',
-            'Transfer-Encoding': 'chunked'
-        });
-
-        const completion = await openai.createChatCompletion({
-            model: model,
-            messages,
-            temperature: 0.8,
-            frequency_penalty: 0.4,
-            stream: true
-        });
-
-        const responseStream = completion.data.choices[0].text.stream();
-
-        for await (const chunk of responseStream) {
-            if (!res.writableEnded) {
-                const response = `<html><body><p>${chunk}</p></body></html>`;
-                res.write(response);
+        completion.data.on('data', data => {
+            const lines = data.toString().split('\n').filter(line => line.trim() !== '');
+            for (const line of lines) {
+              const message = line.replace(/^data: /, '');
+              if (message === '[DONE]') {
+                res.write('\n\n');
+                res.end();
+                return;
+              } else {
+                try {
+                  const parsed = JSON.parse(message);
+                  if(parsed.choices[0].finish_reason === "stop"){
+                    res.write('\n\n');
+                    // const transaction = new Transaction({
+                    //     value: completion.data.usage.total_tokens,
+                    //     title: title,
+                    //     type: "expense",
+                    //     timestamp: Date.now()
+                    // });
+            
+                    // user.transactions.push(transaction);
+                    
+                    // user.tokenHistory.push({
+                    //     timestamp: Date.now(),
+                    //     balance: user.tokenBalance
+                    // });
+            
+                    await user.save();
+                    // await transaction.save();
+                    res.end();
+                    return;
+                  } else if(parsed.choices[0].delta.content) {
+                    res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}\n\n`);
+                  }
+                } catch(error) {
+                  console.error('Could not JSON parse stream message', message, error);
+                }
+              }
             }
-        }
-
-        // Decrease token balance
-        user.tokenBalance -= completion.data.usage.total_tokens;
-
-        const transaction = new Transaction({
-            value: completion.data.usage.total_tokens,
-            title: title,
-            type: "expense",
-            timestamp: Date.now()
-        });
-
-        user.transactions.push(transaction);
-        
-        user.tokenHistory.push({
-            timestamp: Date.now(),
-            balance: user.tokenBalance
-        });
-
-        await user.save();
-        await transaction.save();
-
-        res.end();
-
+          });
     } catch (error) {
-        console.log(error)
-        return res.status(500).json({ message: error.message });
+        if (error.response?.status) {
+            console.error(error.response.status, error.message);
+            error.response.data.on('data', data => {
+                const message = data.toString();
+                try {
+                    const parsed = JSON.parse(message);
+                    console.error('An error occurred during OpenAI request: ', parsed);
+                } catch(error) {
+                    console.error('An error occurred during OpenAI request: ', message);
+                }
+            });
+        } else {
+            console.error('An error occurred during OpenAI request', error);
+        }
     }
 });
 
