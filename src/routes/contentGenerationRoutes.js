@@ -261,7 +261,6 @@ router.post('/message-stream', async (req, res) => {
                   const parsed = JSON.parse(message);
                   if(parsed.choices[0].finish_reason === "stop"){
                     res.write('\n\n');
-                    completion.data.destroy();
                     return;
                   } else if(parsed.choices[0].delta.content) {
                     res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}\n\n`);
