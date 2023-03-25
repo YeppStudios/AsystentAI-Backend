@@ -259,7 +259,7 @@ router.post('/message-stream', async (req, res) => {
               } else {
                 try {
                   const parsed = JSON.parse(message);
-                  if(parsed.choices[0].finish_reason = "stop"){
+                  if(parsed.choices[0].finish_reason === "stop"){
                     completion.data.destroy();
                     return;
                   } else if(parsed.choices[0].delta.content) {
