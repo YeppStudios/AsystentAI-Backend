@@ -228,16 +228,14 @@ router.post('/promptConversation', requireTokens, async (req, res) => {
     }
 });
 
-router.post('/message-stream', async (req, res) => {
+router.post('/promptconversation-stream', requireTokens, async (req, res) => {
     try {
+        const { conversationContext } = req.body;
         const user = req.user;
-        let messages = [
-            { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści.' },
-            { role: 'user', content: "Cześć, jak się masz?" }
-        ]
+
         const completion = await openai.createChatCompletion({
             model: "gpt-3.5-turbo",
-            messages,
+            messages: conversationContext,
             temperature: 0.7,
             frequency_penalty: 0.35,
             stream: true,
