@@ -232,7 +232,7 @@ router.post('/message-stream', async (req, res) => {
     try {
         const user = req.user;
         let messages = [
-            { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczaj ilość emoji w generowanym tekście.' },
+            { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści.' },
             { role: 'user', content: "Cześć, jak się masz?" }
         ]
         const completion = await openai.createChatCompletion({
@@ -242,7 +242,7 @@ router.post('/message-stream', async (req, res) => {
             frequency_penalty: 0.35,
             stream: true,
         }, { responseType: 'stream' });
-        
+        console.log(completion.data)
         res.set({
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache',
@@ -254,13 +254,15 @@ router.post('/message-stream', async (req, res) => {
             for (const line of lines) {
               const message = line.replace(/^data: /, '');
               if (message === '[DONE]') {
-                completion.data.destroy();
                 res.write('\n\n');
                 return;
               } else {
                 try {
                   const parsed = JSON.parse(message);
-                  if(parsed.choices[0].delta.content) {
+                  if(parsed.choices[0].finish_reason = "stop"){
+                    completion.data.destroy();
+                    return;
+                  } else if(parsed.choices[0].delta.content) {
                     console.log(parsed.choices[0].delta.content);
                     res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}\n\n`);
                   }
@@ -270,7 +272,6 @@ router.post('/message-stream', async (req, res) => {
               }
             }
           });
-          
     } catch (error) {
         if (error.response?.status) {
             console.error(error.response.status, error.message);
