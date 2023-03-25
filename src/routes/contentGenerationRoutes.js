@@ -242,7 +242,6 @@ router.post('/message-stream', async (req, res) => {
             frequency_penalty: 0.35,
             stream: true,
         }, { responseType: 'stream' });
-        console.log(completion.data)
         res.set({
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache',
@@ -255,12 +254,14 @@ router.post('/message-stream', async (req, res) => {
               const message = line.replace(/^data: /, '');
               if (message === '[DONE]') {
                 res.write('\n\n');
+                res.end();
                 return;
               } else {
                 try {
                   const parsed = JSON.parse(message);
                   if(parsed.choices[0].finish_reason === "stop"){
                     res.write('\n\n');
+                    res.end();
                     return;
                   } else if(parsed.choices[0].delta.content) {
                     res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}\n\n`);
