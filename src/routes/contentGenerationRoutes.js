@@ -79,7 +79,6 @@ router.post('/askAI', requireTokens, async (req, res) => {
                   const parsed = JSON.parse(message);
                   if(parsed.choices[0].finish_reason === "stop"){
                     res.write('\n\n');
-                    console.log(reply);
                     outputTokens = estimateTokens(reply);
                     const totalTokens = inputTokens + outputTokens;
                     user.tokenBalance -= (totalTokens);
@@ -134,7 +133,12 @@ router.post('/messageAI', requireTokens, async (req, res) => {
     try {
         const { conversationContext, test } = req.body;
         const user = req.user;
-
+        let inputTokens = 0;
+        let outputTokens = 0;
+        let reply = '';
+        conversationContext.forEach(message => {
+            inputTokens += estimateTokens(message.content);
+        });
         const completion = await openai.createChatCompletion({
             model: "gpt-3.5-turbo",
             messages: conversationContext,
@@ -161,10 +165,15 @@ router.post('/messageAI', requireTokens, async (req, res) => {
                   const parsed = JSON.parse(message);
                   if(parsed.choices[0].finish_reason === "stop"){
                     res.write('\n\n');
+                    outputTokens = estimateTokens(reply);
+                    const totalTokens = inputTokens + outputTokens;
+                    user.tokenBalance -= (totalTokens);
+                    await user.save();
                     res.end();
                     return;
                   } else if(parsed.choices[0].delta.content) {
                     res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}\n\n`);
+                    reply += parsed.choices[0].delta.content;
                   }
                 } catch(error) {
                   console.error('Could not JSON parse stream message', message, error);
