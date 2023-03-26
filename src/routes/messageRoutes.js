@@ -42,6 +42,8 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
     try {
         const { text } = req.body;
         const user = req.user;
+        let inputTokens = 0;
+        let outputTokens = 0;
         let response = '';
         const conversation = await Conversation.findById(req.params.conversationId)
             .populate({
@@ -90,7 +92,9 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                   const parsed = JSON.parse(message);
                   if(parsed.choices[0].finish_reason === "stop"){ //when generating response ends
                     res.write('\n\n');
-                    user.tokenBalance -= 0;
+                    outputTokens = estimateTokens(response);
+                    const totalTokens = inputTokens + outputTokens;
+                    user.tokenBalance -= totalTokens;
 
                     user.tokenHistory.push({
                         timestamp: Date.now(),
