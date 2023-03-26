@@ -136,11 +136,9 @@ router.post('/messageAI', requireTokens, async (req, res) => {
         let inputTokens = 0;
         let outputTokens = 0;
         let reply = '';
-        if(conversationContext.lenght > 0){
-            conversationContext.forEach(message => {
-                inputTokens += estimateTokens(message.content);
-            });
-        }
+        conversationContext.forEach(message => {
+            inputTokens += estimateTokens(message.content);
+        });
         const completion = await openai.createChatCompletion({
             model: "gpt-3.5-turbo",
             messages: conversationContext,
