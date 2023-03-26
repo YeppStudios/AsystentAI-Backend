@@ -17,20 +17,6 @@ const configuration = new Configuration({
 
 const openai = new OpenAIApi(configuration);
 
-async function attemptCompletion(params, retries = 2, delay = 350) {
-    try {
-        return await openai.createChatCompletion(params);
-    } catch (error) {
-        if (retries > 0) {
-            console.log(`Retrying OpenAI API request (${retries} retries left)...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return await attemptCompletion(params, retries - 1, delay);
-        } else {
-            throw error;
-        }
-    }
-}
-
 
 router.post('/askAI', requireTokens, async (req, res) => {
     try {
@@ -55,7 +41,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
             model: model,
             messages,
             temperature: 0.8,
-            frequency_penalty: 0.4,
+            frequency_penalty: 0.35,
             stream: true,
         }, { responseType: 'stream' });
         res.set({
@@ -77,22 +63,23 @@ router.post('/askAI', requireTokens, async (req, res) => {
                   const parsed = JSON.parse(message);
                   if(parsed.choices[0].finish_reason === "stop"){
                     res.write('\n\n');
-                    // const transaction = new Transaction({
-                    //     value: completion.data.usage.total_tokens,
-                    //     title: title,
-                    //     type: "expense",
-                    //     timestamp: Date.now()
-                    // });
+                    user.tokenBalance -= 0;
+                    const transaction = new Transaction({
+                        value: completion.data.usage.total_tokens,
+                        title: title,
+                        type: "expense",
+                        timestamp: Date.now()
+                    });
             
-                    // user.transactions.push(transaction);
+                    user.transactions.push(transaction);
                     
-                    // user.tokenHistory.push({
-                    //     timestamp: Date.now(),
-                    //     balance: user.tokenBalance
-                    // });
+                    user.tokenHistory.push({
+                        timestamp: Date.now(),
+                        balance: user.tokenBalance
+                    });
             
-                    // await user.save();
-                    // await transaction.save();
+                    await user.save();
+                    await transaction.save();
                     res.end();
                     return;
                   } else if(parsed.choices[0].delta.content) {
@@ -121,33 +108,6 @@ router.post('/askAI', requireTokens, async (req, res) => {
         }
     }
 });
-
-
-router.post('/askAI-job', requireTokens, async (req, res) => {
-    console.log("call")
-    try {
-      const { prompt, title, preprompt, model } = req.body;
-      const user = req.user;
-  
-      const job = await jobQueue.add({
-        userId: user._id, // Pass the user ID to the worker
-        prompt,
-        title,
-        preprompt,
-        model,
-      });
-  
-      console.log(`Job added to the queue: ${job.id}`);
-  
-      res.status(200).json({
-        message: 'Job added to the queue',
-        jobId: job.id,
-      });
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: error.message });
-    }
-  });
 
 
 router.post('/testAskAI', requireTestTokens, async (req, res) => {

@@ -30,6 +30,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
     try {
         const { text } = req.body;
         const user = req.user;
+        let response = '';
         const conversation = await Conversation.findById(req.params.conversationId)
             .populate({
                 path: 'messages',
@@ -53,40 +54,66 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         }), { role: "user", content: text },];
 
         const completion = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo-0301",
+            model: "gpt-3.5-turbo",
             messages,
-            temperature: 0.7,
-            frequency_penalty: 0.35
+            temperature: 0.8,
+            frequency_penalty: 0.35,
+            stream: true,
+        }, { responseType: 'stream' });
+        res.set({
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
         });
-        // Decrease token balance
-        user.tokenBalance -= completion.data.usage.total_tokens;
+        completion.data.on('data', async data => {
+            const lines = data.toString().split('\n').filter(line => line.trim() !== '');
+            for (const line of lines) {
+              const message = line.replace(/^data: /, '');
+              if (message === '[DONE]') {
+                res.write('\n\n');
+                res.end();
+                return;
+              } else {
+                try {
+                  const parsed = JSON.parse(message);
+                  if(parsed.choices[0].finish_reason === "stop"){ //when generating response ends
+                    res.write('\n\n');
+                    user.tokenBalance -= 0;
 
-        user.tokenHistory.push({
-            timestamp: Date.now(),
-            balance: user.tokenBalance
-        });
+                    user.tokenHistory.push({
+                        timestamp: Date.now(),
+                        balance: user.tokenBalance
+                    });
 
-        const userMessage = new Message({
-            text: text,
-            conversation,
-            sender: "user"
-        });
-
-        const assistantResponse = new Message({
-            text: completion.data.choices[0].message.content,
-            conversation,
-            sender: "assistant"
-        });
-        
-        await user.save();
-        await userMessage.save();
-        await assistantResponse.save();
-        conversation.messages.push(userMessage);
-        conversation.messages.push(assistantResponse);
-        conversation.lastUpdated = Date.now();
-        await conversation.save();
-
-        return res.status(201).json({ response: completion.data.choices[0].message.content, tokens: completion.data.usage.total_tokens });
+                    const userMessage = new Message({
+                        text: text,
+                        conversation,
+                        sender: "user"
+                    });
+                    const assistantResponse = new Message({
+                        text: response,
+                        conversation,
+                        sender: "assistant"
+                    });
+                    await user.save();
+                    await userMessage.save();
+                    await assistantResponse.save();
+                    conversation.messages.push(userMessage);
+                    conversation.messages.push(assistantResponse);
+                    conversation.lastUpdated = Date.now();
+                    await conversation.save();
+                    res.end();
+                    return;
+                  } else if(parsed.choices[0].delta.content) {
+                    res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}\n\n`);
+                    response += parsed.choices[0].delta.content
+                  }
+                } catch(error) {
+                  console.error('Could not JSON parse stream message', message, error);
+                }
+              }
+            }
+          });
 
     } catch (error) {
         console.log(error)
