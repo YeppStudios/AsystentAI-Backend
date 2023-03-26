@@ -15,6 +15,18 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
+function estimateTokens(text) {
+    const tokenRegex = /[\p{L}\p{N}]+|[^ \t\p{L}\p{N}]/ug;
+    let tokens = 0;
+    let match;
+  
+    while ((match = tokenRegex.exec(text)) !== null) {
+      tokens += 1;
+    }
+  
+    return tokens;
+}
+
 router.post('/send',async (req, res) => {
     const completion = await openai.createChatCompletion({
         model: "gpt-3.5-turbo-0301",

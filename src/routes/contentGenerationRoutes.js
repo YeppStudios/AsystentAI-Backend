@@ -17,12 +17,25 @@ const configuration = new Configuration({
 
 const openai = new OpenAIApi(configuration);
 
+function estimateTokens(text) {
+    const tokenRegex = /[\p{L}\p{N}]+|[^ \t\p{L}\p{N}]/ug;
+    let tokens = 0;
+    let match;
+  
+    while ((match = tokenRegex.exec(text)) !== null) {
+      tokens += 1;
+    }
+  
+    return tokens;
+}
 
 router.post('/askAI', requireTokens, async (req, res) => {
     try {
         const { prompt, title, preprompt, model } = req.body;
         const user = req.user;
-
+        let inputTokens = 0;
+        let outputTokens = 0;
+        let reply = '';
         let messages = [];
         if(preprompt) {
             messages = [
@@ -37,6 +50,9 @@ router.post('/askAI', requireTokens, async (req, res) => {
                 { role: 'user', content: prompt }
             ]
         }
+        messages.forEach(message => {
+            inputTokens += estimateTokens(message.content);
+        });
         const completion = await openai.createChatCompletion({
             model: model,
             messages,
@@ -63,9 +79,13 @@ router.post('/askAI', requireTokens, async (req, res) => {
                   const parsed = JSON.parse(message);
                   if(parsed.choices[0].finish_reason === "stop"){
                     res.write('\n\n');
-                    user.tokenBalance -= 0;
+                    console.log(reply);
+                    outputTokens = estimateTokens(reply);
+                    const totalTokens = inputTokens + outputTokens;
+                    user.tokenBalance -= (totalTokens);
+
                     const transaction = new Transaction({
-                        value: completion.data.usage.total_tokens,
+                        value: totalTokens,
                         title: title,
                         type: "expense",
                         timestamp: Date.now()
@@ -84,6 +104,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
                     return;
                   } else if(parsed.choices[0].delta.content) {
                     res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}\n\n`);
+                    reply += parsed.choices[0].delta.content;
                   }
                 } catch(error) {
                   console.error('Could not JSON parse stream message', message, error);
@@ -111,7 +132,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
 
 router.post('/messageAI', requireTokens, async (req, res) => {
     try {
-        const { conversationContext } = req.body;
+        const { conversationContext, test } = req.body;
         const user = req.user;
 
         const completion = await openai.createChatCompletion({
