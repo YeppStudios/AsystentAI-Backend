@@ -154,7 +154,7 @@ router.post('/messageAI', requireTokens, async (req, res) => {
             'Connection': 'keep-alive'
         });
 
-        completion.data.on('data', data => {
+        completion.data.on('data', async  data => {
             const lines = data.toString().split('\n').filter(line => line.trim() !== '');
             for (const line of lines) {
               const message = line.replace(/^data: /, '');
