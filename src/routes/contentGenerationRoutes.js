@@ -7,7 +7,6 @@ const { Configuration, OpenAIApi } = OpenAI;
 const requireTokens = require('../middlewares/requireTokens');
 const requireTestTokens = require('../middlewares/requireTestTokens');
 require('dotenv').config();
-const jobQueue = require('../queues/jobQueue');
 const Transaction = mongoose.model('Transaction');
 
 const configuration = new Configuration({
@@ -131,7 +130,8 @@ router.post('/askAI', requireTokens, async (req, res) => {
 
 router.post('/messageAI', requireTokens, async (req, res) => {
     try {
-        const { conversationContext, test } = req.body;
+        const { conversationContext } = req.body;
+
         const user = req.user;
         let inputTokens = 0;
         let outputTokens = 0;
@@ -167,7 +167,78 @@ router.post('/messageAI', requireTokens, async (req, res) => {
                     res.write('\n\n');
                     outputTokens = estimateTokens(reply);
                     const totalTokens = inputTokens + outputTokens;
-                    user.tokenBalance -= (totalTokens);
+                    user.tokenBalance -= totalTokens;
+                    await user.save();
+                    res.end();
+                    return;
+                  } else if(parsed.choices[0].delta.content) {
+                    res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}\n\n`);
+                    reply += parsed.choices[0].delta.content;
+                  }
+                } catch(error) {
+                  console.error('Could not JSON parse stream message', message, error);
+                }
+              }
+            }
+          });
+    } catch (error) {
+        if (error.response?.status) {
+            console.error(error.response.status, error.message);
+            error.response.data.on('data', data => {
+                const message = data.toString();
+                try {
+                    const parsed = JSON.parse(message);
+                    console.error('An error occurred during OpenAI request: ', parsed);
+                } catch(error) {
+                    console.error('An error occurred during OpenAI request: ', message);
+                }
+            });
+        } else {
+            console.error('An error occurred during OpenAI request', error);
+        }
+    }
+});
+
+router.post('/testMessageAI', requireTestTokens, async (req, res) => {
+    try {
+        const { conversationContext } = req.body;
+        
+        const user = req.user;
+        let inputTokens = 0;
+        let outputTokens = 0;
+        let reply = '';
+        conversationContext.forEach(message => {
+            inputTokens += estimateTokens(message.content);
+        });
+        const completion = await openai.createChatCompletion({
+            model: "gpt-3.5-turbo",
+            messages: conversationContext,
+            temperature: 0.7,
+            frequency_penalty: 0.35,
+            stream: true,
+        }, { responseType: 'stream' });
+        res.set({
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+        });
+
+        completion.data.on('data', async  data => {
+            const lines = data.toString().split('\n').filter(line => line.trim() !== '');
+            for (const line of lines) {
+              const message = line.replace(/^data: /, '');
+              if (message === '[DONE]') {
+                res.write('\n\n');
+                res.end();
+                return;
+              } else {
+                try {
+                  const parsed = JSON.parse(message);
+                  if(parsed.choices[0].finish_reason === "stop"){
+                    res.write('\n\n');
+                    outputTokens = estimateTokens(reply);
+                    const totalTokens = inputTokens + outputTokens;
+                    user.testTokenBalance -= totalTokens;
                     await user.save();
                     res.end();
                     return;
