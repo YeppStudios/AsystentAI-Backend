@@ -65,6 +65,10 @@ router.post('/askAI', requireTokens, async (req, res) => {
             'Connection': 'keep-alive'
         });
 
+        const heartbeatInterval = setInterval(() => {
+            res.write(':heartbeat\n\n');
+        }, 28000);
+
         completion.data.on('data', async data => {
             const lines = data.toString().split('\n').filter(line => line.trim() !== '');
             for (const line of lines) {
@@ -110,6 +114,11 @@ router.post('/askAI', requireTokens, async (req, res) => {
               }
             }
           });
+
+          req.on('close', () => {
+            clearInterval(heartbeatInterval);
+          });
+
     } catch (error) {
         if (error.response?.status) {
             console.error(error.response.status, error.message);
@@ -152,6 +161,11 @@ router.post('/messageAI', requireTokens, async (req, res) => {
             'Connection': 'keep-alive'
         });
 
+        const heartbeatInterval = setInterval(() => {
+            res.write(':heartbeat\n\n');
+        }, 28000);
+
+
         completion.data.on('data', async  data => {
             const lines = data.toString().split('\n').filter(line => line.trim() !== '');
             for (const line of lines) {
@@ -181,6 +195,11 @@ router.post('/messageAI', requireTokens, async (req, res) => {
               }
             }
           });
+          
+          req.on('close', () => {
+            clearInterval(heartbeatInterval);
+          });
+
     } catch (error) {
         if (error.response?.status) {
             console.error(error.response.status, error.message);

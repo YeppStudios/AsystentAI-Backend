@@ -79,6 +79,12 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive'
         });
+
+        const heartbeatInterval = setInterval(() => {
+            res.write(':heartbeat\n\n');
+        }, 28000);
+
+
         completion.data.on('data', async data => {
             const lines = data.toString().split('\n').filter(line => line.trim() !== '');
             for (const line of lines) {
@@ -130,7 +136,10 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
               }
             }
           });
-
+          req.on('close', () => {
+            clearInterval(heartbeatInterval);
+          });
+          
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: error.message });
