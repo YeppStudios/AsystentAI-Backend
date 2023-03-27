@@ -16,6 +16,8 @@ mailchimp.setConfig({
   server: process.env.MAILCHIMP_SERVER_PREFIX,
 });
 
+const whitelistedEmails = ["karolina.wojciechowska@sprawnymarketing.pl", "leszek.lewandowicz@sprawnymarketing.pl", "anna.kolodziej@sprawnymarketing.pl", "jacek.adamczak@sprawnymarketing.pl", "wojciech.markowski@sprawnymarketing.pl", "katarzyna.granops.szkoda@sprawnymarketing.pl", "piotrg2003@gmail.com"];
+
 router.post('/register', async (req, res) => {
   try {
     const { email, password, name, isCompany } = req.body;
@@ -26,6 +28,16 @@ router.post('/register', async (req, res) => {
       // User already exists, log them in
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
       return res.status(200).json({ token, user });
+    }
+    let transaction;
+    if(whitelistedEmails.includes(newUser.email)){
+      transaction = new Transaction({
+        value: 500000,
+        title: "+500k na start ;)",
+        type: "income",
+        timestamp: Date.now()
+      });
+      newUser.tokenBalance += 500000;
     }
 
     try {
@@ -53,7 +65,10 @@ router.post('/register', async (req, res) => {
       accountType,
     });
 
+    user.transactions.push(transaction);
+
     await user.save();
+    await transaction.save();
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     return res.status(201).json({ token, user });
   } catch (error) {
@@ -67,7 +82,7 @@ router.post('/register-free-trial', async (req, res) => {
       const { email, password, name, isCompany } = req.body;
       const user = await User.findOne({ email });
       if (user) return res.status(400).json({ message: 'User already exists' });
-
+      
       let accountType = 'individual';
       if(isCompany){
         accountType = 'company';
@@ -91,16 +106,26 @@ router.post('/register-free-trial', async (req, res) => {
           name,
           accountType: accountType,
       });
+      let transaction;
+      if(whitelistedEmails.includes(newUser.email)){
+        transaction = new Transaction({
+          value: 500000,
+          title: "+500k na start ;)",
+          type: "income",
+          timestamp: Date.now()
+        });
+        newUser.tokenBalance += 500000;
+      } else {
+        transaction = new Transaction({
+          value: 10000,
+          title: "+10 000 elixiru na start",
+          type: "income",
+          timestamp: Date.now()
+      });
+      newUser.tokenBalance += 10000;
+      }
 
-      const transaction = new Transaction({
-        value: 10000,
-        title: "+10 000 elixiru na start",
-        type: "income",
-        timestamp: Date.now()
-    });
-
-    newUser.transactions.push(transaction);
-    newUser.tokenBalance += 10000;
+      newUser.transactions.push(transaction);
 
       await newUser.save();
       await transaction.save();
