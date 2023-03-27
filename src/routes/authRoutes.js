@@ -54,7 +54,7 @@ router.post('/register', async (req, res) => {
       name,
       accountType,
     });
-    
+
     let transaction;
     if(whitelistedEmails.includes(user.email)){
       transaction = new Transaction({
@@ -64,12 +64,11 @@ router.post('/register', async (req, res) => {
         timestamp: Date.now()
       });
       user.tokenBalance += 500000;
+      user.transactions.push(transaction);
+      await transaction.save();
     }
 
-    user.transactions.push(transaction);
-
     await user.save();
-    await transaction.save();
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     return res.status(201).json({ token, user });
   } catch (error) {
@@ -116,6 +115,8 @@ router.post('/register-free-trial', async (req, res) => {
           timestamp: Date.now()
         });
         newUser.tokenBalance += 500000;
+        newUser.transactions.push(transaction);
+        await transaction.save();
       } else {
         transaction = new Transaction({
           value: 10000,
@@ -124,12 +125,11 @@ router.post('/register-free-trial', async (req, res) => {
           timestamp: Date.now()
       });
       newUser.tokenBalance += 10000;
+      newUser.transactions.push(transaction);
+      await transaction.save();
       }
 
-      newUser.transactions.push(transaction);
-
       await newUser.save();
-      await transaction.save();
       const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
       return res.status(201).json({ token, newUser });
   } catch (error) {
