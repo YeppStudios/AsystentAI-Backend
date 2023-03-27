@@ -29,16 +29,6 @@ router.post('/register', async (req, res) => {
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
       return res.status(200).json({ token, user });
     }
-    let transaction;
-    if(whitelistedEmails.includes(newUser.email)){
-      transaction = new Transaction({
-        value: 500000,
-        title: "+500k na start ;)",
-        type: "income",
-        timestamp: Date.now()
-      });
-      newUser.tokenBalance += 500000;
-    }
 
     try {
       await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
@@ -64,6 +54,17 @@ router.post('/register', async (req, res) => {
       name,
       accountType,
     });
+    
+    let transaction;
+    if(whitelistedEmails.includes(user.email)){
+      transaction = new Transaction({
+        value: 500000,
+        title: "+500k na start ;)",
+        type: "income",
+        timestamp: Date.now()
+      });
+      user.tokenBalance += 500000;
+    }
 
     user.transactions.push(transaction);
 
