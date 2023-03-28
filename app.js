@@ -60,7 +60,7 @@ mongoose.connect(mongoUri);
 
 mongoose.connection.on('error', (err) => {
     console.log("Error connecting to mongo ", err);
-    job.stop();
+    // job.stop();
 });
 
 app.listen(app.get('port'), function () {
