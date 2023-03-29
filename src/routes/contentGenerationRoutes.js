@@ -139,7 +139,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
 
 router.post('/messageAI', requireTokens, async (req, res) => {
     try {
-        const { conversationContext } = req.body;
+        const { conversationContext, model } = req.body;
 
         const user = req.user;
         let inputTokens = 0;
@@ -149,7 +149,7 @@ router.post('/messageAI', requireTokens, async (req, res) => {
             inputTokens += estimateTokens(message.content);
         });
         const completion = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo",
+            model: model,
             messages: conversationContext,
             temperature: 0.7,
             frequency_penalty: 0.35,
