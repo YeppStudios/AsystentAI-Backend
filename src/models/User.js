@@ -107,6 +107,10 @@ const UserSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    referredBy: {
+        type: String,
+        default: ""
+    },
     profiles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Profile'}],
     purchases: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Payment'}],
     transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction'}],

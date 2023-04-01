@@ -79,7 +79,7 @@ router.post('/register', async (req, res) => {
 
 router.post('/register-free-trial', async (req, res) => {
   try {
-      const { email, password, name, isCompany } = req.body;
+      const { email, password, name, isCompany, referrerId } = req.body;
       const user = await User.findOne({ email });
       if (user) return res.status(400).json({ message: 'User already exists' });
       
@@ -105,6 +105,7 @@ router.post('/register-free-trial', async (req, res) => {
           password,
           name,
           accountType: accountType,
+          referredBy: referrerId
       });
       let transaction;
       if(whitelistedEmails.includes(newUser.email)){

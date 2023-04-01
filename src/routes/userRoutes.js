@@ -122,12 +122,33 @@ router.delete('/deleteUser/:id', requireAuth, async (req, res) => {
 router.get('/get-refferal-link', requireAuth, async (req, res) => {
   const user = req.user;
   try {
-    const refferalLink = `https://asystent.ai/onboarding?ref=${user._id}`;
+    const refferalLink = `https://asystent.ai/contentcreator?registration=true&ref=${user._id}`;
     return res.status(200).json({ link: refferalLink });
   } catch (error) {
       return res.status(500).json({ message: error.message });
   }
 });
+
+
+router.put('/clear-referred-by', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: { referredBy: "" } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ message: 'ReferredBy field cleared successfully', user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 
 router.get('/getEmails', requireAdmin, async (req, res) => {
   try {
