@@ -7,6 +7,7 @@ require('./src/models/Payment');
 require('./src/models/Whitelist');
 require('./src/models/Profile');
 require('./src/models/Prompt');
+require('./src/models/Content');
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser =  require('body-parser');
@@ -22,6 +23,7 @@ const contentGenerationRoutes =  require('./src/routes/contentGenerationRoutes')
 const userRoutes =  require('./src/routes/userRoutes');
 const profileRoutes =  require('./src/routes/profileRoutes');
 const promptRoutes =  require('./src/routes/promptRoutes');
+const contentGatheringRoutes =  require('./src/routes/contentGatheringRoutes');
 // const job = require('./src/cron');
 const cors = require('cors');
 require('dotenv').config()
@@ -49,6 +51,7 @@ app.use(stripeRoutes);
 app.use(whitelistRoutes);
 app.use(profileRoutes);
 app.use(promptRoutes);
+app.use(contentGatheringRoutes);
 
 const mongoUri = process.env.MONGO_URI;
 mongoose.connect(mongoUri);
