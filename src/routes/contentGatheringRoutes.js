@@ -48,5 +48,14 @@ router.delete('/deleteContent/:id', requireAdmin, async (req, res) => {
     }
 });
 
+router.get('/content', requireAdmin, async (req, res) => {
+    try {
+      const contents = await Content.find();
+      res.status(200).json(contents);
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
 
 module.exports = router;

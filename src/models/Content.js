@@ -23,4 +23,4 @@ const ContentSchema = new mongoose.Schema({
     }
 });
 
-mongoose.model('Message', ContentSchema);
+mongoose.model('Content', ContentSchema);

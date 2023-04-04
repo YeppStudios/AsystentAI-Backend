@@ -20,10 +20,10 @@ const planRoutes =  require('./src/routes/planRoutes');
 const whitelistRoutes =  require('./src/routes/whitelistRoutes');
 const stripeRoutes =  require('./src/routes/stripeRoutes');
 const contentGenerationRoutes =  require('./src/routes/contentGenerationRoutes');
+const contentGatheringRoutes =  require('./src/routes/contentGatheringRoutes');
 const userRoutes =  require('./src/routes/userRoutes');
 const profileRoutes =  require('./src/routes/profileRoutes');
 const promptRoutes =  require('./src/routes/promptRoutes');
-const contentGatheringRoutes =  require('./src/routes/contentGatheringRoutes');
 // const job = require('./src/cron');
 const cors = require('cors');
 require('dotenv').config()
