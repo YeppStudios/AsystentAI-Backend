@@ -90,7 +90,9 @@ router.post('/askAI', requireTokens, async (req, res) => {
                         value: totalTokens,
                         title: title,
                         type: "expense",
-                        timestamp: Date.now()
+                        timestamp: Date.now(),
+                        category: "forms",
+                        user: user._id
                     });
             
                     user.transactions.push(transaction);
@@ -182,7 +184,16 @@ router.post('/messageAI', requireTokens, async (req, res) => {
                     outputTokens = estimateTokens(reply);
                     const totalTokens = inputTokens + outputTokens;
                     user.tokenBalance -= totalTokens;
+                    const transaction = new Transaction({
+                      title: "Message in prompt search engine",
+                      type: "expense",
+                      value: totalTokens,
+                      timestamp: Date.now(),
+                      category: "prompts",
+                      user: user._id
+                    });
                     await user.save();
+                    await transaction.save();
                     res.end();
                     return;
                   } else if(parsed.choices[0].delta.content) {

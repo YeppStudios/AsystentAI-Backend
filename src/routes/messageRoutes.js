@@ -7,6 +7,7 @@ const requireAuth = require('../middlewares/requireAuth');
 const requireTokens = require('../middlewares/requireTokens');
 const Message = mongoose.model('Message');
 const Conversation = mongoose.model('Conversation');
+const Transaction = mongoose.model('Transaction');
 require('dotenv').config();
 
 const configuration = new Configuration({
@@ -101,7 +102,14 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                     outputTokens = estimateTokens(response);
                     const totalTokens = inputTokens + outputTokens;
                     user.tokenBalance -= totalTokens;
-
+                    const transaction = new Transaction({
+                        title: "Message in chat",
+                        value: totalTokens,
+                        type: "expense",
+                        timestamp: Date.now(),
+                        category: "chat",
+                        user: user._id
+                    });
                     user.tokenHistory.push({
                         timestamp: Date.now(),
                         balance: user.tokenBalance
@@ -120,6 +128,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                     await user.save();
                     await userMessage.save();
                     await assistantResponse.save();
+                    await transaction.save();
                     conversation.messages.push(userMessage);
                     conversation.messages.push(assistantResponse);
                     conversation.lastUpdated = Date.now();

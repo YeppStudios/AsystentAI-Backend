@@ -7,7 +7,6 @@ const TokenTransactionSchema = new mongoose.Schema({
     },
     value: {
         type: Number,
-        require: true,
     },
     title: {
         type: String,
@@ -17,7 +16,15 @@ const TokenTransactionSchema = new mongoose.Schema({
         type: String,
         required: true,
         enum: ['expense', 'income']
-    }
+    },
+    category: {
+        type: String
+    },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
 })
 
 mongoose.model('Transaction', TokenTransactionSchema);
