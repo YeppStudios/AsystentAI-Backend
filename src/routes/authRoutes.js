@@ -48,7 +48,7 @@ router.post('/register', async (req, res) => {
       accountType = 'company';
     }
 
-    user = new User({
+    let newUser = new User({
       email,
       password,
       name,
@@ -56,21 +56,21 @@ router.post('/register', async (req, res) => {
     });
 
     let transaction;
-    if(whitelistedEmails.includes(user.email)){
+    if(whitelistedEmails.includes(newUser.email)){
       transaction = new Transaction({
         value: 500000,
         title: "+500k na start ;)",
         type: "income",
         timestamp: Date.now()
       });
-      user.tokenBalance += 500000;
-      user.transactions.push(transaction);
+      newUser.tokenBalance += 500000;
+      newUser.transactions.push(transaction);
       await transaction.save();
     }
 
-    await user.save();
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    return res.status(201).json({ token, user });
+    await newUser.save();
+    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    return res.status(201).json({ token, newUser });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

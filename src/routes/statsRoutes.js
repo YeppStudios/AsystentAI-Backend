@@ -149,6 +149,85 @@ router.post('/user/:userId/addPosts', requireAuth, (req, res) => {
     }
   });
   
+
+
+  router.post('/count-individual-tokens', async (req, res) => { // Changed to POST
+    try {
+      const { start, end } = req.body;
+  
+      const startDate = new Date(start);
+      startDate.setHours(0, 0, 0, 0);
+  
+      const endDate = new Date(end);
+      endDate.setHours(23, 59, 59, 999);
+  
+      const transactionsInRange = await Transaction.aggregate([
+        {
+          $match: {
+            timestamp: {
+              $gte: startDate,
+              $lt: endDate,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: '$user',
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+  
+      res.json(transactionsInRange);
+    } catch (error) {
+      res.status(500).json({ message: 'Error retrieving transactions.' });
+    }
+  });
+  
+  router.post('/count-cumulative-tokens', async (req, res) => {
+    try {
+      const { start, end } = req.body;
+  
+      const startDate = start ? new Date(start) : null;
+      if (startDate) {
+        startDate.setHours(0, 0, 0, 0);
+      }
+  
+      const endDate = end ? new Date(end) : null;
+      if (endDate) {
+        endDate.setHours(23, 59, 59, 999);
+      }
+  
+      const matchStage = {
+        $match: {
+          timestamp: {},
+        },
+      };
+  
+      if (startDate) {
+        matchStage.$match.timestamp.$gte = startDate;
+      }
+  
+      if (endDate) {
+        matchStage.$match.timestamp.$lt = endDate;
+      }
+  
+      const cumulativeTransactions = await Transaction.aggregate([
+        matchStage,
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+  
+      res.json(cumulativeTransactions);
+    } catch (error) {
+      res.status(500).json({ message: 'Error retrieving cumulative transactions.' });
+      console.log(error)
+    }
+  });
   
 
 module.exports = router;
