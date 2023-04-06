@@ -70,7 +70,7 @@ router.post('/register', async (req, res) => {
 
     await newUser.save();
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    return res.status(201).json({ token, newUser });
+    return res.status(201).json({ token, user: newUser });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
