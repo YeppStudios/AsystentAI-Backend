@@ -285,8 +285,6 @@ router.post('/compose-editor-completion', requireTokens, async (req, res) => {
                       category: "text-editor",
                       user: user._id
                   });
-          
-                  user.transactions.push(transaction);
                   
                   user.tokenHistory.push({
                       timestamp: Date.now(),
