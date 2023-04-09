@@ -237,7 +237,7 @@ router.post('/compose-editor-completion', requireTokens, async (req, res) => {
       let outputTokens = 0;
       let reply = '';
       let messages = [
-          { role: 'system', content: 'Jesteś przyjaznym, pomocnym i wszechwiedzącym copywriterem, który nazywa się Asystent AI. Jesteś mistrzem w generowaniu wysokiej jakości treści marketingowych i SEO. Zawsze zamiast zaczynać od nowej linii wstawiasz spacje.' },
+          { role: 'system', content: 'Jesteś przyjaznym, pomocnym i wszechwiedzącym copywriterem, który nazywa się Asystent AI. Jesteś mistrzem w generowaniu wysokiej jakości treści marketingowych i SEO. Nowe linie rozpoczynaj od \n.' },
           { role: 'user', content: prompt }
       ]
       messages.forEach(message => {
