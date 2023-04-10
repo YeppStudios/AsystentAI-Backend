@@ -388,13 +388,14 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
         let invoiceData;
         let infaktClientId;
         let planId;
+        let priceId = event.data.object.lines.data[0].price.id;
 
         try {
-          if(event.data.object.lines.data[0].price.id === "price_1MdbTMFe80Kn2YGG5QDfmjvS") {
+          if(priceId === "price_1MdbTMFe80Kn2YGG5QDfmjvS") {
             planId = "63f0e6968e1b9d507c38a749";
-          } else if (event.data.object.lines.data[0].price.id === "price_1MdbUeFe80Kn2YGGRlKvmre4") {
+          } else if (priceId === "price_1MdbUeFe80Kn2YGGRlKvmre4") {
             planId = "63f0e7d075de0ef12bb8c484";
-          } else if (event.data.object.lines.data[0].price.id === "price_1MdbUeFe80Kn2YGGRlKvmre4") {
+          } else if (priceId === "price_1MdbWFFe80Kn2YGG3w8Xg2ub") {
             planId = "63f0e7ed75de0ef12bb8c487";
           }
           const plan = await Plan.findById(planId);
