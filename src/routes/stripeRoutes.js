@@ -381,7 +381,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
   if (event.type === 'invoice.paid' && event.data.object.billing_reason === 'subscription_cycle') {
     try {
 
-    User.findOne({ email: request.data.customer_email }, async (err, user) => {
+    User.findOne({ email: event.data.object.customer_email }, async (err, user) => {
       if(user) {
         
         let transaction;
@@ -390,11 +390,11 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
         let planId;
 
         try {
-          if(request.data.object.lines.data[0].price.id === "price_1MdbTMFe80Kn2YGG5QDfmjvS") {
+          if(event.data.object.lines.data[0].price.id === "price_1MdbTMFe80Kn2YGG5QDfmjvS") {
             planId = "63f0e6968e1b9d507c38a749";
-          } else if (request.data.object.lines.data[0].price.id === "price_1MdbUeFe80Kn2YGGRlKvmre4") {
+          } else if (event.data.object.lines.data[0].price.id === "price_1MdbUeFe80Kn2YGGRlKvmre4") {
             planId = "63f0e7d075de0ef12bb8c484";
-          } else if (request.data.object.lines.data[0].price.id === "price_1MdbUeFe80Kn2YGGRlKvmre4") {
+          } else if (event.data.object.lines.data[0].price.id === "price_1MdbUeFe80Kn2YGGRlKvmre4") {
             planId = "63f0e7ed75de0ef12bb8c487";
           }
           const plan = await Plan.findById(planId);
