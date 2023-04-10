@@ -377,7 +377,6 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
   } catch (err) {
     return response.status(400).send(`Webhook Error: ${err.message}`);
   }
-  const transactionData = event.data.object;
 
   if (event.type === 'invoice.paid' && event.data.object.billing_reason === 'subscription_cycle') {
     try {
@@ -388,9 +387,16 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
         let transaction;
         let invoiceData;
         let infaktClientId;
+        let planId;
 
         try {
-          const planId = transactionData.metadata.plan_id;
+          if(request.data.object.lines.data[0].price.id === "price_1MdbTMFe80Kn2YGG5QDfmjvS") {
+            planId = "63f0e6968e1b9d507c38a749";
+          } else if (request.data.object.lines.data[0].price.id === "price_1MdbUeFe80Kn2YGGRlKvmre4") {
+            planId = "63f0e7d075de0ef12bb8c484";
+          } else if (request.data.object.lines.data[0].price.id === "price_1MdbUeFe80Kn2YGGRlKvmre4") {
+            planId = "63f0e7ed75de0ef12bb8c487";
+          }
           const plan = await Plan.findById(planId);
 
           user.tokenBalance += plan.monthlyTokens;
