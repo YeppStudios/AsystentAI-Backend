@@ -382,7 +382,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
   if (event.type === 'invoice.paid' && event.data.object.billing_reason === 'subscription_cycle') {
     try {
 
-    User.findOne({ email: transactionData.customer_details.email }, async (err, user) => {
+    User.findOne({ email: request.data.customer_email }, async (err, user) => {
       if(user) {
         
         let transaction;
