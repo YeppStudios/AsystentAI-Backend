@@ -380,8 +380,8 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
 
   if (event.type === 'invoice.paid' && event.data.object.billing_reason === 'subscription_cycle') {
     try {
-
-    User.findOne({ email: "gerke.contact@gmail.com" }, async (err, user) => {
+    const userEmail = event.data.object.customer_email;
+    User.findOne({ email: userEmail }, async (err, user) => {
       if(user) {
         
         let transaction;
@@ -419,7 +419,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
             const month = String(today.getMonth() + 1).padStart(2, '0');
             const day = String(today.getDate()).padStart(2, '0');
           
-            let infaktClientsResponse = await axios.get(`https://api.infakt.pl/v3/clients.json?q[email_eq]=gerke.contact@gmail.com`, infaktConfig);
+            let infaktClientsResponse = await axios.get(`https://api.infakt.pl/v3/clients.json?q[email_eq]=${user.contactEmail}`, infaktConfig);
             let infaktClients = infaktClientsResponse.data;
             if (infaktClients.length > 0) {
               infaktClientId = infaktClients[0].id;
