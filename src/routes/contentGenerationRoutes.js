@@ -237,7 +237,7 @@ router.post('/compose-editor-completion', requireTokens, async (req, res) => {
       let outputTokens = 0;
       let reply = '';
       let messages = [
-          { role: 'system', content: 'Jesteś przyjaznym, pomocnym i wszechwiedzącym copywriterem, który nazywa się Asystent AI. Jesteś mistrzem w generowaniu wysokiej jakości treści marketingowych i SEO. Nowe linie rozpoczynaj od \n.' },
+          { role: 'system', content: 'Jesteś przyjaznym, pomocnym i wszechwiedzącym copywriterem, który nazywa się Asystent AI. Jesteś mistrzem w generowaniu wysokiej jakości treści marketingowych i SEO. Nowe linie rozpoczynaj od \n' },
           { role: 'user', content: prompt }
       ]
       messages.forEach(message => {
@@ -246,7 +246,7 @@ router.post('/compose-editor-completion', requireTokens, async (req, res) => {
       const completion = await openai.createChatCompletion({
           model: model,
           messages,
-          temperature: 0.7,
+          temperature: 0.75,
           frequency_penalty: 0.35,
           stream: true,
       }, { responseType: 'stream' });
