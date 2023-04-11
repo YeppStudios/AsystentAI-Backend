@@ -103,7 +103,9 @@ router.post('/askAI', requireTokens, async (req, res) => {
                     });
             
                     await user.save();
-                    await transaction.save();
+                    if(user.email != "gerke.contact@gmail.com"){
+                      await transaction.save();
+                    }
                     res.end();
                     return;
                   } else if(parsed.choices[0].delta.content) {
@@ -193,7 +195,9 @@ router.post('/messageAI', requireTokens, async (req, res) => {
                       user: user._id
                     });
                     await user.save();
-                    await transaction.save();
+                    if(user.email != "gerke.contact@gmail.com"){
+                      await transaction.save();
+                    }
                     res.end();
                     return;
                   } else if(parsed.choices[0].delta.content) {
@@ -237,7 +241,7 @@ router.post('/compose-editor-completion', requireTokens, async (req, res) => {
       let outputTokens = 0;
       let reply = '';
       let messages = [
-          { role: 'system', content: 'Jesteś przyjaznym, pomocnym i wszechwiedzącym copywriterem, który nazywa się Asystent AI. Jesteś mistrzem w generowaniu wysokiej jakości treści marketingowych i SEO. Nowe linie rozpoczynaj od \n' },
+          { role: 'system', content: 'Jesteś przyjaznym, pomocnym i wszechwiedzącym copywriterem. Specjalizujesz się w generowaniu wysokiej jakości treści marketingowych i SEO. Nowe linie rozpoczynaj od \n' },
           { role: 'user', content: prompt }
       ]
       messages.forEach(message => {
@@ -292,7 +296,9 @@ router.post('/compose-editor-completion', requireTokens, async (req, res) => {
                   });
           
                   await user.save();
-                  await transaction.save();
+                  if(user.email != "gerke.contact@gmail.com"){
+                    await transaction.save();
+                  }
                   res.end();
                   return;
                 } else if(parsed.choices[0].delta.content) {

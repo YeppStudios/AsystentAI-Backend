@@ -128,7 +128,9 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                     await user.save();
                     await userMessage.save();
                     await assistantResponse.save();
-                    await transaction.save();
+                    if(user.email != "gerke.contact@gmail.com"){
+                        await transaction.save();
+                      }
                     conversation.messages.push(userMessage);
                     conversation.messages.push(assistantResponse);
                     conversation.lastUpdated = Date.now();

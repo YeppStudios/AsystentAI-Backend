@@ -229,5 +229,46 @@ router.post('/user/:userId/addPosts', requireAuth, (req, res) => {
     }
   });
   
+  router.post('/transactions-last-7-days', async (req, res) => {
+    try {
+      // Get the current date
+      const currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0);
+  
+      // Calculate the date 7 days ago
+      const sevenDaysAgo = new Date(currentDate);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  
+      // Aggregate transactions by day
+      const transactionsByDay = await Transaction.aggregate([
+        {
+          $match: {
+            timestamp: {
+              $gte: sevenDaysAgo,
+              $lt: currentDate,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: '$timestamp',
+              },
+            },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+  
+      res.json(transactionsByDay);
+    } catch (error) {
+      res.status(500).json({ message: 'Error retrieving transactions for the last 7 days.' });
+      console.log(error);
+    }
+  });
+  
 
 module.exports = router;
