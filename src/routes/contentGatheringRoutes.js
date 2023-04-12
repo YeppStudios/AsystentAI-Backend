@@ -18,7 +18,7 @@ router.post('/addContent', requireAuth, async (req, res) => {
     }
 });
 
-router.patch('/updateContent/:id', requireAdmin, async (req, res) => {
+router.patch('/updateContent/:id', requireAuth, async (req, res) => {
     const userId = req.user._id;
     const { text, prompt, title } = req.body;
     const updateFields = {};
