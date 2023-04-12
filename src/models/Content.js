@@ -20,6 +20,10 @@ const ContentSchema = new mongoose.Schema({
     savedBy: {
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'User' 
+    },
+    title: {
+        type: String,
+        default: "Nowa treść"
     }
 });
 
