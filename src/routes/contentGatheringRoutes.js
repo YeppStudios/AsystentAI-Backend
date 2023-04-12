@@ -4,6 +4,7 @@ const router = express.Router();
 const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');
 const Content = mongoose.model('Content');
+const moment = require('moment');
 
 router.post('/addContent', requireAuth, async (req, res) => {
     const { text, prompt, category, savedBy } = req.body;
@@ -72,10 +73,32 @@ router.get('/getSavedContent', requireAdmin, async (req, res) => {
     }
   });
   
-  router.get('/getSavedContent/:userId', requireAuth, async (req, res) => {
+  router.get('/getUserSavedContent', requireAuth, async (req, res) => {
     try {
-      const contents = await Content.find({ savedBy: req.user._id });
-      res.status(200).json(contents);
+      const contents = await Content.find({ savedBy: req.user._id })
+        .sort({ timestamp: -1 }) // Sort contents by timestamp in descending order (newest to oldest)
+        .populate('savedBy', 'email') // Populate email from User model
+        .lean(); // Convert Mongoose documents to plain JavaScript objects
+  
+      const contentsWithCustomTimestamp = contents.map((content) => {
+        // Calculate time difference in days
+        const daysAgo = moment().diff(moment(content.timestamp), 'days');
+  
+        // Format timestamp based on daysAgo
+        const customTimestamp = daysAgo === 0
+          ? 'Dzisiaj'
+          : daysAgo === 1
+            ? '1 Dzień temu'
+            : `${daysAgo} dni temu`;
+  
+        return {
+          ...content,
+          timestamp: customTimestamp,
+          savedBy: content.savedBy.email, // Replace savedBy with the email
+        };
+      });
+  
+      res.status(200).json(contentsWithCustomTimestamp);
     } catch (error) {
       res.status(400).json({ message: error.message });
     }

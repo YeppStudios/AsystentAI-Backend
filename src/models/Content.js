@@ -24,6 +24,26 @@ const ContentSchema = new mongoose.Schema({
     title: {
         type: String,
         default: "Nowa treść"
+    },
+    contentType: {
+        type: String,
+        enum: [
+            "Facebook-post",
+            "Instagram-post",
+            "text-editor",
+            "article-section",
+            "email",
+            "article-conspect",
+            "Twitter-post",
+            "Linkedin-post",
+            "google-ads",
+            "newsletter",
+            "newsletter-conspect",
+            "amazon",
+            "allegro",
+            "document"
+        ],
+        default: "document" // Set a default value if needed
     }
 });
 
