@@ -10,6 +10,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const mailchimp = require('@mailchimp/mailchimp_marketing');
+const crypto = require('crypto');
 
 mailchimp.setConfig({
   apiKey: process.env.MAILCHIMP_API_KEY,
@@ -29,6 +30,8 @@ router.post('/register', async (req, res) => {
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
       return res.status(200).json({ token, user });
     }
+    const verificationCode = crypto.randomBytes(6).toString('hex');
+    newUser.verificationCode = verificationCode;
 
     try {
       await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
@@ -87,7 +90,9 @@ router.post('/register-free-trial', async (req, res) => {
       if(isCompany){
         accountType = 'company';
       }
-
+      const verificationCode = crypto.randomBytes(6).toString('hex');
+      newUser.verificationCode = verificationCode;
+      
       try {
         await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
           email_address: email,
@@ -177,7 +182,7 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'User not found' });
-
+    if (user.isBlocked) return res.status(400).json({ message: 'User is blocked' });
     await user.comparePassword(password);
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
