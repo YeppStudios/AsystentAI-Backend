@@ -30,7 +30,10 @@ const BalanceSnapshotSchema = new mongoose.Schema({
 });
 
 const UserSchema = new mongoose.Schema({
-    name: String,
+    name: {
+        type: String,
+        required: true,
+    },
     fullName: { 
         type: String, 
         default: ""
@@ -38,7 +41,7 @@ const UserSchema = new mongoose.Schema({
     email: { 
         type: String, 
         unique: true,
-        require:true
+        required:true
     },
     contactEmail: {
         type: String, 

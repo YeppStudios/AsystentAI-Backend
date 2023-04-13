@@ -10,12 +10,22 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const mailchimp = require('@mailchimp/mailchimp_marketing');
-const crypto = require('crypto');
-
 mailchimp.setConfig({
   apiKey: process.env.MAILCHIMP_API_KEY,
   server: process.env.MAILCHIMP_SERVER_PREFIX,
 });
+
+function generateVerificationCode(length) {
+  const characters = '0123456789';
+  let result = '';
+
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    result += characters[randomIndex];
+  }
+
+  return result;
+}
 
 router.post('/register', async (req, res) => {
   try {
@@ -28,8 +38,18 @@ router.post('/register', async (req, res) => {
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
       return res.status(200).json({ token, user });
     }
-    const verificationCode = crypto.randomBytes(6).toString('hex');
-    
+    const verificationCode = generateVerificationCode(6);
+    try {
+      await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
+        email_address: email,
+        status: 'subscribed',
+        merge_fields: {
+          FNAME: name,
+      },
+      });
+    } catch (error) {
+      console.error('Failed to add user to Mailchimp audience:', error.message);
+    }
     // User doesn't exist, register them
     let accountType = 'individual';
     if (isCompany) {
@@ -64,7 +84,7 @@ router.post('/register-free-trial', async (req, res) => {
       if(isCompany){
         accountType = 'company';
       }
-      const verificationCode = crypto.randomBytes(6).toString('hex');
+      const verificationCode = generateVerificationCode(6);
 
       const newUser = new User({
           email,
@@ -86,7 +106,7 @@ router.post('/register-free-trial', async (req, res) => {
 
       await newUser.save();
 
-      return res.status(201).json({ newUser });
+      return res.status(201).json({ newUser, verificationCode });
   } catch (error) {
       return res.status(500).json({ message: error.message });
   }
@@ -115,8 +135,8 @@ router.post('/verify-email', async (req, res) => {
       }
       user.isBlocked = false;
       await user.save();
-      const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      res.status(200).json({ token });
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      res.status(200).json({ newUser: user, token });
     } else {
       res.status(400).json({ message: 'Invalid verification code' });
     }
