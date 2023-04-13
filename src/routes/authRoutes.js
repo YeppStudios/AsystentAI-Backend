@@ -17,8 +17,6 @@ mailchimp.setConfig({
   server: process.env.MAILCHIMP_SERVER_PREFIX,
 });
 
-const whitelistedEmails = ["karolina.wojciechowska@sprawnymarketing.pl", "leszek.lewandowicz@sprawnymarketing.pl", "anna.kolodziej@sprawnymarketing.pl", "jacek.adamczak@sprawnymarketing.pl", "wojciech.markowski@sprawnymarketing.pl", "katarzyna.granops.szkoda@sprawnymarketing.pl", "piotrg2003@gmail.com"];
-
 router.post('/register', async (req, res) => {
   try {
     const { email, password, name, isCompany } = req.body;
@@ -31,19 +29,6 @@ router.post('/register', async (req, res) => {
       return res.status(200).json({ token, user });
     }
     const verificationCode = crypto.randomBytes(6).toString('hex');
-    newUser.verificationCode = verificationCode;
-
-    try {
-      await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
-        email_address: email,
-        status: 'subscribed',
-        merge_fields: {
-          FNAME: name,
-      },
-      });
-    } catch (error) {
-      console.error('Failed to add user to Mailchimp audience:', error.message);
-    }
     
     // User doesn't exist, register them
     let accountType = 'individual';
@@ -56,20 +41,9 @@ router.post('/register', async (req, res) => {
       password,
       name,
       accountType,
+      verificationCode,
+      isBlocked: false
     });
-
-    let transaction;
-    if(whitelistedEmails.includes(newUser.email)){
-      transaction = new Transaction({
-        value: 500000,
-        title: "+500k na start ;)",
-        type: "income",
-        timestamp: Date.now()
-      });
-      newUser.tokenBalance += 500000;
-      newUser.transactions.push(transaction);
-      await transaction.save();
-    }
 
     await newUser.save();
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -91,8 +65,43 @@ router.post('/register-free-trial', async (req, res) => {
         accountType = 'company';
       }
       const verificationCode = crypto.randomBytes(6).toString('hex');
-      newUser.verificationCode = verificationCode;
-      
+
+      const newUser = new User({
+          email,
+          password,
+          name,
+          accountType: accountType,
+          referredBy: referrerId,
+          verificationCode
+      });
+      let transaction = new Transaction({
+          value: 10000,
+          title: "+10 000 elixiru na start",
+          type: "income",
+          timestamp: Date.now()
+      });
+      newUser.tokenBalance += 10000;
+      newUser.transactions.push(transaction);
+      await transaction.save();
+
+      await newUser.save();
+
+      return res.status(201).json({ newUser });
+  } catch (error) {
+      return res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/verify-email', async (req, res) => {
+  try {
+    const { email, code, name } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.verificationCode === code) {
       try {
         await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
           email_address: email,
@@ -102,44 +111,17 @@ router.post('/register-free-trial', async (req, res) => {
         },
         });
       } catch (error) {
-        console.error('Failed to add user to Mailchimp audience:', error);
+        console.error('Failed to add user to Mailchimp audience:', error.message);
       }
-      
-      const newUser = new User({
-          email,
-          password,
-          name,
-          accountType: accountType,
-          referredBy: referrerId
-      });
-      let transaction;
-      if(whitelistedEmails.includes(newUser.email)){
-        transaction = new Transaction({
-          value: 500000,
-          title: "+500k na start ;)",
-          type: "income",
-          timestamp: Date.now()
-        });
-        newUser.tokenBalance += 500000;
-        newUser.transactions.push(transaction);
-        await transaction.save();
-      } else {
-        transaction = new Transaction({
-          value: 10000,
-          title: "+10 000 elixiru na start",
-          type: "income",
-          timestamp: Date.now()
-      });
-      newUser.tokenBalance += 10000;
-      newUser.transactions.push(transaction);
-      await transaction.save();
-      }
-
-      await newUser.save();
+      user.isBlocked = false;
+      await user.save();
       const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      return res.status(201).json({ token, newUser });
+      res.status(200).json({ token });
+    } else {
+      res.status(400).json({ message: 'Invalid verification code' });
+    }
   } catch (error) {
-      return res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
