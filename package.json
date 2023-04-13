@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "dev": "nodemon app.js",
-    "start": "node app.js"
+    "start": "node app.js",
+    "update": "node verification.js"
   },
   "dependencies": {
     "@dqbd/tiktoken": "^1.0.2",
