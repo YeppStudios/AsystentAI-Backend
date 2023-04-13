@@ -103,7 +103,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
                     });
             
                     await user.save();
-                    if(user.email != "gerke.contact@gmail.com"){
+                    if(user.email != "gerke.contact@gmail.com" && user.email != "piotrg2003@gmail.com"){
                       await transaction.save();
                     }
                     res.end();
@@ -195,7 +195,7 @@ router.post('/messageAI', requireTokens, async (req, res) => {
                       user: user._id
                     });
                     await user.save();
-                    if(user.email != "gerke.contact@gmail.com"){
+                    if(user.email != "gerke.contact@gmail.com" && user.email != "piotrg2003@gmail.com"){
                       await transaction.save();
                     }
                     res.end();
@@ -296,7 +296,7 @@ router.post('/compose-editor-completion', requireTokens, async (req, res) => {
                   });
           
                   await user.save();
-                  if(user.email != "gerke.contact@gmail.com"){
+                  if(user.email != "gerke.contact@gmail.com" && user.email != "piotrg2003@gmail.com"){
                     await transaction.save();
                   }
                   res.end();

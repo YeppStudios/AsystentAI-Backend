@@ -128,7 +128,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                     await user.save();
                     await userMessage.save();
                     await assistantResponse.save();
-                    if(user.email != "gerke.contact@gmail.com"){
+                    if(user.email != "gerke.contact@gmail.com" && user.email != "piotrg2003@gmail.com"){
                         await transaction.save();
                       }
                     conversation.messages.push(userMessage);
