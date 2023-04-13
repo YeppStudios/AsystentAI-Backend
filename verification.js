@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const User = require('./src/models/User'); // Adjust the path to your User model
+const User = require('./src/models/User');
 
 mongoose.connect('mongodb+srv://App:Asystent*AI2023@mainasystentdb.rbtvr.mongodb.net/?retryWrites=true&w=majority', { // Replace with your database connection string
   useNewUrlParser: true,
