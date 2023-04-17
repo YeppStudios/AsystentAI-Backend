@@ -95,12 +95,12 @@ router.post('/register-free-trial', async (req, res) => {
           verificationCode
       });
       let transaction = new Transaction({
-          value: 10000,
-          title: "+10 000 elixiru na start",
+          value: 2500,
+          title: "+2500 elixiru na start",
           type: "income",
           timestamp: Date.now()
       });
-      newUser.tokenBalance += 10000;
+      newUser.tokenBalance += 2500;
       newUser.transactions.push(transaction);
       await transaction.save();
 
