@@ -72,11 +72,11 @@ const UserSchema = new mongoose.Schema({
     accountType: {
         type: String,
         required: true,
-        enum: ['company', 'individual']
+        enum: ['company', 'individual', 'employee']
     },
-    company: {
+    workspace:{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Company'
+        ref: 'Workspace'
     },
     createdAt: {
         type: Date,

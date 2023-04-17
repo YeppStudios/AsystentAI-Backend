@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const express = require('express');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
-const Whitelist = mongoose.model('Whitelist');
+const Workspace = mongoose.model('Workspace');
 const Transaction = mongoose.model('Transaction');
 const requireAuth = require('../middlewares/requireAuth');
 require('dotenv').config();
@@ -111,6 +111,38 @@ router.post('/register-free-trial', async (req, res) => {
       return res.status(500).json({ message: error.message });
   }
 });
+
+router.post('/register-to-workspace', async (req, res) => {
+  try {
+      const { email, code, password, name } = req.body;
+
+      let employee = "";
+
+      const workspace = await Workspace.findOne({ 'invitations.email': email, 'invitations.code': code });
+      if (!workspace) {
+          return res.status(404).json({ error: 'Invalid invitation code' });
+      }
+      
+      const user = await User.findOne({ email });
+      if (!user) {
+        employee = await User.create({ email, password, name, accountType: 'individual', workspace: workspace._id });
+      } else {
+        employee = user;
+        user.workspace = workspace._id;
+        await user.save();
+      }
+
+      workspace.employees.push({ user: employee._id, role: invitation.role });
+      workspace.invitations = workspace.invitations.filter(i => i.code !== code);
+      await workspace.save();
+      const token = jwt.sign({ userId: employee._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      res.status(200).json({ token });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to register employee' });
+  }
+});
+
 
 router.post('/verify-email', async (req, res) => {
   try {

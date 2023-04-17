@@ -8,6 +8,7 @@ require('./src/models/Whitelist');
 require('./src/models/Profile');
 require('./src/models/Prompt');
 require('./src/models/Content');
+require('./src/models/Workspace');
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser =  require('body-parser');
@@ -33,7 +34,13 @@ const app = express();
 app.set('port', (process.env.PORT || 3004));
 
 app.use(express.static('public'));
-app.use(cors());
+
+const corsOptions = {
+  origin: 'https://asystent.ai'
+};
+
+app.use(cors(corsOptions));
+
 app.use(bodyParser.json({
     verify: (req, res, buf) => {
       req.rawBody = buf
