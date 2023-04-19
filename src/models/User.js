@@ -110,6 +110,10 @@ const UserSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    registeredByReferral: {
+        type: Number,
+        default: 0
+    },
     elixirAware: {
         type: Boolean,
         default: false

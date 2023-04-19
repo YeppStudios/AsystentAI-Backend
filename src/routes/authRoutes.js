@@ -79,6 +79,17 @@ router.post('/register-free-trial', async (req, res) => {
       const { email, password, name, isCompany, referrerId } = req.body;
       const user = await User.findOne({ email });
       if (user) return res.status(400).json({ message: 'User already exists' });
+
+      if(referrerId){
+        try {
+          const referringUser = await User.findById(referrerId);
+          if(referringUser) {
+            referringUser.registeredByReferral += 1;
+            await referringUser.save();
+          }
+        } catch (e) {
+        }
+      }
       
       let accountType = 'individual';
       if(isCompany){
@@ -100,10 +111,10 @@ router.post('/register-free-trial', async (req, res) => {
           type: "income",
           timestamp: Date.now()
       });
+
       newUser.tokenBalance += 2500;
       newUser.transactions.push(transaction);
       await transaction.save();
-
       await newUser.save();
 
       return res.status(201).json({ newUser, verificationCode });
