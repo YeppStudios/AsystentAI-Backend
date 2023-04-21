@@ -23,7 +23,7 @@ const infaktConfig = {
 const router = express.Router();
 
 router.post('/create-checkout-session', async (req, res) => {
-  const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId, referrerId, isTrial, asCompany } = req.body;
+  const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId, referrerId, isTrial, asCompany, invoiceTitle } = req.body;
   try {
     let customer;
     try {
@@ -63,7 +63,7 @@ router.post('/create-checkout-session', async (req, res) => {
               plan_id: `${planId}`, //plan id
               referrer_id: `${referrerId}`,
               trial: true,
-              asCompany: asCompany
+              asCompany: asCompany,
             },
             mode: `${mode}`,
             subscription_data: {
@@ -90,10 +90,11 @@ router.post('/create-checkout-session', async (req, res) => {
         ],
         metadata: {
           tokens_to_add: `${tokensAmount}`,
-          plan_id: `${planId}`, //plan id
+          plan_id: `${planId}`,
           referrer_id: `${referrerId}`,
           trial: false,
-          asCompany: asCompany
+          asCompany: asCompany,
+          invoiceTitle: invoiceTitle
         },
         mode: `${mode}`,
         success_url: `${successURL}`,
@@ -167,101 +168,59 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                   type: 'income',
                   timestamp: Date.now()
               });
+              const balanceSnapshot = {
+                timestamp: Date.now(),
+                balance: user.tokenBalance
+              };
+              user.tokenHistory.push(balanceSnapshot);
               user.transactions.push(transaction);
+              await transaction.save();
+              await purchase.save();
 
               //checking if transaction was referred
               if (transactionData.metadata.referrer_id) {
               try {
                 const referrer = await User.findOne({ _id: transactionData.metadata.referrer_id });
                 if(referrer){
-                user.tokenBalance += 30000;
-                referrer.tokenBalance += 30000;
-    
-                const referralTransaction = new Transaction({
-                    value: 30000,
-                    title: "30 000 elixiru w prezencie za polecenie",
-                    type: "income",
-                    timestamp: Date.now()
-                });
+                  user.tokenBalance += 30000;
+                  referrer.tokenBalance += 30000;
+      
+                  const referralTransaction = new Transaction({
+                      value: 30000,
+                      title: "30 000 elixiru w prezencie za polecenie",
+                      type: "income",
+                      timestamp: Date.now()
+                  });
 
-                user.transactions.push(referralTransaction);
-                referrer.transactions.push(referralTransaction);
-    
-                const referrerBalanceSnapshot = {
-                  timestamp: new Date(),
-                  balance: referrer.tokenBalance
-                };
-                referrer.tokenHistory.push(referrerBalanceSnapshot);
-    
-                User.findOneAndUpdate(
-                  { _id: transactionData.metadata.referrer_id },
-                  { $inc: { "referralCount": 1 } },
-                  { upsert: true },
-                  function(err, user) {
-                    if (err) throw err;
-                  }
-                );
-                await referrer.save();
-                await referralTransaction.save();
-              }
-            } catch (e) {
-              console.log(e)
-            }
-            }
-
-            //generate invoices only if it's not trial  and it was a company
-            if(transactionData.metadata.trial === "false"){
-              if(user.accountType === "company" && transactionData.metadata.asCompany === "true"){
-                 //check if client is in infakt if not then create new one
-                let infaktClientsResponse = await axios.get(`https://api.infakt.pl/v3/clients.json?q[email_eq]=${user.contactEmail}`, infaktConfig);
-                let infaktClients = infaktClientsResponse.data;
-                if (infaktClients.length > 0) {
-                  infaktClientId = infaktClients[0].id;
-                } else {
-                  createInfaktClient = await axios.post('https://api.infakt.pl/v3/clients.json', {
-                    client: {
-                      "name": user.fullName,
-                      "email": user.email,
-                      "company_name": user.companyName,
-                      "street": user.street,
-                      "street_number": user.streetNumber,
-                      "flat_number": user.apartmentNumber,
-                      "city": user.city,
-                      "country": "Polska",
-                      "postal_code": user.postalCode,
-                      "nip": user.nip,
-                      "mailing_company_mail": user.contactEmail
+                  user.transactions.push(referralTransaction);
+                  referrer.transactions.push(referralTransaction);
+      
+                  const referrerBalanceSnapshot = {
+                    timestamp: new Date(),
+                    balance: referrer.tokenBalance
+                  };
+                  referrer.tokenHistory.push(referrerBalanceSnapshot);
+      
+                  User.findOneAndUpdate(
+                    { _id: transactionData.metadata.referrer_id },
+                    { $inc: { "referralCount": 1 } },
+                    { upsert: true },
+                    function(err, user) {
+                      if (err) throw err;
                     }
-                  }, infaktConfig);
-                  infaktClientId = createInfaktClient.data.id;
+                  );
+                  await referrer.save();
+                  await referralTransaction.save();
                 }
-                invoiceData = { //for companies
-                  invoice: {
-                    "client_company_name": user.companyName, 
-                    "invoice_date": `${year}-${month}-${day}`,
-                    "sale_date": `${year}-${month}-${day}`,
-                    "status": "paid",
-                    "paid_date": `${year}-${month}-${day}`,
-                    "payment_method": "card",
-                    "client_id": infaktClientId,
-                    "paid_price": plan.price * 100, 
-                    "services":[
-                      {
-                        "name": `Miesięczna Subskrypcja Oprogramowania Aplikacji AsystentAI (Pakiet ${plan.name})`, 
-                         "pkwiu": "62.01", 
-                         "tax_symbol": 23,
-                         "gross_price": plan.price * 100, 
-                      }
-                    ]
-                  },
-                };
+              } catch (e) {
+                console.log(e)
               }
             }
             } catch (err) {
               console.log(err)
             }
 
-          } else { //one-time purchase
+          } else if (transactionData.metadata.tokens_to_add !== "undefined") { //one-time elixir purchase
             const tokensToAdd = parseInt(transactionData.metadata.tokens_to_add);
             user.tokenBalance += tokensToAdd;
 
@@ -282,68 +241,70 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                 type: 'income',
                 timestamp: Date.now()
             });
-            user.transactions.push(transaction);
-
-          //generate infakt invoice object
-          if(user.accountType === "company" && transactionData.metadata.asCompany === "true"){
-            //check if client is in infakt if not then create new one
-            let infaktClientsResponse = await axios.get(`https://api.infakt.pl/v3/clients.json?q[email_eq]=${user.contactEmail}`, infaktConfig);
-            let infaktClients = infaktClientsResponse.data;
-            if (infaktClients.length > 0) {
-              infaktClientId = infaktClients[0].id;
-            } else {
-              createInfaktClient = await axios.post('https://api.infakt.pl/v3/clients.json', {
-                client: {
-                  "name": user.fullName,
-                  "email": user.email,
-                  "company_name": user.companyName,
-                  "street": user.street,
-                  "street_number": user.streetNumber,
-                  "flat_number": user.apartmentNumber,
-                  "city": user.city,
-                  "country": "Polska",
-                  "postal_code": user.postalCode,
-                  "nip": user.nip,
-                  "mailing_company_mail": user.contactEmail
-                }
-              }, infaktConfig);
-               infaktClientId = createInfaktClient.data.id;
-            }            
-            invoiceData = {
-              invoice: {
-                "client_company_name": user.companyName, 
-                "invoice_date": `${year}-${month}-${day}`,
-                "sale_date": `${year}-${month}-${day}`,
-                "status": "paid",
-                "paid_date": `${year}-${month}-${day}`,
-                "payment_method": "card",
-                "client_id": infaktClientId,
-                "paid_price": transactionData.amount_total, 
-                "services":[
-                  {
-                     "name": `Jednorazowe doładowanie miesięcznej Subskrypcji - "Elixir ${tokensToAdd}ml`, 
-                     "pkwiu": "62.01", 
-                     "tax_symbol": 23,
-                     "gross_price": transactionData.amount_total, 
-                  }
-                ]
-              },
-            };
-          }
-          }
-          // Create a new balance snapshot and add it to the user's tokenHistory
-          const balanceSnapshot = {
+            const balanceSnapshot = {
               timestamp: Date.now(),
               balance: user.tokenBalance
           };
           user.tokenHistory.push(balanceSnapshot);
+            user.transactions.push(transaction);
+            await transaction.save();
+            await purchase.save();
+          }
 
           // Save the user and send invoice
           try {
             await user.save();
-            await transaction.save();
-            await purchase.save();
+            
             if (transactionData.metadata.trial === "false" && user.accountType === "company" && transactionData.metadata.asCompany === "true") {
+              if(user.accountType === "company" && transactionData.metadata.asCompany === "true"){
+              //check if client is in infakt if not then create new one
+                try {
+                  let infaktClientsResponse = await axios.get(`https://api.infakt.pl/v3/clients.json?q[email_eq]=${user.contactEmail}`, infaktConfig);
+                  let infaktClients = infaktClientsResponse.data;
+                  if (infaktClients.length > 0) {
+                    infaktClientId = infaktClients[0].id;
+                  } else {
+                    let createdInfaktClient = await axios.post('https://api.infakt.pl/v3/clients.json', {
+                      client: {
+                        "name": user.fullName,
+                        "email": user.email,
+                        "company_name": user.companyName,
+                        "street": user.street,
+                        "street_number": user.streetNumber,
+                        "flat_number": user.apartmentNumber,
+                        "city": user.city,
+                        "country": "Polska",
+                        "postal_code": user.postalCode,
+                        "nip": user.nip,
+                        "mailing_company_mail": user.contactEmail
+                      }
+                    }, infaktConfig);
+                    infaktClientId = createdInfaktClient.data.id;
+                  }            
+                  invoiceData = {
+                    invoice: {
+                      "client_company_name": user.companyName, 
+                      "invoice_date": `${year}-${month}-${day}`,
+                      "sale_date": `${year}-${month}-${day}`,
+                      "status": "paid",
+                      "paid_date": `${year}-${month}-${day}`,
+                      "payment_method": "card",
+                      "client_id": infaktClientId,
+                      "paid_price": transactionData.amount_total, 
+                      "services":[
+                        {
+                          "name": `${transactionData.metadata.invoiceTitle}`, 
+                          "pkwiu": "62.01", 
+                          "tax_symbol": 23,
+                          "gross_price": transactionData.amount_total, 
+                        }
+                      ]
+                    },
+                  };
+                } catch (e) {
+                  console.log(e);
+                }
+              }
               await axios.post('https://api.infakt.pl/v3/invoices.json', invoiceData, infaktConfig);
               await new Promise(resolve => setTimeout(resolve, 2500));
               const latestInvoice = await axios.get('https://api.infakt.pl/v3/invoices.json?limit=1', infaktConfig);
@@ -352,7 +313,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/deliver_via_email.json`, {"print_type": "original"}, infaktConfig);
             }
           } catch (error) {
-            console.error(`Error: ${JSON.stringify(error.response.data)}`);
+            console.error(error);
           }
         }
       });
