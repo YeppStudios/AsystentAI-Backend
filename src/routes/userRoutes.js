@@ -44,7 +44,7 @@ router.patch('/updateUser/:id', requireAdmin, async (req, res) => {
     }
 });
 
-router.patch('/unblockUser/:userId', async (req, res) => {
+router.patch('/unblockUser/:userId', requireAdmin, async (req, res) => {
   try {
     const { userId } = req.params;
 

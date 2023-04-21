@@ -188,6 +188,29 @@ router.post('/verify-email', async (req, res) => {
   }
 });
 
+router.post('/save-contact', async (req, res) => {
+  try {
+    const { email, name, companyName, phone, spots } = req.body;
+      try {
+        await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
+          email_address: email,
+          status: 'subscribed',
+          merge_fields: {
+            FNAME: name,
+            COMPANY: companyName,
+            PHONE: phone,
+            SPOTS: spots
+          },
+        });
+      } catch (error) {
+        console.error('Failed to add user to Mailchimp audience:', error.message);
+      }
+      res.status(200).json({ message: 'Success' });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 
 //login only for whitelisted and with stripe plans
 // router.post('/login', async (req, res) => {
