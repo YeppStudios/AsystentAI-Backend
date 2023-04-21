@@ -190,7 +190,7 @@ router.post('/verify-email', async (req, res) => {
 
 router.post('/save-contact', async (req, res) => {
   try {
-    const { email, name, companyName, phone, spots } = req.body;
+    const { email, name, companyName, phone, spots, preorder } = req.body;
       try {
         await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
           email_address: email,
@@ -199,7 +199,8 @@ router.post('/save-contact', async (req, res) => {
             FNAME: name,
             COMPANY: companyName,
             PHONE: phone,
-            SPOTS: spots
+            SPOTS: spots,
+            PRO: preorder
           },
         });
       } catch (error) {
