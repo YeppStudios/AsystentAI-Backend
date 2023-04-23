@@ -9,7 +9,7 @@ require('./src/models/Profile');
 require('./src/models/Prompt');
 require('./src/models/Content');
 require('./src/models/Workspace');
-require('./src/models/Reservation');
+require('./src/models/ConferenceReservation');
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser =  require('body-parser');
