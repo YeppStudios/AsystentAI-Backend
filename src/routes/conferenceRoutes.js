@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const Reservation = mongoose.model('Reservation');
 
 
-router.post('/reservations', async (req, res) => {
+router.post('/addReservation', async (req, res) => {
     try {
       const { fullName, spots, companyName, email, phone } = req.body;
   
