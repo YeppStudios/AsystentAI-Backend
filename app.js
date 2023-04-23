@@ -26,7 +26,7 @@ const contentGatheringRoutes =  require('./src/routes/contentGatheringRoutes');
 const userRoutes =  require('./src/routes/userRoutes');
 const profileRoutes =  require('./src/routes/profileRoutes');
 const promptRoutes =  require('./src/routes/promptRoutes');
-const reservationRoutes =  require('./src/routes/reservationRoutes');
+const conferenceRoutes =  require('./src/routes/conferenceRoutes');
 // const job = require('./src/cron');
 const cors = require('cors');
 require('dotenv').config()
@@ -55,7 +55,7 @@ app.use(whitelistRoutes);
 app.use(profileRoutes);
 app.use(promptRoutes);
 app.use(contentGatheringRoutes);
-app.use(reservationRoutes);
+app.use(conferenceRoutes);
 
 const mongoUri = process.env.MONGO_URI;
 mongoose.connect(mongoUri);
