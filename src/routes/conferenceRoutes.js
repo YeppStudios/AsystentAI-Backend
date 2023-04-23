@@ -22,4 +22,12 @@ router.post('/addReservation', async (req, res) => {
     }
   });
   
+  router.get('/reservations', async (req, res) => {
+    try {
+      const reservations = await Reservation.find();
+      res.json(reservations);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 module.exports = router;
