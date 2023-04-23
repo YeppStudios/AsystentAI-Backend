@@ -32,8 +32,8 @@ router.get('/getPlan/:id', async (req, res) => {
 
 router.post('/createPlan', requireAdmin, async (req, res) => {
     try {
-        const { name, type, tokenPrice, monthlyTokens, price, accountLimit } = req.body;
-        const plan = new Plan({ name, type, tokenPrice, monthlyTokens, price, accountLimit });
+        const { name, monthlyTokens, price, maxProfiles } = req.body;
+        const plan = new Plan({ name, monthlyTokens, price, maxProfiles });
 
         await plan.save();
         res.status(201).json(plan);
