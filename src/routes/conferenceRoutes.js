@@ -30,4 +30,18 @@ router.post('/addReservation', async (req, res) => {
       res.status(500).json({ error: err.message });
     }
   });
+
+  router.get('/sumSpots', async (req, res) => {
+    try {
+      const reservations = await Reservation.find();
+      let totalSpots = 0;
+      reservations.forEach(reservation => {
+        totalSpots += parseInt(reservation.spots);
+      });
+      res.send({ totalSpots });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('Server Error');
+    }
+  });
 module.exports = router;

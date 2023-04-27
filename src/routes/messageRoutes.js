@@ -42,39 +42,19 @@ router.post('/send',async (req, res) => {
 
 router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
     try {
-        const { text } = req.body;
+        const { text, system, context } = req.body;
         const user = req.user;
         let inputTokens = 0;
         let outputTokens = 0;
         let response = '';
-        const chunks = await axios.post(
-            "http://0.0.0.0:8000/query",
-            {
-              "queries": [
-                {
-                  "query": text,
-                  "filter": {
-                    "document_id": [
-                      "77a08c2f-7e54-4559-a7d9-a8d10867c4fa"
-                    ]
-                  },
-                  "top_k": 3
-                }
-              ]
-            },
-            {
-              headers: {
-                authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFzeXN0ZW50IEFJIiwiaWF0IjoxNTE2MjM5MDIyfQ.Sv6VfOqzuQxjILbLdKXzh1y9HhvdBHGyApkcWaNM8r4"
-              }
-            }
-          );          
-
-        let context = "";
-        chunks.data.results[0].results.forEach((item) => {
-          context += item.text + " ";
-        });
-        
-        console.log(context);
+        let systemPrompt = "Jesteś pomocnym asystentem.";
+        let embeddingContext = "";
+        if (system) {
+          systemPrompt = system;
+        }
+        if (context) {
+          embeddingContext = `Kontekst: ${context}. Teraz na podstawie kontekstu odpowiedz na: `;
+        }
         const conversation = await Conversation.findById(req.params.conversationId)
             .populate({
                 path: 'messages',
@@ -91,14 +71,13 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         if (conversation.user._id.toString() !== user._id.toString()) {
             return res.status(401).json({ message: 'Not authorized' });
         }
-
         const latestMessages = conversation.messages.slice(-4);
-        const messages = [  { role: "system", content: "Jesteś pomocnym asystentem." },  ...latestMessages.map((message) => {    
+        const messages = [  { role: "system", content: systemPrompt },  ...latestMessages.map((message) => {    
             return {role: message.sender,  content: message.text};
-        }), { role: "user", content: `context: ${context}. now based on context reply to: ${text}` },];
+        }), { role: "user", content: `${embeddingContext} ${text}`},];
         console.log(messages);
         const completion = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo",
+            model: "gpt-4",
             messages,
             temperature: 0.8,
             frequency_penalty: 0.35,
@@ -172,6 +151,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
               }
             }
           });
+
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: error.message });

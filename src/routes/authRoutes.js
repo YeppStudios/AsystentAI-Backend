@@ -123,6 +123,45 @@ router.post('/register-free-trial', async (req, res) => {
   }
 });
 
+router.post('/register-no-password', async (req, res) => {
+  try {
+      const { email, name, isCompany } = req.body;
+      const user = await User.findOne({ email });
+      if (user) return res.status(400).json({ message: 'User already exists' });
+      
+      let accountType = 'individual';
+      if(isCompany){
+        accountType = 'company';
+      }
+      const verificationCode = generateVerificationCode(6);
+
+      const newUser = new User({
+          email,
+          password: verificationCode,
+          name,
+          accountType: accountType,
+          verificationCode,
+          isBlocked: false
+      });
+      let transaction = new Transaction({
+          value: 2500,
+          title: "+2500 elixiru na start",
+          type: "income",
+          timestamp: Date.now()
+      });
+
+      newUser.tokenBalance += 5000;
+      newUser.transactions.push(transaction);
+      await transaction.save();
+      await newUser.save();
+
+      const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      return res.status(201).json({ token, user: newUser });
+  } catch (error) {
+      return res.status(500).json({ message: error.message });
+  }
+});
+
 router.post('/register-to-workspace', async (req, res) => {
   try {
       const { email, code, password, name } = req.body;

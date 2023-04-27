@@ -16,6 +16,7 @@
     "body-parser": "^1.20.1",
     "bull": "^4.10.4",
     "chai-http": "^4.3.0",
+    "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
     "cron": "^2.2.0",
     "dotenv": "^16.0.3",
@@ -29,6 +30,7 @@
     "nodemon": "^2.0.20",
     "openai": "^3.2.0",
     "raw-body": "^2.5.1",
+    "request": "^2.88.2",
     "stripe": "^11.10.0"
   },
   "author": "Yepp",
