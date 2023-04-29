@@ -47,7 +47,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         let inputTokens = 0;
         let outputTokens = 0;
         let response = '';
-        let systemPrompt = "Jesteś pomocnym asystentem.";
+        let systemPrompt = "Jesteś pomocnym asystentem AI, który specjalizuje się w marketingu.";
         let embeddingContext = "";
         if (system) {
           systemPrompt = system;
