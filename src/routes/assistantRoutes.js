@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const requireAuth = require('../middlewares/requireAuth');
 
 const Assistant = mongoose.model('Assistant');
 
@@ -29,9 +30,8 @@ router.get('/get-assistants', (req, res) => {
 });
 
 // READ all assistants for owner by owner id
-router.get('/assistants/:userId', (req, res) => {
-    const userId = req.params.userId;
-    Assistant.find({ owner: userId })
+router.get('/getUserAssistants', requireAuth, (req, res) => {
+    Assistant.find({ owner: req.user._id })
       .populate('documents') // populate documents field with actual documents
       .then(assistants => {
         res.json(assistants);
