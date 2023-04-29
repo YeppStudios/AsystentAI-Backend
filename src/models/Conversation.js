@@ -5,6 +5,10 @@ const ConversationSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'User' 
     },
+    assistant: {
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Assistant' 
+    },
     startTime: { 
         type: Date, 
         default: Date.now 

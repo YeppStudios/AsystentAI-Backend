@@ -11,7 +11,7 @@ require('./src/models/Content');
 require('./src/models/Workspace');
 require('./src/models/Assistant');
 require('./src/models/Document');
-require('./src/models/ConferenceReservation');
+require('./src/models/Reservations');
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser =  require('body-parser');
@@ -30,7 +30,7 @@ const profileRoutes =  require('./src/routes/profileRoutes');
 const promptRoutes =  require('./src/routes/promptRoutes');
 const assistantRoutes =  require('./src/routes/assistantRoutes');
 const documentRoutes =  require('./src/routes/documentRoutes');
-const conferenceRoutes =  require('./src/routes/conferenceRoutes');
+const reservationsRoutes =  require('./src/routes/reservationsRoutes');
 // const job = require('./src/cron');
 const cors = require('cors');
 require('dotenv').config()
@@ -59,7 +59,7 @@ app.use(whitelistRoutes);
 app.use(profileRoutes);
 app.use(promptRoutes);
 app.use(contentGatheringRoutes);
-app.use(conferenceRoutes);
+app.use(reservationsRoutes);
 app.use(assistantRoutes);
 app.use(documentRoutes);
 

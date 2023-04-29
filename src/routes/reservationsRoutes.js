@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const Reservation = mongoose.model('Reservation');
-
+const Reservation = mongoose.model('ConferenceReservation');
+const BusinessReservation = mongoose.model('BusinessReservation');
 
 router.post('/addReservation', async (req, res) => {
     try {
@@ -44,4 +44,31 @@ router.post('/addReservation', async (req, res) => {
       res.status(500).send('Server Error');
     }
   });
+
+  router.post('/add-business-reservation', async (req, res) => {
+    try {
+      const reservation = new BusinessReservation({
+        company: req.body.company,
+        email: req.body.email,
+        website: req.body.website
+      });
+      await reservation.save();
+      res.status(201).json({ message: 'Reservation added successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+  
+  // Route for getting all reservations
+  router.get('/business-reservations', async (req, res) => {
+    try {
+      const reservations = await BusinessReservation.find();
+      res.status(200).json(reservations);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+  
 module.exports = router;

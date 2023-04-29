@@ -23,4 +23,22 @@ const ReservationSchema = new mongoose.Schema({
     }
 });
 
-mongoose.model('Reservation', ReservationSchema);
+mongoose.model('ConferenceReservation', ReservationSchema);
+
+
+const BusinessReservation = new mongoose.Schema({
+    company: {
+        type: String,
+        required: true
+    },
+    email: {
+        type: String,
+        required: true
+    },
+    website: {
+        type: String,
+        required: true
+    }
+});
+
+mongoose.model('BusinessReservation', BusinessReservation);

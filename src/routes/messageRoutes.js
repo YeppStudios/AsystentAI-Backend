@@ -72,10 +72,11 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
             return res.status(401).json({ message: 'Not authorized' });
         }
         const latestMessages = conversation.messages.slice(-4);
+        const messagesText = latestMessages.map((message) => message.text).join(" ");
         const messages = [  { role: "system", content: systemPrompt },  ...latestMessages.map((message) => {    
             return {role: message.sender,  content: message.text};
         }), { role: "user", content: `${embeddingContext} ${text}`},];
-        console.log(messages);
+
         const completion = await openai.createChatCompletion({
             model: "gpt-4",
             messages,
@@ -104,6 +105,9 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                   if(parsed.choices[0].finish_reason === "stop"){ //when generating response ends
                     res.write('\n\n');
                     outputTokens = estimateTokens(response);
+                    inputTokens += estimateTokens(messagesText);
+                    inputTokens += estimateTokens(systemPrompt);
+                    inputTokens += estimateTokens(embeddingContext);
                     const totalTokens = inputTokens + outputTokens;
                     user.tokenBalance -= totalTokens;
                     const transaction = new Transaction({
