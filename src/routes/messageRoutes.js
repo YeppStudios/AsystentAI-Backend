@@ -29,16 +29,6 @@ function estimateTokens(text) {
     return tokens;
 }
 
-router.post('/send',async (req, res) => {
-    const completion = await openai.createChatCompletion({
-        model: "gpt-3.5-turbo-0301",
-        messages: [  { role: 'system', content: 'Jesteś pomocnym asystentem.' },
-        { role: 'user', content: 'Cześć' }
-      ],
-      });
-      console.log(completion.data.choices[0].message);
-});
-
 
 router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
     try {

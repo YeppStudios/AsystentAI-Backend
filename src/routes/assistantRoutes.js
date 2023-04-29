@@ -28,6 +28,20 @@ router.get('/get-assistants', (req, res) => {
     });
 });
 
+// READ all assistants for owner by owner id
+router.get('/assistants/:userId', (req, res) => {
+    const userId = req.params.userId;
+    Assistant.find({ owner: userId })
+      .populate('documents') // populate documents field with actual documents
+      .then(assistants => {
+        res.json(assistants);
+      })
+      .catch(err => {
+        res.status(500).json({ error: err.message });
+      });
+  });
+  
+
 router.get('/get-assistant/:id', (req, res) => {
   Assistant.findById(req.params.id)
     .populate('documents') // populate documents field with actual documents
