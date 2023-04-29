@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const Reservation = mongoose.model('ConferenceReservation');
+const Reservation = mongoose.model('Reservation');
 const BusinessReservation = mongoose.model('BusinessReservation');
 
 router.post('/addReservation', async (req, res) => {

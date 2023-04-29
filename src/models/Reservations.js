@@ -23,7 +23,7 @@ const ReservationSchema = new mongoose.Schema({
     }
 });
 
-mongoose.model('ConferenceReservation', ReservationSchema);
+mongoose.model('Reservation', ReservationSchema);
 
 
 const BusinessReservation = new mongoose.Schema({
