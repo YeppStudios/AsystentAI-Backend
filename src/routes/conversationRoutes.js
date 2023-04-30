@@ -30,12 +30,11 @@ router.post('/createConversation', requireAuth, async (req, res) => {
     }
 });
 
-router.get('/getConversations', async (req, res) => {
-    try {
-      const conversations = await Conversation.find({})
-        .populate('assistant', '_id')
-        .lean();
+router.get('/getConversations', requireAuth, async (req, res) => {
+    const user = req.user;
   
+    try {
+      const conversations = await Conversation.find({ user: user._id }).sort({ lastUpdated: -1 }).lean();
       const conversationsWithCustomTimestamp = conversations.map((conversation) => {
         // Calculate time difference in days
         const daysAgo = moment().diff(moment(conversation.startTime), 'days');
@@ -44,7 +43,7 @@ router.get('/getConversations', async (req, res) => {
         const customTimestamp = daysAgo === 0
           ? 'Dzisiaj'
           : daysAgo === 1
-            ? '1 Dzień temu'
+            ? '1 dzień temu'
             : `${daysAgo} dni temu`;
   
         // Update the lastUpdated field with custom timestamp
@@ -53,11 +52,11 @@ router.get('/getConversations', async (req, res) => {
         return conversation;
       });
   
-      res.status(200).json({conversations: conversationsWithCustomTimestamp});
+      return res.json({ conversations: conversationsWithCustomTimestamp });
     } catch (error) {
-      res.status(400).json({ message: error.message });
+      return res.status(500).json({ message: error.message });
     }
-  });
+  });  
   
 
 router.get('/getLatestConversation', requireAuth, async (req, res) => {
