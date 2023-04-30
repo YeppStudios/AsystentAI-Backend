@@ -22,7 +22,7 @@ router.get('/get-assistants', (req, res) => {
   Assistant.find()
     .populate('documents') // populate documents field with actual documents
     .then(assistants => {
-      res.json(assistants);
+      return res.json(assistants);
     })
     .catch(err => {
       res.status(500).json({ error: err.message });
@@ -31,16 +31,18 @@ router.get('/get-assistants', (req, res) => {
 
 // READ all assistants for owner by owner id
 router.get('/getUserAssistants', requireAuth, (req, res) => {
+    console.log("getUserAssistants endpoint called"); // log the endpoint call
     Assistant.find({ owner: req.user._id })
       .populate('documents') // populate documents field with actual documents
       .then(assistants => {
-        res.json(assistants);
+        console.log("Assistant.find() returned: ", assistants); // log the results
+        return res.json({assistants: assistants});
       })
       .catch(err => {
-        res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: err.message });
       });
-  });
-  
+});
+
 
 router.get('/get-assistant/:id', (req, res) => {
   Assistant.findById(req.params.id)

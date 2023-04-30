@@ -6,10 +6,18 @@ const Conversation = mongoose.model('Conversation');
 
 router.post('/createConversation', requireAuth, async (req, res) => {
     const user = req.user;
-    try {       
+    const { assistantId } = req.body;
+    let id = "1";
+
+    if(assistantId) {
+        id = assistantId;
+    }
+
+    try {      
         const conversation = new Conversation({
             user,
-            startTime: Date.now()
+            startTime: Date.now(),
+            assistant: id
         });
         await conversation.save();
         return res.status(201).json({ conversation });
