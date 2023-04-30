@@ -30,7 +30,7 @@ router.post('/createConversation', requireAuth, async (req, res) => {
     }
 });
 
-router.get('/conversations', async (req, res) => {
+router.get('/getConversations', async (req, res) => {
     try {
       const conversations = await Conversation.find({})
         .populate('assistant', '_id')
