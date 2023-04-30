@@ -81,6 +81,7 @@ router.get('/getConversations', requireAuth, async (req, res) => {
       return res.status(500).json({ message: error.message });
     }
   });
+  
 router.get('/getLatestConversation', requireAuth, async (req, res) => {
     const user = req.user;
 
