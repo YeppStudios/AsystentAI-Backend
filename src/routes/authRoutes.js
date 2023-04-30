@@ -150,7 +150,7 @@ router.post('/register-no-password', async (req, res) => {
           timestamp: Date.now()
       });
 
-      newUser.tokenBalance += 5000;
+      newUser.tokenBalance += 2500;
       newUser.transactions.push(transaction);
       await transaction.save();
       await newUser.save();
