@@ -53,7 +53,7 @@ router.get('/getConversations', async (req, res) => {
         return conversation;
       });
   
-      res.status(200).json(conversationsWithCustomTimestamp);
+      res.status(200).json({conversations: conversationsWithCustomTimestamp});
     } catch (error) {
       res.status(400).json({ message: error.message });
     }
