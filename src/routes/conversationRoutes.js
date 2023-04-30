@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const requireAuth = require('../middlewares/requireAuth');
 const Conversation = mongoose.model('Conversation');
+const moment = require('moment');
+
 
 router.post('/createConversation', requireAuth, async (req, res) => {
     const user = req.user;
@@ -117,7 +119,7 @@ router.get('/latest-conversation/:assistantId', requireAuth, async (req, res) =>
         return res.json({ latestConversation: conversation });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ message: 'Internal server error.' });
+      returnres.status(500).json({ message: 'Internal server error.' });
     }
   });
   
