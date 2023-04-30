@@ -19,7 +19,9 @@ router.post('/createConversation', requireAuth, async (req, res) => {
         const conversation = new Conversation({
             user,
             startTime: Date.now(),
-            assistant: id
+            assistant: id,
+            lastUpdated: Date.now(),
+            title: "Nowa konwersacja"
         });
         await conversation.save();
         return res.status(201).json({ conversation });
@@ -34,14 +36,13 @@ router.get('/getConversations', requireAuth, async (req, res) => {
     try {
       const conversations = await Conversation.find({ user: user._id })
         .sort({ lastUpdated: -1 })
-        .populate('user', 'email') // Populate email from User model
-        .populate('assistant', 'name') // Populate name from Assistant model
         .populate({
-          path: 'messages',
-          populate: {
-            path: 'sender',
-            select: 'email',
-          },
+            path: 'user',
+            select: '_id'
+        })
+        .populate({
+            path: 'assistant',
+            select: '_id'
         })
         .lean(); // Convert Mongoose documents to plain JavaScript objects
   
@@ -81,7 +82,7 @@ router.get('/getConversations', requireAuth, async (req, res) => {
       return res.status(500).json({ message: error.message });
     }
   });
-  
+
 router.get('/getLatestConversation', requireAuth, async (req, res) => {
     const user = req.user;
 
@@ -124,7 +125,7 @@ router.get('/latest-conversation/:assistantId', requireAuth, async (req, res) =>
         return res.json({ latestConversation: conversation });
     } catch (err) {
       console.error(err);
-      returnres.status(500).json({ message: 'Internal server error.' });
+      return res.status(500).json({ message: 'Internal server error.' });
     }
   });
   
