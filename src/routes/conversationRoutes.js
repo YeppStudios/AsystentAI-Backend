@@ -64,6 +64,26 @@ router.get('/getConversation/:id', requireAuth, async (req, res) => {
     }
 });
 
+router.get('/latest-conversation/:assistantId', requireAuth, async (req, res) => {
+    try {
+      const conversation = await Conversation.findOne({ assistant: req.params.assistantId })
+                                             .sort({ lastUpdated: -1 })
+                                             .populate('messages');
+      if (!conversation) {
+        return res.status(404).json({ message: 'Conversation not found.' });
+      }
+
+      if (conversation.user.toString() !== req.user._id.toString()) {
+        return res.status(401).json({ message: 'Not authorized' });
+    }
+        return res.json({ latestConversation: conversation });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Internal server error.' });
+    }
+  });
+  
+
 router.delete('/deleteConversation/:id', requireAuth, async (req, res) => {
     try {
         const conversation = await Conversation.findById(req.params.id);
