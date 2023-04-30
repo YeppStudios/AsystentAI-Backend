@@ -30,53 +30,57 @@ router.post('/createConversation', requireAuth, async (req, res) => {
 
 router.get('/getConversations', requireAuth, async (req, res) => {
     const user = req.user;
-
+  
     try {
-        const conversations = await Conversation.find({ user: user._id })
-            .sort({ lastUpdated: -1 })
-            .populate('user', 'email') // Populate email from User model
-            .populate('assistant', 'name') // Populate name from Assistant model
-            .populate({
-                path: 'messages',
-                populate: {
-                    path: 'sender',
-                    select: 'email'
-                }
-            })
-            .lean(); // Convert Mongoose documents to plain JavaScript objects
-
-        const conversationsWithCustomTimestamp = conversations.map((conversation) => {
-            // Calculate time difference in days
-            const daysAgo = moment().diff(moment(conversation.lastUpdated), 'days');
-
-            // Format timestamp based on daysAgo
-            const customTimestamp = daysAgo === 0
-                ? 'Dzisiaj'
-                : daysAgo === 1
-                    ? '1 Dzień temu'
-                    : `${daysAgo} dni temu`;
-
-            // Replace user and assistant fields with their email and name respectively
+      const conversations = await Conversation.find({ user: user._id })
+        .sort({ lastUpdated: -1 })
+        .populate('user', 'email') // Populate email from User model
+        .populate('assistant', 'name') // Populate name from Assistant model
+        .populate({
+          path: 'messages',
+          populate: {
+            path: 'sender',
+            select: 'email',
+          },
+        })
+        .lean(); // Convert Mongoose documents to plain JavaScript objects
+  
+      if (!conversations) {
+        return res.status(404).json({ message: 'Nie znaleziono konwersacji' });
+      }
+  
+      const conversationsWithCustomTimestamp = conversations.map((conversation) => {
+        // Calculate time difference in days
+        const daysAgo = moment().diff(moment(conversation.lastUpdated), 'days');
+  
+        // Format timestamp based on daysAgo
+        const customTimestamp =
+          daysAgo === 0
+            ? 'Dzisiaj'
+            : daysAgo === 1
+            ? '1 Dzień temu'
+            : `${daysAgo} dni temu`;
+  
+        // Replace user and assistant fields with their email and name respectively
+        return {
+          ...conversation,
+          user: conversation.user.email,
+          assistant: conversation.assistant ? conversation.assistant.name : '',
+          lastUpdated: customTimestamp,
+          messages: conversation.messages.map((message) => {
             return {
-                ...conversation,
-                user: conversation.user.email,
-                assistant: conversation.assistant.name,
-                lastUpdated: customTimestamp,
-                messages: conversation.messages.map((message) => {
-                    return {
-                        ...message,
-                        sender: message.sender.email
-                    };
-                })
+              ...message,
+              sender: message.sender.email,
             };
-        });
-
-        return res.json({ conversations: conversationsWithCustomTimestamp });
+          }),
+        };
+      });
+  
+      return res.json({ conversations: conversationsWithCustomTimestamp });
     } catch (error) {
-        return res.status(500).json({ message: error.message });
+      return res.status(500).json({ message: error.message });
     }
-});
-
+  });
 router.get('/getLatestConversation', requireAuth, async (req, res) => {
     const user = req.user;
 
