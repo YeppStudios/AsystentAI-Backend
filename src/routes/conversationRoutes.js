@@ -30,16 +30,35 @@ router.post('/createConversation', requireAuth, async (req, res) => {
     }
 });
 
-router.get('/getConversations', requireAuth, async (req, res) => {
-    const user = req.user;
-    
+router.get('/conversations', async (req, res) => {
     try {
-        const conversations = await Conversation.find({ user: user._id }).sort({ lastUpdated: -1 });
-        return res.json({ conversations });
+      const conversations = await Conversation.find({})
+        .populate('assistant', '_id')
+        .lean();
+  
+      const conversationsWithCustomTimestamp = conversations.map((conversation) => {
+        // Calculate time difference in days
+        const daysAgo = moment().diff(moment(conversation.startTime), 'days');
+  
+        // Format timestamp based on daysAgo
+        const customTimestamp = daysAgo === 0
+          ? 'Dzisiaj'
+          : daysAgo === 1
+            ? '1 Dzień temu'
+            : `${daysAgo} dni temu`;
+  
+        // Update the lastUpdated field with custom timestamp
+        conversation.lastUpdated = customTimestamp;
+  
+        return conversation;
+      });
+  
+      res.status(200).json(conversationsWithCustomTimestamp);
     } catch (error) {
-        return res.status(500).json({ message: error.message });
+      res.status(400).json({ message: error.message });
     }
-});
+  });
+  
 
 router.get('/getLatestConversation', requireAuth, async (req, res) => {
     const user = req.user;
