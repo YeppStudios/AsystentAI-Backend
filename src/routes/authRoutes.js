@@ -78,11 +78,10 @@ router.post('/register', async (req, res) => {
       name,
       accountType,
       verificationCode,
-      workspace,
+      workspace: workspace,
       isBlocked: false
     });
 
-    newUser.workspace = workspace._id;
     await newUser.save();
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     return res.status(201).json({ token, user: newUser });
@@ -129,7 +128,7 @@ router.post('/register-free-trial', async (req, res) => {
           accountType: accountType,
           referredBy: referrerId,
           verificationCode,
-          workspace: workspace ? workspace._id : null
+          workspace: workspace,
       });
       let transaction = new Transaction({
           value: 2500,
@@ -138,7 +137,6 @@ router.post('/register-free-trial', async (req, res) => {
           timestamp: Date.now()
       });
 
-      newUser.workspace = workspace._id;
       newUser.tokenBalance += 2500;
       newUser.transactions.push(transaction);
       await transaction.save();
@@ -183,7 +181,8 @@ router.post('/register-no-password', async (req, res) => {
       name,
       accountType,
       verificationCode,
-      isBlocked: false
+      isBlocked: false,
+      workspace: workspace
     });
 
     let transaction = new Transaction({
@@ -196,9 +195,6 @@ router.post('/register-no-password', async (req, res) => {
     newUser.tokenBalance += 2500;
     newUser.transactions.push(transaction);
     await transaction.save();
-    await newUser.save();
-
-    newUser.workspace = workspace._id;
     await newUser.save();
 
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
