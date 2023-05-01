@@ -41,7 +41,7 @@ router.get('/getConversations', requireAuth, async (req, res) => {
   
         // Format timestamp based on daysAgo
         const customTimestamp = daysAgo === 0
-          ? 'Dzisiaj'
+          ? 'Ostatne 24h'
           : daysAgo === 1
             ? '1 dzień temu'
             : `${daysAgo} dni temu`;
