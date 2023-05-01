@@ -55,12 +55,22 @@ router.post('/register', async (req, res) => {
 
     // User doesn't exist, register them
     let accountType = 'individual';
-    let workspace = null;
 
     if (isCompany) {
       accountType = 'company';
+    }
 
-      // create new workspace
+    let newUser = new User({
+      email,
+      password,
+      name,
+      accountType,
+      verificationCode,
+      isBlocked: false
+    });
+
+    let workspace = null;
+    if (isCompany) {
       const workspaceData = {
         company: newUser._id,
         admins: [newUser._id],
@@ -72,16 +82,7 @@ router.post('/register', async (req, res) => {
       await workspace.save();
     }
 
-    let newUser = new User({
-      email,
-      password,
-      name,
-      accountType,
-      verificationCode,
-      workspace: workspace,
-      isBlocked: false
-    });
-
+    newUser.workspace = workspace;
     await newUser.save();
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     return res.status(201).json({ token, user: newUser });
@@ -108,16 +109,8 @@ router.post('/register-free-trial', async (req, res) => {
       }
       
       let accountType = 'individual';
-      let workspace = null;
       if(isCompany){
         accountType = 'company';
-        workspace = new Workspace({
-          company: newUser._id,
-          admins: [newUser._id],
-          employees: [],
-          invitations: []
-        });
-        await workspace.save();
       }
       const verificationCode = generateVerificationCode(6);
 
@@ -128,8 +121,19 @@ router.post('/register-free-trial', async (req, res) => {
           accountType: accountType,
           referredBy: referrerId,
           verificationCode,
-          workspace: workspace,
       });
+
+      let workspace = null;
+      if (isCompany) {
+        workspace = new Workspace({
+          company: newUser._id,
+          admins: [newUser._id],
+          employees: [],
+          invitations: []
+        });
+        await workspace.save();
+      }
+
       let transaction = new Transaction({
           value: 2500,
           title: "+2500 elixiru na start",
@@ -137,6 +141,7 @@ router.post('/register-free-trial', async (req, res) => {
           timestamp: Date.now()
       });
 
+      newUser.workspace = workspace;
       newUser.tokenBalance += 2500;
       newUser.transactions.push(transaction);
       await transaction.save();
@@ -160,17 +165,9 @@ router.post('/register-no-password', async (req, res) => {
     }
 
     let accountType = 'individual';
-    let workspace = null;
+
     if (isCompany) {
       accountType = 'company';
-      workspace = new Workspace({
-        admins: [newUser._id],
-        company: newUser._id,
-        employees: [],
-        invitations: [],
-        apiKey: ''
-      });
-      await workspace.save();
     }
 
     const verificationCode = generateVerificationCode(6);
@@ -182,8 +179,19 @@ router.post('/register-no-password', async (req, res) => {
       accountType,
       verificationCode,
       isBlocked: false,
-      workspace: workspace
     });
+
+    let workspace = null;
+    if (isCompany) {
+      workspace = new Workspace({
+        admins: [newUser._id],
+        company: newUser._id,
+        employees: [],
+        invitations: [],
+        apiKey: ''
+      });
+      await workspace.save();
+    }
 
     let transaction = new Transaction({
       value: 2500,
@@ -192,6 +200,7 @@ router.post('/register-no-password', async (req, res) => {
       timestamp: Date.now()
     });
 
+    newUser.workspace = workspace;
     newUser.tokenBalance += 2500;
     newUser.transactions.push(transaction);
     await transaction.save();
