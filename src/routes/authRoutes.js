@@ -144,7 +144,7 @@ router.post('/register-free-trial', async (req, res) => {
       await transaction.save();
       await newUser.save();
 
-      return res.status(201).json({ newUser, verificationCode, workspace });
+      return res.status(201).json({ newUser, verificationCode });
   } catch (error) {
       return res.status(500).json({ message: error.message });
   }
@@ -265,7 +265,7 @@ router.post('/verify-email', async (req, res) => {
       user.isBlocked = false;
       await user.save();
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      res.status(200).json({ newUser: user, token });
+      res.status(200).json({ newUser: user, token, workspace: user.workspace });
     } else {
       res.status(400).json({ message: 'Invalid verification code' });
     }
@@ -340,7 +340,7 @@ router.post('/login', async (req, res) => {
     await user.comparePassword(password);
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    return res.json({ token, user });
+    return res.json({ token, user, workspace: user.workspace });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
