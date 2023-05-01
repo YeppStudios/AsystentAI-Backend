@@ -36,24 +36,40 @@ router.post('/register', async (req, res) => {
     if (user) {
       // User already exists, log them in
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      return res.status(200).json({ token, user });
+      return res.status(200).json({ token, user, workspace: user.workspace });
     }
+
     const verificationCode = generateVerificationCode(6);
+
     try {
       await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
         email_address: email,
         status: 'subscribed',
         merge_fields: {
           FNAME: name,
-      },
+        },
       });
     } catch (error) {
       console.error('Failed to add user to Mailchimp audience:', error.message);
     }
+
     // User doesn't exist, register them
     let accountType = 'individual';
+    let workspace = null;
+
     if (isCompany) {
       accountType = 'company';
+
+      // create new workspace
+      const workspaceData = {
+        company: newUser._id,
+        admins: [newUser._id],
+        employees: [],
+        invitations: []
+      };
+
+      workspace = new Workspace(workspaceData);
+      await workspace.save();
     }
 
     let newUser = new User({
@@ -62,17 +78,18 @@ router.post('/register', async (req, res) => {
       name,
       accountType,
       verificationCode,
+      workspace,
       isBlocked: false
     });
 
+    newUser.workspace = workspace._id;
     await newUser.save();
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    return res.status(201).json({ token, user: newUser });
+    return res.status(201).json({ token, user: newUser, workspace });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 });
-
 
 router.post('/register-free-trial', async (req, res) => {
   try {
@@ -92,8 +109,16 @@ router.post('/register-free-trial', async (req, res) => {
       }
       
       let accountType = 'individual';
+      let workspace = null;
       if(isCompany){
         accountType = 'company';
+        workspace = new Workspace({
+          company: newUser._id,
+          admins: [newUser._id],
+          employees: [],
+          invitations: []
+        });
+        await workspace.save();
       }
       const verificationCode = generateVerificationCode(6);
 
@@ -103,7 +128,8 @@ router.post('/register-free-trial', async (req, res) => {
           name,
           accountType: accountType,
           referredBy: referrerId,
-          verificationCode
+          verificationCode,
+          workspace: workspace ? workspace._id : null
       });
       let transaction = new Transaction({
           value: 2500,
@@ -112,57 +138,73 @@ router.post('/register-free-trial', async (req, res) => {
           timestamp: Date.now()
       });
 
+      newUser.workspace = workspace._id;
       newUser.tokenBalance += 2500;
       newUser.transactions.push(transaction);
       await transaction.save();
       await newUser.save();
 
-      return res.status(201).json({ newUser, verificationCode });
+      return res.status(201).json({ newUser, verificationCode, workspace });
   } catch (error) {
       return res.status(500).json({ message: error.message });
   }
 });
 
+
 router.post('/register-no-password', async (req, res) => {
   try {
-      const { email, name, isCompany } = req.body;
-      const user = await User.findOne({ email });
-      if (user) {
-        // User already exists, log them in
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        return res.status(200).json({ token, user });
-      }
-      
-      let accountType = 'individual';
-      if(isCompany){
-        accountType = 'company';
-      }
-      const verificationCode = generateVerificationCode(6);
+    const { email, name, isCompany } = req.body;
+    const user = await User.findOne({ email });
+    if (user) {
+      // User already exists, log them in
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      return res.status(200).json({ token, user, workspace: user.workspace });
+    }
 
-      const newUser = new User({
-          email,
-          password: verificationCode,
-          name,
-          accountType: accountType,
-          verificationCode,
-          isBlocked: false
+    let accountType = 'individual';
+    let workspace = null;
+    if (isCompany) {
+      accountType = 'company';
+      workspace = new Workspace({
+        admins: [newUser._id],
+        company: newUser._id,
+        employees: [],
+        invitations: [],
+        apiKey: ''
       });
-      let transaction = new Transaction({
-          value: 2500,
-          title: "+2500 elixiru na start",
-          type: "income",
-          timestamp: Date.now()
-      });
+      await workspace.save();
+    }
 
-      newUser.tokenBalance += 2500;
-      newUser.transactions.push(transaction);
-      await transaction.save();
-      await newUser.save();
+    const verificationCode = generateVerificationCode(6);
 
-      const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      return res.status(201).json({ token, user: newUser, verificationCode });
+    const newUser = new User({
+      email,
+      password: verificationCode,
+      name,
+      accountType,
+      verificationCode,
+      isBlocked: false
+    });
+
+    let transaction = new Transaction({
+      value: 2500,
+      title: "+2500 elixiru na start",
+      type: "income",
+      timestamp: Date.now()
+    });
+
+    newUser.tokenBalance += 2500;
+    newUser.transactions.push(transaction);
+    await transaction.save();
+    await newUser.save();
+
+    newUser.workspace = workspace._id;
+    await newUser.save();
+
+    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    return res.status(201).json({ token, user: newUser, verificationCode, workspace });
   } catch (error) {
-      return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -179,7 +221,8 @@ router.post('/register-to-workspace', async (req, res) => {
       
       const user = await User.findOne({ email });
       if (!user) {
-        employee = await User.create({ email, password, name, accountType: 'individual', workspace: workspace._id });
+        employee = await User.create({ email, password, name, accountType: 'employee', workspace: workspace._id });
+        await employee.save();
       } else {
         employee = user;
         user.workspace = workspace._id;
@@ -190,7 +233,7 @@ router.post('/register-to-workspace', async (req, res) => {
       workspace.invitations = workspace.invitations.filter(i => i.code !== code);
       await workspace.save();
       const token = jwt.sign({ userId: employee._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      res.status(200).json({ token });
+      res.status(200).json({ token, workspace, user: employee });
   } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to register employee' });
