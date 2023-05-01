@@ -85,7 +85,7 @@ router.post('/register', async (req, res) => {
     newUser.workspace = workspace._id;
     await newUser.save();
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    return res.status(201).json({ token, user: newUser, workspace });
+    return res.status(201).json({ token, user: newUser });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -202,7 +202,7 @@ router.post('/register-no-password', async (req, res) => {
     await newUser.save();
 
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    return res.status(201).json({ token, user: newUser, verificationCode, workspace });
+    return res.status(201).json({ token, user: newUser, verificationCode });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -265,7 +265,7 @@ router.post('/verify-email', async (req, res) => {
       user.isBlocked = false;
       await user.save();
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      res.status(200).json({ newUser: user, token, workspace: user.workspace });
+      res.status(200).json({ newUser: user, token });
     } else {
       res.status(400).json({ message: 'Invalid verification code' });
     }
@@ -340,7 +340,7 @@ router.post('/login', async (req, res) => {
     await user.comparePassword(password);
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    return res.json({ token, user, workspace: user.workspace });
+    return res.json({ token, user });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
