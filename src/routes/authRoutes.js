@@ -77,12 +77,11 @@ router.post('/register', async (req, res) => {
         employees: [],
         invitations: []
       };
-
       workspace = new Workspace(workspaceData);
+      newUser.workspace = workspace;
       await workspace.save();
     }
 
-    newUser.workspace = workspace;
     await newUser.save();
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     return res.status(201).json({ token, user: newUser });
@@ -131,6 +130,7 @@ router.post('/register-free-trial', async (req, res) => {
           employees: [],
           invitations: []
         });
+        newUser.workspace = workspace;
         await workspace.save();
       }
 
@@ -141,7 +141,6 @@ router.post('/register-free-trial', async (req, res) => {
           timestamp: Date.now()
       });
 
-      newUser.workspace = workspace;
       newUser.tokenBalance += 2500;
       newUser.transactions.push(transaction);
       await transaction.save();
@@ -190,6 +189,7 @@ router.post('/register-no-password', async (req, res) => {
         invitations: [],
         apiKey: ''
       });
+      newUser.workspace = workspace;
       await workspace.save();
     }
 
@@ -200,7 +200,6 @@ router.post('/register-no-password', async (req, res) => {
       timestamp: Date.now()
     });
 
-    newUser.workspace = workspace;
     newUser.tokenBalance += 2500;
     newUser.transactions.push(transaction);
     await transaction.save();
