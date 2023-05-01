@@ -127,7 +127,11 @@ router.post('/register-no-password', async (req, res) => {
   try {
       const { email, name, isCompany } = req.body;
       const user = await User.findOne({ email });
-      if (user) return res.status(400).json({ message: 'User already exists' });
+      if (user) {
+        // User already exists, log them in
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        return res.status(200).json({ token, user });
+      }
       
       let accountType = 'individual';
       if(isCompany){
