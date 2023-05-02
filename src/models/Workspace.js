@@ -30,6 +30,7 @@ const WorkspaceSchema = new mongoose.Schema({
         },
         code: {
             type: String,
+            unique: false
         },
         role: {
             type: String,
