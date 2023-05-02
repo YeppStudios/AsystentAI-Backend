@@ -289,7 +289,7 @@ router.post('/register-to-workspace', async (req, res) => {
       res.status(200).json({ token, newUser: employee });
   } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Failed to register employee' });
+      res.status(500).json({ error });
   }
 });
 
