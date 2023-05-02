@@ -9,6 +9,9 @@ const InvitationSchema = new mongoose.Schema({
             type: String,
             default: "employee"
         },
+        code: {
+            type: String
+        },
         invitedBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'

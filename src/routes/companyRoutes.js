@@ -36,6 +36,17 @@ router.post('workspaces/add', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/workspace', requireAuth, async (req, res) => {
+
+  try {
+    const workspace = await Workspace.findById(req.user.workspace).populate('admins', 'email').populate('employees.user', 'email').exec();
+    res.json(workspace);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server Error');
+  }
+});
+
 router.post('/send-invitation', requireAuth, async (req, res) => {
     const { email, role } = req.body;
     const invitedBy = req.user._id;
@@ -54,7 +65,7 @@ router.post('/send-invitation', requireAuth, async (req, res) => {
     workspace.invitations.push({ email, code, role, invitedBy });
     await workspace.save();
 
-    const inviteUrl = `https://www.asystent.ai/contentcreator?registration=true&workspace=${code}`;
+    const inviteUrl = `https://www.asystent.ai/contentcreator?registration=true&workspace=${workspace._id}&code=${code}`;
 
 
     res.status(201).json({ invitationLink: inviteUrl });

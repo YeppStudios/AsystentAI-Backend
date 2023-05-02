@@ -202,5 +202,19 @@ router.put('/displayElixirInfo', requireAuth, async (req, res) => {
   }
 });
 
+router.post('/last-user-emails', requireAdmin, async (req, res) => {
+  try {
+    const emailsNumber = req.body.emailsNumber;
+    if (typeof emailsNumber !== 'number' || emailsNumber <= 0) {
+      return res.status(400).json({ message: 'Invalid value for emailsNumber' });
+    }
+    
+    const users = await User.find().sort({ createdAt: -1 }).limit(emailsNumber).select('email name');
+    const userInfos = users.map(user => ({ email: user.email, name: user.name }));
+    res.status(200).json({ users: userInfos });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 module.exports = router;

@@ -31,6 +31,7 @@ const promptRoutes =  require('./src/routes/promptRoutes');
 const assistantRoutes =  require('./src/routes/assistantRoutes');
 const documentRoutes =  require('./src/routes/documentRoutes');
 const reservationsRoutes =  require('./src/routes/reservationsRoutes');
+const companyRoutes =  require('./src/routes/companyRoutes');
 // const job = require('./src/cron');
 const cors = require('cors');
 require('dotenv').config()
@@ -62,6 +63,7 @@ app.use(contentGatheringRoutes);
 app.use(reservationsRoutes);
 app.use(assistantRoutes);
 app.use(documentRoutes);
+app.use(companyRoutes);
 
 const mongoUri = process.env.MONGO_URI;
 mongoose.connect(mongoUri);
