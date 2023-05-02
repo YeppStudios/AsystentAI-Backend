@@ -127,8 +127,7 @@ router.post('/register-free-trial', async (req, res) => {
         workspace = new Workspace({
           company: newUser._id,
           admins: [newUser._id],
-          employees: [],
-          invitations: []
+          employees: []
         });
         newUser.workspace = workspace;
         await workspace.save();
