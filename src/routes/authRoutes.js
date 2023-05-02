@@ -160,7 +160,7 @@ router.post('/register-no-password', async (req, res) => {
     if (user) {
       // User already exists, log them in
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      return res.status(200).json({ token, user, workspace: user.workspace });
+      return res.status(200).json({ token, user });
     }
 
     let accountType = 'individual';
@@ -176,13 +176,11 @@ router.post('/register-no-password', async (req, res) => {
       password: verificationCode,
       name,
       accountType,
-      verificationCode,
       isBlocked: false,
     });
 
-    let workspace = null;
     if (isCompany) {
-      workspace = new Workspace({
+      const workspace = new Workspace({
         admins: [newUser._id],
         company: newUser._id,
         employees: [],

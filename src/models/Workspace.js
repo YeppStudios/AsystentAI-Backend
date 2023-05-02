@@ -26,22 +26,18 @@ const WorkspaceSchema = new mongoose.Schema({
       }],
       invitations: [{
         email: {
-            type: String,
-            required: true
+            type: String
         },
         code: {
             type: String,
-            required: true,
             unique: true
         },
         role: {
             type: String,
-            required: true,
         },
         invitedBy: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true
+            ref: 'User'
         }
     }],
     apiKey: {
