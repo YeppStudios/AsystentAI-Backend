@@ -75,7 +75,6 @@ router.post('/register', async (req, res) => {
         company: newUser._id,
         admins: [newUser._id],
         employees: [],
-        invitations: []
       };
       workspace = new Workspace(workspaceData);
       newUser.workspace = workspace;
@@ -183,7 +182,6 @@ router.post('/register-no-password', async (req, res) => {
         admins: [newUser._id],
         company: newUser._id,
         employees: [],
-        invitations: [],
         apiKey: ''
       });
       newUser.workspace = workspace;
