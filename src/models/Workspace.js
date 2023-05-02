@@ -1,30 +1,6 @@
 const mongoose = require('mongoose');
 
-
-const WorkspaceSchema = new mongoose.Schema({
-    admins: [{
-        type: [mongoose.Schema.Types.ObjectId],
-        ref: 'User',
-        required: true
-    }],
-    company: {
-        type: [mongoose.Schema.Types.ObjectId],
-        ref: 'User',
-        required: true
-    },
-    employees: [{
-        user: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'User',
-          required: true
-        },
-        role: {
-          type: String,
-          enum: ['employee', 'manager', 'admin'],
-          default: 'employee'
-        }
-      }],
-      invitations: [{
+const InvitationSchema = new mongoose.Schema({
         email: {
             type: String,
             default: ""
@@ -41,10 +17,38 @@ const WorkspaceSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
         }
-    }],
-    apiKey: {
-        type: String
-    }
-});
+    });
 
-mongoose.model('Workspace', WorkspaceSchema);
+    const WorkspaceSchema = new mongoose.Schema({
+        admins: [{
+            type: [mongoose.Schema.Types.ObjectId],
+            ref: 'User',
+            required: true
+        }],
+        company: {
+            type: [mongoose.Schema.Types.ObjectId],
+            ref: 'User',
+            required: true
+        },
+        employees: [{
+            user: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: 'User',
+              required: true
+            },
+            role: {
+              type: String,
+              enum: ['employee', 'manager', 'admin'],
+              default: 'employee'
+            }
+          }],
+          invitations: [{
+              type: InvitationSchema,
+              default: () => ({})
+          }],
+        apiKey: {
+            type: String
+        }
+    });
+    
+    mongoose.model('Workspace', WorkspaceSchema);
