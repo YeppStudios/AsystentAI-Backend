@@ -5,10 +5,6 @@ const InvitationSchema = new mongoose.Schema({
             type: String,
             default: ""
         },
-        code: {
-            type: String,
-            default: ""
-        },
         role: {
             type: String,
             default: "employee"
