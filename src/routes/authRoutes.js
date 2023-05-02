@@ -27,6 +27,17 @@ function generateVerificationCode(length) {
   return result;
 }
 
+function generateApiKey() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let apiKey = '';
+  for (let i = 0; i < 32; i++) {
+    const randomIndex = Math.floor(Math.random() * chars.length);
+    apiKey += chars[randomIndex];
+  }
+  return apiKey;
+}
+
+
 router.post('/register', async (req, res) => {
   try {
     const { email, password, name, isCompany } = req.body;
@@ -71,12 +82,13 @@ router.post('/register', async (req, res) => {
 
     let workspace = null;
     if (isCompany) {
-      const workspaceData = {
-        company: newUser._id,
+      const key = generateApiKey();
+      let workspace = new Workspace({
         admins: [newUser._id],
+        company: newUser._id,
         employees: [],
-      };
-      workspace = new Workspace(workspaceData);
+        apiKey: key
+      });
       newUser.workspace = workspace;
       await workspace.save();
     }
@@ -135,10 +147,12 @@ router.post('/register-free-trial', async (req, res) => {
       
       let workspace = null;
       if (isCompany) {
+        const key = generateApiKey();
         workspace = new Workspace({
-          company: newUser._id,
           admins: [newUser._id],
-          employees: []
+          company: newUser._id,
+          employees: [],
+          apiKey: key
         });
         newUser.workspace = workspace;
         await workspace.save();
@@ -190,11 +204,12 @@ router.post('/register-no-password', async (req, res) => {
     });
 
     if (isCompany) {
+      const key = generateApiKey();
       let workspace = new Workspace({
         admins: [newUser._id],
         company: newUser._id,
         employees: [],
-        apiKey: ''
+        apiKey: key
       });
       newUser.workspace = workspace;
       await workspace.save();
@@ -211,7 +226,7 @@ router.post('/register-no-password', async (req, res) => {
     } catch (error) {
       console.error('Failed to add user to Mailchimp audience:', error.message);
     }
-    
+
     let transaction = new Transaction({
       value: 2500,
       title: "+2500 elixiru na start",
@@ -233,19 +248,34 @@ router.post('/register-no-password', async (req, res) => {
 
 router.post('/register-to-workspace', async (req, res) => {
   try {
-      const { email, code, password, name } = req.body;
+      const { email, code, password, name, workspaceId } = req.body;
 
       let employee = "";
 
-      const workspace = await Workspace.findOne({ 'invitations.email': email, 'invitations.code': code });
+      const workspace = await Workspace.findById(workspaceId);
       if (!workspace) {
           return res.status(404).json({ error: 'Invalid invitation code' });
       }
       
       const user = await User.findOne({ email });
+
       if (!user) {
-        employee = await User.create({ email, password, name, accountType: 'employee', workspace: workspace._id });
+        try {
+          await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
+            email_address: email,
+            status: 'subscribed',
+            merge_fields: {
+              FNAME: name,
+            },
+          });
+        } catch (error) {
+          console.error('Failed to add user to Mailchimp audience:', error.message);
+        }
+
+        const verificationCode = generateVerificationCode(6);
+        employee = await User.create({ email, password, name, accountType: 'individual', workspace: workspaceId, verificationCode });
         await employee.save();
+
       } else {
         employee = user;
         user.workspace = workspace._id;
@@ -256,7 +286,7 @@ router.post('/register-to-workspace', async (req, res) => {
       workspace.invitations = workspace.invitations.filter(i => i.code !== code);
       await workspace.save();
       const token = jwt.sign({ userId: employee._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      res.status(200).json({ token, workspace, user: employee });
+      res.status(200).json({ token, newUser: employee });
   } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to register employee' });

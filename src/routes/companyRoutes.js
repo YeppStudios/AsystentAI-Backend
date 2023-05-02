@@ -65,7 +65,7 @@ router.post('/send-invitation', requireAuth, async (req, res) => {
     workspace.invitations.push({ email, code, role, invitedBy });
     await workspace.save();
 
-    const inviteUrl = `https://www.asystent.ai/contentcreator?registration=true&workspace=${workspace._id}&code=${code}`;
+    const inviteUrl = `https://www.asystent.ai/contentcreator?registration=true&workspace=${workspace._id}&invitationCode=${code}`;
 
 
     res.status(201).json({ invitationLink: inviteUrl });
