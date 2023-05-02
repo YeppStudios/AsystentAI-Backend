@@ -168,7 +168,7 @@ router.post('/register-no-password', async (req, res) => {
     if (isCompany) {
       accountType = 'company';
     }
-
+d
     const verificationCode = generateVerificationCode(6);
 
     const newUser = new User({
