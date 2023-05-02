@@ -121,6 +121,18 @@ router.post('/register-free-trial', async (req, res) => {
           verificationCode,
       });
 
+      try {
+        await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
+          email_address: email,
+          status: 'subscribed',
+          merge_fields: {
+            FNAME: name,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to add user to Mailchimp audience:', error.message);
+      }
+      
       let workspace = null;
       if (isCompany) {
         workspace = new Workspace({
@@ -188,6 +200,18 @@ router.post('/register-no-password', async (req, res) => {
       await workspace.save();
     }
 
+    try {
+      await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
+        email_address: email,
+        status: 'subscribed',
+        merge_fields: {
+          FNAME: name,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to add user to Mailchimp audience:', error.message);
+    }
+    
     let transaction = new Transaction({
       value: 2500,
       title: "+2500 elixiru na start",

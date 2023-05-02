@@ -39,8 +39,7 @@ const InvitationSchema = new mongoose.Schema({
             }
           }],
           invitations: [{
-              type: InvitationSchema,
-              default: () => ({})
+              InvitationSchema
           }],
         apiKey: {
             type: String
