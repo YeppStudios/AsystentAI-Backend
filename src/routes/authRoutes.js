@@ -250,7 +250,7 @@ router.post('/register-to-workspace', async (req, res) => {
   try {
       const { email, code, password, name, workspaceId } = req.body;
 
-      let employee = "";
+      let employee = null;
 
       const workspace = await Workspace.findById(workspaceId);
       if (!workspace) {
@@ -272,13 +272,12 @@ router.post('/register-to-workspace', async (req, res) => {
           console.error('Failed to add user to Mailchimp audience:', error.message);
         }
 
-        const verificationCode = generateVerificationCode(6);
-        employee = await User.create({ email, password, name, accountType: 'individual', workspace: workspaceId, verificationCode });
+        employee = await User.create({ email, password, name, accountType: 'individual', workspace, isBlocked: false });
         await employee.save();
 
       } else {
         employee = user;
-        user.workspace = workspace._id;
+        user.workspace = workspace;
         await user.save();
       }
 
@@ -286,10 +285,10 @@ router.post('/register-to-workspace', async (req, res) => {
       workspace.invitations = workspace.invitations.filter(i => i.code !== code);
       await workspace.save();
       const token = jwt.sign({ userId: employee._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      res.status(200).json({ token, newUser: employee });
+      return res.status(200).json({ token, newUser: employee });
+      
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ error });
+      return res.status(500).json({ error });
   }
 });
 

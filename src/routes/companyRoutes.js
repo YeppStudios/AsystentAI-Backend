@@ -50,7 +50,7 @@ router.get('/workspace', requireAuth, async (req, res) => {
 router.post('/send-invitation', requireAuth, async (req, res) => {
     const { email, role } = req.body;
     const invitedBy = req.user._id;
-    const workspace = await Workspace.findOne({ company: invitedBy });
+    const workspace = await Workspace.findById( req.user.workspace );
 
     if (!workspace) {
         return res.status(404).json({ error: 'Workspace not found' });
@@ -65,7 +65,7 @@ router.post('/send-invitation', requireAuth, async (req, res) => {
     workspace.invitations.push({ email, code, role, invitedBy });
     await workspace.save();
 
-    const inviteUrl = `https://www.asystent.ai/contentcreator?registration=true&workspace=${workspace._id}&invitationCode=${code}`;
+    const inviteUrl = `https://www.asystent.ai/contentcreator?registration=true&workspace=${workspace._id}&safetyCode=${code}`;
 
 
     res.status(201).json({ invitationLink: inviteUrl });
