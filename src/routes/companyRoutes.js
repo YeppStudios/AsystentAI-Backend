@@ -161,37 +161,43 @@ router.post('/workspaces/:id/add-employee', requireAuth, async (req, res) => {
     }
   });
   
-  
+
 // Remove an employee from a workspace
-router.put('/workspaces/:id/remove-employee', requireAuth, async (req, res) => {
-    const workspaceId = req.params.id;
-    const { userId } = req.body;
-  
-    try {
-      const workspace = await Workspace.findById(workspaceId);
-      if (!workspace) {
-        return res.status(404).json({ error: 'Workspace not found' });
-      }
-  
-      const companyAdmins = workspace.admins.filter(id => id.toString() === req.user._id.toString());
-      if (companyAdmins.length === 0) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-  
-      const employeeIndex = workspace.employees.findIndex(employee => employee.user.toString() === userId.toString());
-      if (employeeIndex === -1) {
-        return res.status(404).json({ error: 'Employee not found in workspace' });
-      }
-  
-      workspace.employees.splice(employeeIndex, 1);
-      await workspace.save();
-      res.json(workspace);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Failed to remove employee' });
+router.delete('/workspaces/:id/delete-employee/:userEmail', requireAuth, async (req, res) => {
+  const workspaceId = req.params.id;
+  const userEmail = req.params.userEmail;
+
+  try {
+    const workspace = await Workspace.findById(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ error: 'Workspace not found' });
     }
-  });
-  
+
+    const companyAdmins = workspace.admins.filter(id => id.toString() === req.user._id.toString());
+    if (companyAdmins.length === 0) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const employeeIndex = workspace.employees.findIndex(employee => employee.email === userEmail);
+    if (employeeIndex === -1) {
+      return res.status(404).json({ error: 'Employee not found in workspace' });
+    }
+
+    const employee = workspace.employees[employeeIndex];
+
+    // Set the workspace field of the user to null
+    await User.findOneAndUpdate({ email: employee.email }, { workspace: null });
+
+    workspace.employees.splice(employeeIndex, 1);
+    await workspace.save();
+    return res.json(workspace);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to remove employee' });
+  }
+});
+
+
   // Remove an admin from a workspace
 router.put('/workspaces/:id/remove-admin', requireAuth, async (req, res) => {
     const workspaceId = req.params.id;
