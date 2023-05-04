@@ -1,6 +1,7 @@
 const jsonwebtoken = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
+const Workspace = mongoose.model('Workspace');
 require('dotenv').config();
 
 module.exports = async (req, res, next) => {
@@ -28,9 +29,16 @@ module.exports = async (req, res, next) => {
             return res.status(401).send({ error: 'Your account is blocked, please contact support' });
         }
 
-        // check if user has any tokens left
-        if (user.tokenBalance <= 0) {
-            return res.status(402).send({ error: 'You have reached your token limit, please purchase more tokens.' });
+        if (user.workspace) {
+            const workspace = await Workspace.findById(user.workspace);
+            const company = await User.findById(workspace.company);
+            if (company.tokenBalance <= 0) {
+                return res.status(402).send({ error: 'You have reached your token limit, please purchase more tokens.' });
+            }
+        } else {
+            if (user.tokenBalance <= 0) {
+                return res.status(402).send({ error: 'You have reached your token limit, please purchase more tokens.' });
+            }
         }
 
         req.user = user;

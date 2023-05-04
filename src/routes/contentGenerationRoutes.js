@@ -8,6 +8,8 @@ const requireTokens = require('../middlewares/requireTokens');
 const requireTestTokens = require('../middlewares/requireTestTokens');
 require('dotenv').config();
 const Transaction = mongoose.model('Transaction');
+const Workspace = mongoose.model('Workspace');
+const User = mongoose.model('User');
 
 const configuration = new Configuration({
     organization: "org-oP1kxBXnJo6VGoYOLxzHnNSV",
@@ -80,7 +82,14 @@ router.post('/askAI', requireTokens, async (req, res) => {
                     res.write('\n\n');
                     outputTokens = estimateTokens(reply);
                     const totalTokens = inputTokens + outputTokens;
-                    user.tokenBalance -= (totalTokens);
+                    if (user.workspace) {
+                      const workspace = await Workspace.findById(user.workspace);
+                      const company = await User.findById(workspace.company);
+                      company.tokenBalance -= totalTokens;
+                      await company.save();
+                    } else {
+                      user.tokenBalance -= (totalTokens);
+                    }
 
                     const transaction = new Transaction({
                         value: totalTokens,
@@ -168,11 +177,21 @@ router.post('/messageAI', requireTokens, async (req, res) => {
               } else {
                 try {
                   const parsed = JSON.parse(message);
+
                   if(parsed.choices[0].finish_reason === "stop"){
                     res.write('\n\n');
+
                     outputTokens = estimateTokens(reply);
                     const totalTokens = inputTokens + outputTokens;
-                    user.tokenBalance -= totalTokens;
+                    if (user.workspace) {
+                      const workspace = await Workspace.findById(user.workspace)
+                      const company = await User.findById(workspace.company);
+                      company.tokenBalance -= totalTokens;
+                      await company.save();
+                    } else {
+                      user.tokenBalance -= (totalTokens);
+                    }
+
                     const transaction = new Transaction({
                       title: "Message in prompt search engine",
                       type: "expense",
@@ -181,6 +200,7 @@ router.post('/messageAI', requireTokens, async (req, res) => {
                       category: "prompts",
                       user: user._id
                     });
+                    
                     await user.save();
                     if(user.email != "gerke.contact@gmail.com" && user.email != "piotrg2003@gmail.com"){
                       await transaction.save();
@@ -258,7 +278,14 @@ router.post('/compose-editor-completion', requireTokens, async (req, res) => {
                   res.write('\n\n');
                   outputTokens = estimateTokens(reply);
                   const totalTokens = inputTokens + outputTokens;
-                  user.tokenBalance -= (totalTokens);
+                  if (user.workspace) {
+                    const workspace = await Workspace.findById(user.workspace)
+                    const company = await User.findById(workspace.company);
+                    company.tokenBalance -= totalTokens;
+                    await company.save();
+                  } else {
+                    user.tokenBalance -= (totalTokens);
+                  }
 
                   const transaction = new Transaction({
                       value: totalTokens,

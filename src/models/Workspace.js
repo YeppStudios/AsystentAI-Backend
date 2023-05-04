@@ -1,22 +1,5 @@
 const mongoose = require('mongoose');
 
-const InvitationSchema = new mongoose.Schema({
-        email: {
-            type: String,
-            default: ""
-        },
-        role: {
-            type: String,
-            default: "employee"
-        },
-        code: {
-            type: String
-        },
-        invitedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        }
-    });
 
     const WorkspaceSchema = new mongoose.Schema({
         admins: [{
@@ -35,6 +18,12 @@ const InvitationSchema = new mongoose.Schema({
               ref: 'User',
               required: true
             },
+            name: {
+                type: String
+            },
+            email: {
+                type: String
+            },
             role: {
               type: String,
               enum: ['employee', 'manager', 'admin'],
@@ -42,8 +31,19 @@ const InvitationSchema = new mongoose.Schema({
             }
           }],
           invitations: [{
-              InvitationSchema
-          }],
+            email: {
+                type: String,
+                default: ""
+            },
+            role: {
+                type: String,
+                default: "employee"
+            },
+            invitedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User'
+            }
+        }],
         apiKey: {
             type: String
         }

@@ -89,7 +89,6 @@ router.post('/register', async (req, res) => {
         employees: [],
         apiKey: key
       });
-      newUser.workspace = workspace;
       await workspace.save();
     }
 
@@ -154,7 +153,6 @@ router.post('/register-free-trial', async (req, res) => {
           employees: [],
           apiKey: key
         });
-        newUser.workspace = workspace;
         await workspace.save();
       }
 
@@ -211,7 +209,6 @@ router.post('/register-no-password', async (req, res) => {
         employees: [],
         apiKey: key
       });
-      newUser.workspace = workspace;
       await workspace.save();
     }
 
@@ -248,47 +245,54 @@ router.post('/register-no-password', async (req, res) => {
 
 router.post('/register-to-workspace', async (req, res) => {
   try {
-      const { email, code, password, name, workspaceId } = req.body;
+    const { email, password, name, workspaceId } = req.body;
 
-      let employee = null;
+    let employee = null;
 
-      const workspace = await Workspace.findById(workspaceId);
-      if (!workspace) {
-          return res.status(404).json({ error: 'Invalid invitation code' });
-      }
-      
-      const user = await User.findOne({ email });
+    const workspace = await Workspace.findById(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ error: 'Invalid workspace ID' });
+    }
 
-      if (!user) {
-        try {
-          await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
-            email_address: email,
-            status: 'subscribed',
-            merge_fields: {
-              FNAME: name,
-            },
-          });
-        } catch (error) {
-          console.error('Failed to add user to Mailchimp audience:', error.message);
-        }
+    // Find the invitation with the provided email address in the workspace invitations array
+    const invitation = workspace.invitations.find(i => i.email === email);
+    if (!invitation) {
+      return res.status(404).json({ error: 'Invalid email address' });
+    }
 
-        employee = await User.create({ email, password, name, accountType: 'individual', workspace, isBlocked: false });
-        await employee.save();
+    const user = await User.findOne({ email });
 
-      } else {
-        employee = user;
-        user.workspace = workspace;
-        await user.save();
+    if (!user) {
+      try {
+        await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
+          email_address: email,
+          status: 'subscribed',
+          merge_fields: {
+            FNAME: name,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to add user to Mailchimp audience:', error.message);
       }
 
-      workspace.employees.push({ user: employee._id, role: invitation.role });
-      workspace.invitations = workspace.invitations.filter(i => i.code !== code);
-      await workspace.save();
-      const token = jwt.sign({ userId: employee._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      return res.status(200).json({ token, newUser: employee });
-      
+      employee = await User.create({ email, password, name, accountType: 'individual', workspace: workspace.id, isBlocked: false });
+      await employee.save();
+
+    } else {
+      employee = user;
+      user.workspace = workspace._id;
+      await user.save();
+    }
+
+    workspace.employees.push({ user: employee._id, role: invitation.role, name: employee.name , email: employee.email});
+    workspace.invitations = workspace.invitations.filter(i => i.email !== email);
+    await workspace.save();
+    const token = jwt.sign({ userId: employee._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    return res.status(200).json({ token, newUser: employee });
+
   } catch (error) {
-      return res.status(500).json({ error });
+    console.log(error);
+    return res.status(500).json({ error });
   }
 });
 

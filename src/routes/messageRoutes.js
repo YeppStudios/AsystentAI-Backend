@@ -9,6 +9,8 @@ const requireTokens = require('../middlewares/requireTokens');
 const Message = mongoose.model('Message');
 const Conversation = mongoose.model('Conversation');
 const Transaction = mongoose.model('Transaction');
+const User = mongoose.model('User');
+const Workspace = mongoose.model('Workspace');
 require('dotenv').config();
 
 const configuration = new Configuration({
@@ -99,7 +101,15 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                     inputTokens += estimateTokens(systemPrompt);
                     inputTokens += estimateTokens(embeddingContext);
                     const totalTokens = inputTokens + outputTokens;
-                    user.tokenBalance -= totalTokens;
+                    if (user.workspace) {
+                        const workspace = await Workspace.findById(user.workspace)
+                        const company = await User.findById(workspace.company);
+                        company.tokenBalance -= totalTokens;
+                        await company.save();
+                      } else {
+                        user.tokenBalance -= (totalTokens);
+                      }
+  
                     const transaction = new Transaction({
                         title: "Message in chat",
                         value: totalTokens,
