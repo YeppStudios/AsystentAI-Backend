@@ -30,9 +30,8 @@ router.get('/get-assistants', (req, res) => {
 });
 
 // READ all assistants for owner by owner id
-router.get('/getUserAssistants', requireAuth, (req, res) => {
-    console.log("getUserAssistants endpoint called"); // log the endpoint call
-    Assistant.find({ owner: req.user._id })
+router.get('/getUserAssistants/:userId', requireAuth, (req, res) => {
+    Assistant.find({ owner: req.params.userId })
       .populate('documents') // populate documents field with actual documents
       .then(assistants => {
         console.log("Assistant.find() returned: ", assistants); // log the results

@@ -186,7 +186,7 @@ router.delete('/workspaces/:id/delete-employee/:userEmail', requireAuth, async (
     const employee = workspace.employees[employeeIndex];
 
     // Set the workspace field of the user to null
-    await User.findOneAndUpdate({ email: employee.email }, { workspace: "" });
+    await User.findOneAndUpdate({ email: employee.email }, { workspace: undefined });
 
     workspace.employees.splice(employeeIndex, 1);
     await workspace.save();
