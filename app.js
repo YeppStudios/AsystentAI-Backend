@@ -12,6 +12,7 @@ require('./src/models/Workspace');
 require('./src/models/Assistant');
 require('./src/models/Document');
 require('./src/models/Reservations');
+require('./src/models/Folder');
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser =  require('body-parser');
