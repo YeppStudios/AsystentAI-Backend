@@ -68,10 +68,10 @@ router.get('/workspace/:id', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Workspace not found' });
     }
 
-    res.json(workspace);
+    return res.json(workspace);
   } catch (error) {
     console.error(error);
-    res.status(500).send('Server Error');
+    return res.status(500).send('Server Error');
   }
 });
 
