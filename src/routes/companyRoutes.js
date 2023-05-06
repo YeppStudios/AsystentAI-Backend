@@ -59,10 +59,10 @@ router.get('/workspace-company/:workspaceId', async (req, res) => {
 });
 
 
-router.get('/workspace', requireAuth, async (req, res) => {
+router.get('/workspace/:id', requireAuth, async (req, res) => {
 
   try {
-    const workspace = await Workspace.findOne({ company: req.user._id }).populate('admins', 'email').populate('employees.user', 'email').exec();
+    const workspace = await Workspace.findOne({ company: req.params.id }).populate('admins', 'email').populate('employees.user', 'email').exec();
 
     if (!workspace) {
       return res.status(404).json({ error: 'Workspace not found' });
