@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const requireAuth = require('../middlewares/requireAuth');
 const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
 
@@ -40,25 +41,42 @@ router.get('/get-document/:id', (req, res) => {
     });
 });
 
-// UPDATE
-router.put('/update-document/:id', (req, res) => {
-  Document.findByIdAndUpdate(req.params.id, req.body)
-    .then(document => {
-      if (!document) {
-        return res.status(404).json({ message: 'Document not found' });
-      }
-      return res.json({ message: 'Document updated successfully' });
-    })
-    .catch(err => {
-      return res.status(500).json({ error: err.message });
-    });
-});
-
-//DELETE DOCUMENT
-router.delete('/delete-document/:id', async (req, res) => {
+router.put('/update-document/:id', requireAuth, async (req, res) => {
   const documentId = req.params.id;
   
   try {
+    // Find the document and check if it belongs to the authenticated user
+    const document = await Document.findById(documentId);
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+    if (document.owner.toString() !== req.user._id) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+    
+    // Update the document
+    const updatedDocument = await Document.findByIdAndUpdate(documentId, req.body, { new: true });
+    
+    return res.json({ message: 'Document updated successfully', document: updatedDocument });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+//DELETE DOCUMENT
+router.delete('/delete-document/:id', requireAuth, async (req, res) => {
+  const documentId = req.params.id;
+  
+  try {
+    // Find the document and check if it belongs to the authenticated user
+    const document = await Document.findById(documentId);
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+    if (document.owner.toString() !== req.user._id) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+    
     // Find all folders that contain the document
     const folders = await Folder.find({ documents: documentId });
     
@@ -83,8 +101,8 @@ router.delete('/delete-document/:id', async (req, res) => {
 
 
 // ADD DOCUMENT TO FOLDER
-router.post('/folders/:id/add-document', (req, res) => {
-    Folder.findById(req.params.id)
+router.post('/folders/:id/add-document', requireAuth, (req, res) => {
+  Folder.findOne({ _id: req.params.id, owner: req.user._id })
     .then(folder => {
       if (!folder) {
         return res.status(404).json({ message: 'Folder not found' });
@@ -98,21 +116,21 @@ router.post('/folders/:id/add-document', (req, res) => {
       }
       folder.documents.push(documentId);
       folder.save()
-      .then(() => {
-        return res.status(200).json({ message: 'Document added to folder successfully' });
-      })
-      .catch(err => {
-        return res.status(500).json({ error: err.message });
-      });
+        .then(() => {
+          return res.status(200).json({ message: 'Document added to folder successfully' });
+        })
+        .catch(err => {
+          return res.status(500).json({ error: err.message });
+        });
     })
     .catch(err => {
       return res.status(500).json({ error: err.message });
     });
-  });
-  
-  // DELETE DOCUMENT FROM FOLDER
-  router.delete('/folders/:id/delete-document', (req, res) => {
-    Folder.findById(req.params.id)
+});
+
+// DELETE DOCUMENT FROM FOLDER
+router.delete('/folders/:id/delete-document', requireAuth, (req, res) => {
+  Folder.findOne({ _id: req.params.id, owner: req.user._id })
     .then(folder => {
       if (!folder) {
         return res.status(404).json({ message: 'Folder not found' });
@@ -127,18 +145,18 @@ router.post('/folders/:id/add-document', (req, res) => {
       }
       folder.documents.splice(index, 1);
       folder.save()
-      .then(() => {
-        return res.status(200).json({ message: 'Document deleted from folder successfully' });
-      })
-      .catch(err => {
-        return res.status(500).json({ error: err.message });
-      });
+        .then(() => {
+          return res.status(200).json({ message: 'Document deleted from folder successfully' });
+        })
+        .catch(err => {
+          return res.status(500).json({ error: err.message });
+        });
     })
     .catch(err => {
-    return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: err.message });
     });
-  });
-  
+});
+
 
 // CREATE FOLDER
 router.post('/add-folder', (req, res) => {
@@ -172,15 +190,16 @@ router.post('/add-folder', (req, res) => {
 });
 
   // READ
-  router.get('/folders', (req, res) => {
-    Folder.find()
-    .then(folders => {
-      return res.json(folders);
-    })
-    .catch(err => {
-    return res.status(500).json({ error: err.message });
-    });
+  router.get('/folders', requireAuth, (req, res) => {
+    Folder.find({ owner: req.user._id })
+      .then(folders => {
+        return res.json(folders);
+      })
+      .catch(err => {
+        return res.status(500).json({ error: err.message });
+      });
   });
+  
   
   router.get('/folders/:id', (req, res) => {
     Folder.findById(req.params.id)
@@ -197,31 +216,41 @@ router.post('/add-folder', (req, res) => {
   });
   
   // UPDATE
-  router.put('/folders/:id', (req, res) => {
-  Folder.findByIdAndUpdate(req.params.id, req.body)
-    .then(folder => {
-      if (!folder) {
-        return res.status(404).json({ message: 'Folder not found' });
-      }
-      return res.json({ message: 'Folder updated successfully' });
-    })
-    .catch(err => {
-      return res.status(500).json({ error: err.message });
-    });
-  });
-  
-  // DELETE FLODER
-  router.delete('/folders/:id', (req, res) => {
-    Folder.findByIdAndDelete(req.params.id)
-    .then(folder => {
-      if (!folder) {
-        return res.status(404).json({ message: 'Folder not found' });
-      }
-      return res.json({ message: 'Folder deleted successfully' });
-    })
-    .catch(err => {
-      return res.status(500).json({ error: err.message });
-    });
+  router.put('/folders/:id', requireAuth, (req, res) => {
+    Folder.findById(req.params.id)
+      .then(folder => {
+        if (!folder) {
+          return res.status(404).json({ message: 'Folder not found' });
+        }
+        if (folder.owner.toString() !== req.user._id.toString()) {
+          return res.status(403).json({ message: 'You are not authorized to update this folder' });
+        }
+        return Folder.findByIdAndUpdate(req.params.id, req.body);
+      })
+      .then(() => {
+        return res.json({ message: 'Folder updated successfully' });
+      })
+      .catch(err => {
+        return res.status(500).json({ error: err.message });
+      });
   });
 
+
+// DELETE FOLDER
+router.delete('/folders/:id', requireAuth, async (req, res) => {
+  try {
+    const folder = await Folder.findById(req.params.id);
+    if (!folder) {
+      return res.status(404).json({ message: 'Folder not found' });
+    }
+    if (folder.owner.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    await folder.remove();
+    return res.json({ message: 'Folder deleted successfully' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 module.exports = router;

@@ -10,6 +10,10 @@ const AssistantSchema = new mongoose.Schema({
         required: true,
         default: "Assistant"
     },
+    description: {
+        type: String,
+        required: true,
+    },
     prompt: {
         type: String,
         required: true

@@ -90,6 +90,7 @@ router.post('/register', async (req, res) => {
         apiKey: key
       });
       await workspace.save();
+      newUser.workspace = workspace._id;
     }
 
     await newUser.save();
@@ -154,6 +155,7 @@ router.post('/register-free-trial', async (req, res) => {
           apiKey: key
         });
         await workspace.save();
+        newUser.workspace = workspace._id;
       }
 
       let transaction = new Transaction({
@@ -210,6 +212,7 @@ router.post('/register-no-password', async (req, res) => {
         apiKey: key
       });
       await workspace.save();
+      newUser.workspace = workspace._id;
     }
 
     try {
