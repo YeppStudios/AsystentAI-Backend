@@ -5,6 +5,13 @@ const DocumentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'User' 
     },
+    ownerEmail: { 
+      type: String, 
+    },
+    workspace: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'Workspace' 
+    },
     title: {
         type: String,
         required: true,

@@ -6,7 +6,7 @@ const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
 
 // CREATE
-router.post('/add-document', (req, res) => {
+router.post('/add-document', requireAuth, (req, res) => {
   const document = new Document(req.body);
   document.save()
     .then(() => {
@@ -159,10 +159,10 @@ router.delete('/folders/:id/delete-document', requireAuth, (req, res) => {
 
 
 // CREATE FOLDER
-router.post('/add-folder', (req, res) => {
-  const { owner, title, category, documents } = req.body;
+router.post('/add-folder', requireAuth, (req, res) => {
+  const { title, category, documents } = req.body;
 
-  Folder.findOne({ owner: owner, title: title })
+  Folder.findOne({ owner: req.user._id, title: title })
     .populate('documents')
     .then(existingFolder => {
       if (existingFolder) {
@@ -170,7 +170,7 @@ router.post('/add-folder', (req, res) => {
       }
 
       const folder = new Folder({
-        owner: owner,
+        owner: req.user._id,
         title: title || "Untitled",
         category: category || "other",
         documents: documents || []

@@ -5,6 +5,10 @@ const FolderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'User' 
     },
+    workspace: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Workspace' 
+    },
     title: {
         type: String,
         required: true,
