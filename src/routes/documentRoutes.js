@@ -191,7 +191,7 @@ router.post('/add-folder', requireAuth, (req, res) => {
 
   // READ
   router.get('/folders', requireAuth, (req, res) => {
-    Folder.find({ owner: req.user._id })
+    Folder.find({ workspace: req.user.workspace })
       .then(folders => {
         return res.json(folders);
       })
