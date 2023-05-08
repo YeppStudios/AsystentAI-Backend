@@ -17,6 +17,10 @@ const DocumentSchema = new mongoose.Schema({
         required: true,
         default: "Untitled"
     },
+    vectorId: {
+        type: String,
+        required: true,
+    },
     category: {
         type: String,
         required: true,

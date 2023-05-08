@@ -34,7 +34,6 @@ router.get('/getUserAssistants/:userId', requireAuth, (req, res) => {
     Assistant.find({ owner: req.params.userId })
       .populate('documents') // populate documents field with actual documents
       .then(assistants => {
-        console.log("Assistant.find() returned: ", assistants); // log the results
         return res.json({assistants: assistants});
       })
       .catch(err => {

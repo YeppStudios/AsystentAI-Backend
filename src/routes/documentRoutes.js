@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const requireAuth = require('../middlewares/requireAuth');
+const e = require('express');
 const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
 
@@ -160,38 +161,36 @@ router.delete('/folders/:id/delete-document', requireAuth, (req, res) => {
 
 // CREATE FOLDER
 router.post('/add-folder', requireAuth, (req, res) => {
-  const { title, category, documents } = req.body;
-
+  const { title, category, workspace, documents } = req.body;
   Folder.findOne({ owner: req.user._id, title: title })
     .populate('documents')
     .then(existingFolder => {
       if (existingFolder) {
+        existingFolder.documents.push(...documents);
+        existingFolder.save();
         return res.json({ folder: existingFolder });
       }
-
-      const folder = new Folder({
-        owner: req.user._id,
-        title: title || "Untitled",
-        category: category || "other",
-        documents: documents || []
-      });
-
-      folder.save()
-        .then(() => {
-          return res.status(201).json({ folder });
-        })
-        .catch(err => {
-          return res.status(400).json({ error: err.message });
+      try {
+        const folder = new Folder({
+          owner: req.user._id,
+          title: title || "Untitled",
+          category: category || "other",
+          documents: documents || [],
+          workspace: workspace
         });
-    })
-    .catch(err => {
-      return res.status(500).json({ error: err.message });
+        folder.save()
+        return res.status(201).json({ folder });
+      } catch (e) {
+        console.log(e)
+        return res.status(500).json({ error: err.message });
+      }
+      
     });
 });
 
   // READ
-  router.get('/folders', requireAuth, (req, res) => {
-    Folder.find({ workspace: req.user.workspace })
+  router.get('/folders/:workspaceId', requireAuth, (req, res) => {
+    Folder.find({ workspace: req.params.workspaceId })
       .then(folders => {
         return res.json(folders);
       })
@@ -200,8 +199,7 @@ router.post('/add-folder', requireAuth, (req, res) => {
       });
   });
   
-  
-  router.get('/folders/:id', (req, res) => {
+  router.get('/getFolder/:id', requireAuth, (req, res) => {
     Folder.findById(req.params.id)
     .populate('documents')
     .then(folder => {
