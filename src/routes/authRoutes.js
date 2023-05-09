@@ -144,7 +144,7 @@ router.post('/register-free-trial', async (req, res) => {
       } catch (error) {
         console.error('Failed to add user to Mailchimp audience:', error.message);
       }
-      
+
       let workspace = null;
       if (isCompany) {
         const key = generateApiKey();
@@ -169,8 +169,8 @@ router.post('/register-free-trial', async (req, res) => {
       newUser.transactions.push(transaction);
       await transaction.save();
       await newUser.save();
-
-      return res.status(201).json({ newUser, verificationCode });
+      const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      return res.status(201).json({ newUser, verificationCode, token });
   } catch (error) {
       return res.status(500).json({ message: error.message });
   }
@@ -193,6 +193,7 @@ router.post('/register-no-password', async (req, res) => {
         });
         await workspace.save();
         user.workspace = workspace._id;
+        user.accountType = 'company';
         await user.save();
       }
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -200,7 +201,6 @@ router.post('/register-no-password', async (req, res) => {
     }
 
     let accountType = 'individual';
-
     if (isCompany) {
       accountType = 'company';
     }

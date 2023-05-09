@@ -129,7 +129,7 @@ const UserSchema = new mongoose.Schema({
     stats: StatsSchema,
     isBlocked: {
         type: Boolean,
-        default: true
+        default: false
     },
     appAdmin: {
         type: Boolean,
