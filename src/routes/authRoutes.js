@@ -193,6 +193,7 @@ router.post('/register-no-password', async (req, res) => {
         });
         await workspace.save();
         user.workspace = workspace._id;
+        await user.save();
       }
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
       return res.status(200).json({ token, user });
