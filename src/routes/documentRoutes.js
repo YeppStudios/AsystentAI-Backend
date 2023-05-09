@@ -29,6 +29,19 @@ router.get('/get-documents', (req, res) => {
     });
 });
 
+router.get('/document-by-vector/:vectorId', async (req, res, next) => {
+  try {
+    const vectorId = req.params.vectorId;
+    const document = await Document.findOne({ vectorId });
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+    res.json(document);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/get-document/:id', (req, res) => {
   Document.findById(req.params.id)
     .then(document => {
@@ -63,6 +76,21 @@ router.put('/update-document/:id', requireAuth, async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
+
+//get ids of documents from pinecone
+router.post('/getPineconeIds', requireAuth, async (req, res, next) => {
+  try {
+    const { documents } = req.body;
+    if (!documents || !Array.isArray(documents) || documents.length === 0) {
+      return res.status(400).json({ message: 'Invalid request body' });
+    }
+    const vectorIds = await Document.find({ _id: { $in: documents } }).distinct('vectorId');
+    return res.json(vectorIds);
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 //DELETE DOCUMENT
 router.delete('/delete-document/:id', requireAuth, async (req, res) => {
@@ -186,7 +214,29 @@ router.post('/add-folder', requireAuth, (req, res) => {
       }
       
     });
-});
+  });
+
+  router.post('/folders/documents', async (req, res) => {
+    const folderIds = req.body.folderIds;
+    const vectorIds = [];
+
+    try {
+      // Find all folders matching the provided ids
+      const folders = await Folder.find({ _id: { $in: folderIds } }).populate('documents');
+
+      // Extract all vectorIds from the documents in the folders
+      folders.forEach(folder => {
+        folder.documents.forEach(document => {
+          vectorIds.push(document._id);
+        });
+      });
+
+      // Return the list of vectorIds
+      return res.status(200).json(vectorIds);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
 
   // READ
   router.get('/folders/:workspaceId', requireAuth, (req, res) => {

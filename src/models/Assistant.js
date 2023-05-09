@@ -21,6 +21,9 @@ const AssistantSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    noEmbedPrompt: {
+        type: String,
+    },
     documents: [{
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Document' 

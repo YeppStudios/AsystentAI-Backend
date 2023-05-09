@@ -14,6 +14,9 @@ const MessageSchema = new mongoose.Schema({
         type: Date, 
         default: Date.now 
     },
+    contextDocs: {
+        type: [String],
+    }
 });
 
 mongoose.model('Message', MessageSchema);

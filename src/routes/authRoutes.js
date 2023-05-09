@@ -182,7 +182,18 @@ router.post('/register-no-password', async (req, res) => {
     const { email, name, isCompany } = req.body;
     const user = await User.findOne({ email });
     if (user) {
-      // User already exists, log them in
+      // User already exists, check if they have a workspace and if not create one
+      if(!user.workspace) {
+        const key = generateApiKey();
+        let workspace = new Workspace({
+          admins: [user._id],
+          company: user._id,
+          employees: [],
+          apiKey: key
+        });
+        await workspace.save();
+        user.workspace = workspace._id;
+      }
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
       return res.status(200).json({ token, user });
     }

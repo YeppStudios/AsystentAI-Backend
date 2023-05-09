@@ -34,7 +34,7 @@ function estimateTokens(text) {
 
 router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
     try {
-        const { text, system, context } = req.body;
+        const { text, system, context, contextDocs } = req.body;
         const user = req.user;
         let inputTokens = 0;
         let outputTokens = 0;
@@ -109,40 +109,42 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                       } else {
                         user.tokenBalance -= (totalTokens);
                       }
-  
-                    const transaction = new Transaction({
-                        title: "Message in chat",
-                        value: totalTokens,
-                        type: "expense",
-                        timestamp: Date.now(),
-                        category: "chat",
-                        user: user._id
-                    });
-                    user.tokenHistory.push({
-                        timestamp: Date.now(),
-                        balance: user.tokenBalance
-                    });
+                    if (response !== '[%fetch_info%]' && response !== '[fetch_info]') {
+                        const transaction = new Transaction({
+                            title: "Message in chat",
+                            value: totalTokens,
+                            type: "expense",
+                            timestamp: Date.now(),
+                            category: "chat",
+                            user: user._id
+                        });
+                        user.tokenHistory.push({
+                            timestamp: Date.now(),
+                            balance: user.tokenBalance
+                        });
 
-                    const userMessage = new Message({
-                        text: text,
-                        conversation,
-                        sender: "user"
-                    });
-                    const assistantResponse = new Message({
-                        text: response,
-                        conversation,
-                        sender: "assistant"
-                    });
-                    await user.save();
-                    await userMessage.save();
-                    await assistantResponse.save();
-                    if(user.email != "gerke.contact@gmail.com" && user.email != "piotrg2003@gmail.com"){
-                        await transaction.save();
-                      }
-                    conversation.messages.push(userMessage);
-                    conversation.messages.push(assistantResponse);
-                    conversation.lastUpdated = Date.now();
-                    await conversation.save();
+                        const userMessage = new Message({
+                            text: text,
+                            conversation,
+                            sender: "user"
+                        });
+                        const assistantResponse = new Message({
+                            text: response,
+                            conversation,
+                            sender: "assistant",
+                            contextDocs
+                        });
+                        await user.save();
+                        await userMessage.save();
+                        await assistantResponse.save();
+                        if(user.email != "gerke.contact@gmail.com" && user.email != "piotrg2003@gmail.com"){
+                            await transaction.save();
+                        }
+                        conversation.messages.push(userMessage);
+                        conversation.messages.push(assistantResponse);
+                        conversation.lastUpdated = Date.now();
+                        await conversation.save();
+                    }
                     res.end();
                     return;
                   } else if(parsed.choices[0].delta.content) {
