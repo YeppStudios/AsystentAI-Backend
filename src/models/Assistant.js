@@ -24,6 +24,10 @@ const AssistantSchema = new mongoose.Schema({
     noEmbedPrompt: {
         type: String,
     },
+    folders: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Folder',
+    }],
     documents: [{
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Document' 

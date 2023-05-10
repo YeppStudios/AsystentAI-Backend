@@ -5,6 +5,7 @@ const requireAuth = require('../middlewares/requireAuth');
 const e = require('express');
 const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
+const Assistant = mongoose.model('Assistant');
 
 // CREATE
 router.post('/add-document', requireAuth, (req, res) => {
@@ -146,7 +147,13 @@ router.post('/folders/:id/add-document', requireAuth, (req, res) => {
       folder.documents.push(documentId);
       folder.save()
         .then(() => {
-          return res.status(200).json({ message: 'Document added to folder successfully' });
+          Assistant.updateMany({ folders: req.params.id }, { $push: { documents: documentId } })
+            .then(() => {
+              return res.status(200).json({ message: 'Document added to folder and assistants successfully' });
+            })
+            .catch(err => {
+              return res.status(500).json({ error: err.message });
+            });
         })
         .catch(err => {
           return res.status(500).json({ error: err.message });
@@ -156,6 +163,7 @@ router.post('/folders/:id/add-document', requireAuth, (req, res) => {
       return res.status(500).json({ error: err.message });
     });
 });
+
 
 // DELETE DOCUMENT FROM FOLDER
 router.delete('/folders/:id/delete-document', requireAuth, (req, res) => {

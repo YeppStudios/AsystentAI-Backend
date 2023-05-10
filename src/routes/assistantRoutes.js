@@ -6,7 +6,7 @@ const requireAuth = require('../middlewares/requireAuth');
 const Assistant = mongoose.model('Assistant');
 
 // CREATE
-router.post('/create-assistant', (req, res) => {
+router.post('/create-assistant', requireAuth, (req, res) => {
   const assistant = new Assistant(req.body);
   assistant.save()
     .then(() => {
@@ -57,18 +57,19 @@ router.get('/get-assistant/:id', (req, res) => {
 });
 
 // UPDATE
-router.put('/update-assistant/:id', (req, res) => {
-  Assistant.findByIdAndUpdate(req.params.id, req.body)
+router.put('/update-assistant/:id', requireAuth, (req, res) => {
+  Assistant.findOneAndUpdate({ _id: req.params.id, owner: req.user._id }, req.body)
     .then(assistant => {
       if (!assistant) {
-        return res.status(404).json({ message: 'Assistant not found' });
+        return res.status(404).json({ message: 'Assistant not found or not authorized to modify' });
       }
-      res.json({ message: 'Assistant updated successfully' });
+      return res.json({ message: 'Assistant updated successfully' });
     })
     .catch(err => {
-      res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: err.message });
     });
 });
+
 
 // DELETE
 router.delete('/delete-assistant/:id', (req, res) => {
