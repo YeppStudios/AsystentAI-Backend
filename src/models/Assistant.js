@@ -17,6 +17,9 @@ const AssistantSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    category: {
+        type: String,
+    },
     prompt: {
         type: String,
         required: true
