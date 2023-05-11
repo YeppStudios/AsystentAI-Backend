@@ -32,7 +32,7 @@ function estimateTokens(text) {
 
 router.post('/askAI', requireTokens, async (req, res) => {
     try {
-        const { prompt, title, preprompt, model } = req.body;
+        const { prompt, title, preprompt, model, systemPrompt } = req.body;
         const user = req.user;
         let inputTokens = 0;
         let outputTokens = 0;
@@ -40,14 +40,14 @@ router.post('/askAI', requireTokens, async (req, res) => {
         let messages = [];
         if(preprompt) {
             messages = [
-                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczasz ilość emoji w generowanej treści.' },
+                { role: 'system', content: systemPrompt },
                 { role: 'user', content: preprompt },
                 { role: 'assistant', content: "Brzmi fascynująco, w czym mogę Ci pomóc?" },
                 { role: 'user', content: prompt },
             ]
         } else {
             messages = [
-                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczasz ilość emoji w generowanej treści.' },
+                { role: 'system', content: systemPrompt },
                 { role: 'user', content: prompt }
             ]
         }
@@ -238,13 +238,13 @@ router.post('/messageAI', requireTokens, async (req, res) => {
 
 router.post('/compose-editor-completion', requireTokens, async (req, res) => {
   try {
-      const { prompt, model } = req.body;
+      const { prompt, model, systemPrompt } = req.body;
       const user = req.user;
       let inputTokens = 0;
       let outputTokens = 0;
       let reply = '';
       let messages = [
-          { role: 'system', content: 'Jesteś przyjaznym, pomocnym i wszechwiedzącym copywriterem. Specjalizujesz się w generowaniu wysokiej jakości treści marketingowych i SEO. Nowe linie rozpoczynaj od \n \n' },
+          { role: 'system', content: `${systemPrompt} Pisząc treść nowe linie rozpoczynaj od \n \n` },
           { role: 'user', content: prompt }
       ]
       messages.forEach(message => {
