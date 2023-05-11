@@ -40,14 +40,14 @@ router.post('/askAI', requireTokens, async (req, res) => {
         let messages = [];
         if(preprompt) {
             messages = [
-                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczaj ilość emoji w generowanym tekście.' },
+                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczasz ilość emoji w generowanej treści.' },
                 { role: 'user', content: preprompt },
                 { role: 'assistant', content: "Brzmi fascynująco, w czym mogę Ci pomóc?" },
                 { role: 'user', content: prompt },
             ]
         } else {
             messages = [
-                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczaj ilość emoji w generowanym tekście.' },
+                { role: 'system', content: 'Jesteś przyjaznym, pomocnym copywriterem i marketerem, który jest mistrzem w generowaniu wysokiej jakości treści. Ograniczasz ilość emoji w generowanej treści.' },
                 { role: 'user', content: prompt }
             ]
         }

@@ -250,13 +250,10 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
             await transaction.save();
             await purchase.save();
           }
-
+          await user.save();
           // Save the user and send invoice
           try {
-            await user.save();
-            
             if (transactionData.metadata.trial === "false" && user.accountType === "company" && transactionData.metadata.asCompany === "true") {
-              if(user.accountType === "company" && transactionData.metadata.asCompany === "true"){
               //check if client is in infakt if not then create new one
                 try {
                   let infaktClientsResponse = await axios.get(`https://api.infakt.pl/v3/clients.json?q[email_eq]=${user.contactEmail}`, infaktConfig);
@@ -304,13 +301,13 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                 } catch (e) {
                   console.log(e);
                 }
-              }
+
               await axios.post('https://api.infakt.pl/v3/invoices.json', invoiceData, infaktConfig);
-              await new Promise(resolve => setTimeout(resolve, 2500));
+              await new Promise(resolve => setTimeout(resolve, 3000));
               const latestInvoice = await axios.get('https://api.infakt.pl/v3/invoices.json?limit=1', infaktConfig);
-              const lastInvoiceID = latestInvoice.data.entities[0].id;
-              await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/paid.json`, {invoice: {"status": "paid"}}, infaktConfig);
-              await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/deliver_via_email.json`, {"print_type": "original"}, infaktConfig);
+              const lastInvoiceID = latestInvoice.data.entities[0].uuid;
+              // await axios.post(`https://api.infakt.pl/api/v3/invoices/${lastInvoiceID}/paid.json`, {}, infaktConfig);
+              await axios.post(`https://api.infakt.pl/api/v3/invoices/${lastInvoiceID}/deliver_via_email.json`, {"print_type": "original"}, infaktConfig);
             }
           } catch (error) {
             console.error(error);
@@ -563,9 +560,9 @@ router.post('/update-subscription', requireAuth, async (req, res) => {
         await axios.post('https://api.infakt.pl/v3/invoices.json', invoiceData, infaktConfig);
         await new Promise(resolve => setTimeout(resolve, 2500));
         const latestInvoice = await axios.get('https://api.infakt.pl/v3/invoices.json?limit=1', infaktConfig);
-        const lastInvoiceID = latestInvoice.data.entities[0].id;
-        await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/paid.json`, {invoice: {"status": "paid"}}, infaktConfig);
-        await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/deliver_via_email.json`, {"print_type": "original"}, infaktConfig);
+        const lastInvoiceID = latestInvoice.data.entities[0].uuid;
+        // await axios.post(`https://api.infakt.pl/api/v3/invoices/${lastInvoiceID}/paid.json`, {}, infaktConfig);
+        await axios.post(`https://api.infakt.pl/api/v3/invoices/${lastInvoiceID}/deliver_via_email.json`, {"print_type": "original"}, infaktConfig);
       }
       await user.save();
       await transaction.save();

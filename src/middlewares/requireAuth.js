@@ -22,9 +22,6 @@ module.exports = async (req, res, next) => {
             return res.status(404).send({ error: 'User not found' });
         }
 
-        if (user.isBlocked) {
-            return res.status(401).send({ error: 'Your account is blocked, please contact support' });
-        }
         req.user = user;
 
         await user.save();

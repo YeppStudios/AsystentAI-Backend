@@ -37,6 +37,21 @@ function generateApiKey() {
   return apiKey;
 }
 
+//open login
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: 'User not found' });
+    if (user.isBlocked) return res.status(400).json({ message: 'User is blocked' });
+    await user.comparePassword(password);
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    return res.json({ token, user });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
 
 router.post('/register', async (req, res) => {
   try {
@@ -105,7 +120,25 @@ router.post('/register-free-trial', async (req, res) => {
   try {
       const { email, password, name, isCompany, referrerId } = req.body;
       const user = await User.findOne({ email });
-      if (user) return res.status(400).json({ message: 'User already exists' });
+      if (user) {
+        // User already exists, log them in
+        await user.comparePassword(password);
+        if(!user.workspace) {
+          const key = generateApiKey();
+          let workspace = new Workspace({
+            admins: [user._id],
+            company: user._id,
+            employees: [],
+            apiKey: key
+          });
+          await workspace.save();
+          user.workspace = workspace._id;
+          user.accountType = 'company';
+          await user.save();
+        }
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        return res.status(200).json({ token, newUser: user });
+      }
 
       if(referrerId){
         try {
@@ -212,7 +245,7 @@ router.post('/register-no-password', async (req, res) => {
       password: verificationCode,
       name,
       accountType,
-      isBlocked: false,
+      isBlocked: true,
     });
 
     if (isCompany) {
@@ -400,22 +433,6 @@ router.post('/save-contact', async (req, res) => {
 //     return res.status(500).json({ message: error.message });
 //   }
 // });
-
-//open login
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'User not found' });
-    if (user.isBlocked) return res.status(400).json({ message: 'User is blocked' });
-    await user.comparePassword(password);
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    return res.json({ token, user });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
 
 
 
