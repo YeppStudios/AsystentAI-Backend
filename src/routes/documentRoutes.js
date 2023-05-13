@@ -30,18 +30,19 @@ router.get('/get-documents', (req, res) => {
     });
 });
 
-router.get('/document-by-vector/:vectorId', async (req, res, next) => {
+router.post('/documents-by-vector-ids', async (req, res, next) => {
   try {
-    const vectorId = req.params.vectorId;
-    const document = await Document.findOne({ vectorId });
-    if (!document) {
-      return res.status(404).json({ message: 'Document not found' });
+    const { vectorIds } = req.body;
+    const documents = await Document.find({ vectorId: { $in: vectorIds } });
+    if (!documents.length) {
+      return res.json({documents: []});
     }
-    res.json(document);
+    return res.json({documents});
   } catch (err) {
     next(err);
   }
 });
+
 
 router.get('/get-document/:id', (req, res) => {
   Document.findById(req.params.id)
@@ -93,31 +94,40 @@ router.post('/getPineconeIds', requireAuth, async (req, res, next) => {
 });
 
 
-//DELETE DOCUMENT
-router.delete('/delete-document/:id', requireAuth, async (req, res) => {
-  const documentId = req.params.id;
+// DELETE DOCUMENT
+router.delete('/delete-document/:vectorId', requireAuth, async (req, res) => {
+  const vectorId = req.params.vectorId;
   
   try {
     // Find the document and check if it belongs to the authenticated user
-    const document = await Document.findById(documentId);
+    const document = await Document.findOne({ vectorId: vectorId });
     if (!document) {
       return res.status(404).json({ message: 'Document not found' });
     }
-    if (document.owner.toString() !== req.user._id) {
+    if (document.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Unauthorized' });
     }
     
     // Find all folders that contain the document
-    const folders = await Folder.find({ documents: documentId });
+    const folders = await Folder.find({ documents: document._id });
     
     // Remove the document ID from the documents array of each folder
-    const updateOps = folders.map(folder => {
-      return Folder.updateOne({ _id: folder._id }, { $pull: { documents: documentId } });
+    const folderUpdateOps = folders.map(folder => {
+      return Folder.updateOne({ _id: folder._id }, { $pull: { documents: document._id } });
     });
-    await Promise.all(updateOps);
+    await Promise.all(folderUpdateOps);
+
+    // Find all assistants that contain the document
+    const assistants = await Assistant.find({ documents: document._id });
+
+    // Remove the document ID from the documents array of each assistant
+    const assistantUpdateOps = assistants.map(assistant => {
+      return Assistant.updateOne({ _id: assistant._id }, { $pull: { documents: document._id } });
+    });
+    await Promise.all(assistantUpdateOps);
     
     // Delete the document itself
-    const result = await Document.findByIdAndDelete(documentId);
+    const result = await Document.findByIdAndDelete(document._id);
     
     if (!result) {
       return res.status(404).json({ message: 'Document not found' });
@@ -128,7 +138,6 @@ router.delete('/delete-document/:id', requireAuth, async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
-
 
 // ADD DOCUMENT TO FOLDER
 router.post('/folders/:id/add-document', requireAuth, (req, res) => {

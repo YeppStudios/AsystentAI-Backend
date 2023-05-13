@@ -71,18 +71,21 @@ router.put('/update-assistant/:id', requireAuth, (req, res) => {
 });
 
 
-// DELETE
-router.delete('/delete-assistant/:id', (req, res) => {
-  Assistant.findByIdAndDelete(req.params.id)
-    .then(assistant => {
-      if (!assistant) {
-        return res.status(404).json({ message: 'Assistant not found' });
-      }
-      res.json({ message: 'Assistant deleted successfully' });
-    })
-    .catch(err => {
-      res.status(500).json({ error: err.message });
-    });
+router.delete('/delete-assistant/:id', requireAuth, async (req, res) => {
+  try {
+    const assistant = await Assistant.findById(req.params.id);
+    if (!assistant) {
+      return res.status(404).json({ message: 'Assistant not found' });
+    }
+    if (assistant.owner.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    await assistant.remove();
+    res.json({ message: 'Assistant deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
+
 
 module.exports = router;

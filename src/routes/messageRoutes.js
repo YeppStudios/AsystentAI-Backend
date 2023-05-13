@@ -148,10 +148,11 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                     res.end();
                     return;
                   } else if(parsed.choices[0].delta.content) {
+                    console.log("writing")
                     res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}\n\n`);
                     response += parsed.choices[0].delta.content
                   }
-                } catch(error) {
+                } catch (error) {
                   console.error('Could not JSON parse stream message', message, error);
                 }
               }

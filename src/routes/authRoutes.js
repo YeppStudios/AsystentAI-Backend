@@ -120,6 +120,10 @@ router.post('/register-free-trial', async (req, res) => {
   try {
       const { email, password, name, isCompany, referrerId } = req.body;
       const user = await User.findOne({ email });
+
+      let workspace = null;
+      let freeTokens = 2500;
+
       if (user) {
         // User already exists, log them in
         await user.comparePassword(password);
@@ -178,7 +182,6 @@ router.post('/register-free-trial', async (req, res) => {
         console.error('Failed to add user to Mailchimp audience:', error.message);
       }
 
-      let workspace = null;
       if (isCompany) {
         const key = generateApiKey();
         workspace = new Workspace({
@@ -189,16 +192,17 @@ router.post('/register-free-trial', async (req, res) => {
         });
         await workspace.save();
         newUser.workspace = workspace._id;
+        freeTokens = 5000;
       }
 
       let transaction = new Transaction({
-          value: 2500,
-          title: "+2500 elixiru na start",
+          value: freeTokens,
+          title: `+${freeTokens} elixiru na start`,
           type: "income",
           timestamp: Date.now()
       });
 
-      newUser.tokenBalance += 2500;
+      newUser.tokenBalance += freeTokens;
       newUser.transactions.push(transaction);
       await transaction.save();
       await newUser.save();

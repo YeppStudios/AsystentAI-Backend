@@ -30,6 +30,35 @@ function estimateTokens(text) {
     return tokens;
 }
 
+router.post('/completion', requireTokens, async (req, res) => {
+  try {
+      const { prompt, model, systemPrompt } = req.body;
+
+      const messages = [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt }
+      ]
+
+      try {
+        const completion = await openai.createChatCompletion({
+          model: model,
+          messages,
+          temperature: 0,
+      });
+
+      return res.status(201).json({ completion: completion.data.choices[0].message.content });
+
+      } catch (error) {
+        console.log(error);
+        return res.status(500).send({ error: error.message });
+      }
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({ error: error.message });
+  }
+});
+
 router.post('/askAI', requireTokens, async (req, res) => {
     try {
         const { prompt, title, preprompt, model, systemPrompt } = req.body;
