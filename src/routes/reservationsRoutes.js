@@ -50,7 +50,8 @@ router.post('/addReservation', async (req, res) => {
       const reservation = new BusinessReservation({
         company: req.body.company,
         email: req.body.email,
-        website: req.body.website
+        website: req.body.website,
+        phone: req.body.phone
       });
       await reservation.save();
       res.status(201).json({ message: 'Reservation added successfully' });

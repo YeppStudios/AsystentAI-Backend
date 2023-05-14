@@ -37,7 +37,9 @@ const BusinessReservation = new mongoose.Schema({
     },
     website: {
         type: String,
-        required: true
+    },
+    phone: {
+        type: String,
     }
 });
 
