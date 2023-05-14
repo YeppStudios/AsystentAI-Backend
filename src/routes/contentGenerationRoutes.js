@@ -7,6 +7,7 @@ const { Configuration, OpenAIApi } = OpenAI;
 const requireTokens = require('../middlewares/requireTokens');
 const requireTestTokens = require('../middlewares/requireTestTokens');
 require('dotenv').config();
+const axios = require('axios');
 const Transaction = mongoose.model('Transaction');
 const Workspace = mongoose.model('Workspace');
 const User = mongoose.model('User');
@@ -169,6 +170,55 @@ router.post('/askAI', requireTokens, async (req, res) => {
             console.error('An error occurred during OpenAI request', error);
         }
     }
+});
+
+
+router.post('/fetch-links', async (req, res) => {
+  const { query } = req.body;
+
+  const messages = [
+    { role: 'system', content: `Your only job is to figure out the best optimised Google search query that will give you just enough information to compose an educated answer. 
+    Part of the user query might be a task for you that you should not include into Google search query.
+    Rules you always follow:
+    - You modify text in a language in which user asks. 
+    - You reply ONLY with the modified query, no word more.
+    - If the user query doesn't require the web search to answer it return exactly [%no_internet%].`},
+    { role: 'user', content: "Query: " + query }
+  ]
+
+  const completion = await openai.createChatCompletion({
+      model: "gpt-4",
+      messages,
+      temperature: 0,
+  });
+
+  if (completion.data.choices[0].message.content !== '[%no_internet%]') {
+    let data = JSON.stringify({
+      "q": completion.data.choices[0].message.content
+    });
+
+    let config = {
+      method: 'post',
+      url: 'https://google.serper.dev/search',
+      headers: { 
+        'X-API-KEY': process.env.SERP_API_KEY, 
+        'Content-Type': 'application/json'
+      },
+      data : data
+    };
+
+    axios(config)
+    .then((response) => {
+      // Extract top 3 links from the organic results
+      const top3Links = response.data.organic.slice(0, 3).map(result => result.link);
+      return res.json(top3Links);
+    })
+    .catch((error) => {
+      return res.status(500).json({ message: error });
+    });
+  } else {
+    return res.json(["[%no_internet%]"]);
+  }
 });
 
 router.post('/messageAI', requireTokens, async (req, res) => {

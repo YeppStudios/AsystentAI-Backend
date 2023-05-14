@@ -140,37 +140,33 @@ router.delete('/delete-document/:vectorId', requireAuth, async (req, res) => {
 });
 
 // ADD DOCUMENT TO FOLDER
-router.post('/folders/:id/add-document', requireAuth, (req, res) => {
-  Folder.findOne({ _id: req.params.id, owner: req.user._id })
-    .then(folder => {
-      if (!folder) {
-        return res.status(404).json({ message: 'Folder not found' });
-      }
-      const documentId = req.body.documentId;
-      if (!documentId) {
-        return res.status(400).json({ message: 'documentId is required' });
-      }
-      if (folder.documents.includes(documentId)) {
-        return res.status(400).json({ message: 'Document already exists in the folder' });
-      }
-      folder.documents.push(documentId);
-      folder.save()
-        .then(() => {
-          Assistant.updateMany({ folders: req.params.id }, { $push: { documents: documentId } })
-            .then(() => {
-              return res.status(200).json({ message: 'Document added to folder and assistants successfully' });
-            })
-            .catch(err => {
-              return res.status(500).json({ error: err.message });
-            });
-        })
-        .catch(err => {
-          return res.status(500).json({ error: err.message });
-        });
-    })
-    .catch(err => {
-      return res.status(500).json({ error: err.message });
-    });
+router.post('/folders/:id/add-document', requireAuth, async (req, res) => {
+  try {
+    const folder = await Folder.findOne({ _id: req.params.id, owner: req.user._id });
+
+    if (!folder) {
+      return res.status(404).json({ message: 'Folder not found' });
+    }
+
+    const documentId = req.body.documentId;
+
+    if (!documentId) {
+      return res.status(400).json({ message: 'documentId is required' });
+    }
+
+    if (folder.documents.includes(documentId)) {
+      return res.status(400).json({ message: 'Document already exists in the folder' });
+    }
+
+    folder.documents.push(documentId);
+    await folder.save();
+
+    await Assistant.updateMany({ folders: req.params.id }, { $push: { documents: documentId } });
+
+    return res.status(200).json({ message: 'Document added to folder and assistants successfully' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 

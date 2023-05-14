@@ -1,9 +1,8 @@
-const OpenAI = require('openai');
-const { Configuration, OpenAIApi } = OpenAI;
+const OpenAIImport = require('openai');
+const { Configuration, OpenAIApi } = OpenAIImport;
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
-const axios = require('axios');
 const requireAuth = require('../middlewares/requireAuth');
 const requireTokens = require('../middlewares/requireTokens');
 const Message = mongoose.model('Message');
@@ -31,10 +30,9 @@ function estimateTokens(text) {
     return tokens;
 }
 
-
 router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
     try {
-        const { text, system, context, contextDocs } = req.body;
+        const { text, system, context, contextDocs, browsing } = req.body;
         const user = req.user;
         let inputTokens = 0;
         let outputTokens = 0;
@@ -45,7 +43,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
           systemPrompt = system;
         }
         if (context) {
-          embeddingContext = `Kontekst: ${context}. Teraz na podstawie kontekstu odpowiedz na: `;
+          embeddingContext = `Kontekst: ${context}. Odpowiedz na: `;
         }
         const conversation = await Conversation.findById(req.params.conversationId)
             .populate({
@@ -100,7 +98,10 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                     inputTokens += estimateTokens(messagesText);
                     inputTokens += estimateTokens(systemPrompt);
                     inputTokens += estimateTokens(embeddingContext);
-                    const totalTokens = inputTokens + outputTokens;
+                    let totalTokens = inputTokens + outputTokens;
+                    if (browsing) {
+                      totalTokens = inputTokens + outputTokens + 150;
+                    }
                     if (user.workspace) {
                         const workspace = await Workspace.findById(user.workspace)
                         const company = await User.findById(workspace.company);
@@ -148,7 +149,6 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                     res.end();
                     return;
                   } else if(parsed.choices[0].delta.content) {
-                    console.log("writing")
                     res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}\n\n`);
                     response += parsed.choices[0].delta.content
                   }
