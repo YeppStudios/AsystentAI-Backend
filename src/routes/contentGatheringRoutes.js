@@ -49,9 +49,9 @@ router.patch('/updateContent/:id', requireAuth, async (req, res) => {
 });
 
 
-router.delete('/deleteContent/:id', requireAdmin, async (req, res) => {
+router.delete('/deleteContent/:id', requireAuth, async (req, res) => {
     const contentId = req.params.id;
-
+    
     try {
         const content = await Content.findById(contentId);
         if (!content) {
