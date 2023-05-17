@@ -17,6 +17,16 @@ const AssistantSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    companyName: {
+        type: String,
+    },
+    aboutCompany: {
+        type: String,
+    },
+    exampleContent: {
+        type: String,
+        default: ""
+    },
     category: {
         type: String,
     },

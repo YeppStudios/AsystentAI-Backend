@@ -181,7 +181,6 @@ UserSchema.methods.comparePassword = function(userPassword) {
                 return reject(err);
             }
             if (!isMatch){
-                console.log(userPassword, user.password)
                 return reject(false);
             }
 
