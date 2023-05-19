@@ -192,7 +192,7 @@ router.post('/register-free-trial', async (req, res) => {
         });
         await workspace.save();
         newUser.workspace = workspace._id;
-        freeTokens = 10000;
+        freeTokens = 7500;
       }
 
       let transaction = new Transaction({

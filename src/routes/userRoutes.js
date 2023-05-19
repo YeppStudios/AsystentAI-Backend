@@ -63,6 +63,21 @@ router.patch('/unblockUser/:userId', requireAdmin, async (req, res) => {
   }
 });
 
+
+router.get('/onboarding-step', requireAuth, async (req, res) => {
+  try {
+      const user = await User.findById(req.user._id, 'onboardingStep');
+
+      if (!user) {
+          return res.status(404).send({ message: 'User not found' });
+      }
+
+      res.send({ onboardingStep: user.onboardingStep });
+  } catch (error) {
+      res.status(500).send({ message: error.message });
+  }
+});
+
 router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     const { contactEmail, profilePicture, fullName, street, apartmentNumber, companyName, nip, city, postalCode } = req.body;

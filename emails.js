@@ -1,5 +1,6 @@
 const fs = require('fs');
 let jsonData = [
+
 ]
 
 let emails = jsonData.map(function(item) {

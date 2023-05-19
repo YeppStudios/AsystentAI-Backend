@@ -86,6 +86,10 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    onboardingStep: {
+        type: Number,
+        default: 0
+    },
     city: {
         type: String,
         default: ""
