@@ -63,6 +63,23 @@ router.patch('/unblockUser/:userId', requireAdmin, async (req, res) => {
   }
 });
 
+router.get('/newUsersCount', async (req, res) => {
+  try {
+      const fiveDaysAgo = new Date();
+      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 7);
+
+      const count = await User.countDocuments({
+          createdAt: {
+              $gte: fiveDaysAgo
+          }
+      });
+
+      res.json({ count });
+  } catch(err) {
+      console.error(err);
+      res.status(500).send('Server Error');
+  }
+});
 
 router.get('/onboarding-step', requireAuth, async (req, res) => {
   try {
