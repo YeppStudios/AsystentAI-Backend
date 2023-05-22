@@ -62,7 +62,7 @@ router.post('/register', async (req, res) => {
     if (user) {
       // User already exists, log them in
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      return res.status(200).json({ token, user, workspace: user.workspace });
+      return res.status(200).json({ token, user });
     }
 
     const verificationCode = generateVerificationCode(6);

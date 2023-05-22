@@ -253,7 +253,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           await user.save();
           // Save the user and send invoice
           try {
-            if (transactionData.metadata.trial === "false" && user.accountType === "company" && transactionData.metadata.asCompany === "true") {
+            if (user.accountType === "company" && transactionData.metadata.asCompany === "true") {
               //check if client is in infakt if not then create new one
                 try {
                   let infaktClientsResponse = await axios.get(`https://api.infakt.pl/v3/clients.json?q[email_eq]=${user.contactEmail}`, infaktConfig);
