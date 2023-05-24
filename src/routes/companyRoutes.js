@@ -43,7 +43,7 @@ router.get('/workspace-company/:workspaceId', async (req, res) => {
     const workspace = await Workspace.findById(workspaceId)
       .populate({
         path: 'company',
-        select: 'name email tokenBalance',
+        select: 'name email tokenBalance _id',
       });
 
     if (!workspace) {

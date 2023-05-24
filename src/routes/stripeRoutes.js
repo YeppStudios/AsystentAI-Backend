@@ -178,7 +178,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               await purchase.save();
 
               //checking if transaction was referred
-              if (transactionData.metadata.referrer_id) {
+              if (transactionData.metadata.referrer_id && transactionData.metadata.plan_id === "6444d4394ab2cf9819e5b5f4") {
               try {
                 const referrer = await User.findOne({ _id: transactionData.metadata.referrer_id });
                 if(referrer){
