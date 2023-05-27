@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const User = mongoose.model('User');
 const Transaction = mongoose.model('Transaction');
 const requireAuth = require('../middlewares/requireAuth');
+const requireAdmin = require('../middlewares/requireAdmin');
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ router.get('/purchase-history/:userId', requireAuth, (req, res) => {
         });
 });
 
-router.get('/stats/:userId', async (req, res) => {
+router.get('/stats/:userId', requireAuth, async (req, res) => {
     try {
       const user = await User.findById(req.params.userId);
       const { totalPosts, totalEmails, totalIdeas } = user.stats;
@@ -71,7 +72,7 @@ router.post('/user/:userId/addPosts', requireAuth, (req, res) => {
     });
   });
 
-  router.post('/count-individual-transactions', async (req, res) => { // Changed to POST
+  router.post('/count-individual-transactions', requireAdmin, async (req, res) => { // Changed to POST
     try {
       const { start, end } = req.body;
   
@@ -104,7 +105,7 @@ router.post('/user/:userId/addPosts', requireAuth, (req, res) => {
     }
   });
   
-  router.post('/count-cumulative-transactions', async (req, res) => {
+  router.post('/count-cumulative-transactions', requireAdmin, async (req, res) => {
     try {
       const { start, end } = req.body;
   
@@ -151,7 +152,7 @@ router.post('/user/:userId/addPosts', requireAuth, (req, res) => {
   
 
 
-  router.post('/count-individual-tokens', async (req, res) => { // Changed to POST
+  router.post('/count-individual-tokens', requireAdmin, async (req, res) => { // Changed to POST
     try {
       const { start, end } = req.body;
   
@@ -184,7 +185,7 @@ router.post('/user/:userId/addPosts', requireAuth, (req, res) => {
     }
   });
   
-  router.post('/count-cumulative-tokens', async (req, res) => {
+  router.post('/count-cumulative-tokens', requireAdmin, async (req, res) => {
     try {
       const { start, end } = req.body;
   
@@ -229,7 +230,7 @@ router.post('/user/:userId/addPosts', requireAuth, (req, res) => {
     }
   });
   
-  router.post('/transactions-last-7-days', async (req, res) => {
+  router.post('/transactions-last-7-days', requireAdmin, async (req, res) => {
     try {
       // Get the current date
       const currentDate = new Date();

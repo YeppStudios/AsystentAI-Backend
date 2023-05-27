@@ -9,7 +9,7 @@ const router = express.Router();
 
 
 // Get all users
-router.get('/users', async (req, res) => {
+router.get('/users', requireAdmin, async (req, res) => {
     try {
         const users = await User.find();
         return res.status(200).json(users);
@@ -19,9 +19,9 @@ router.get('/users', async (req, res) => {
 });
 
 // Get a single user
-router.get('/users/:id', async (req, res) => {
+router.get('/users/:id', requireAuth, async (req, res) => {
     try {
-        const user = await User.findById(req.params.id);
+        const user = await User.findById(req.user._id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -63,7 +63,7 @@ router.patch('/unblockUser/:userId', requireAdmin, async (req, res) => {
   }
 });
 
-router.get('/newUsersCount', async (req, res) => {
+router.get('/newUsersCount', requireAdmin, async (req, res) => {
   try {
       const fiveDaysAgo = new Date();
       fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 7);
@@ -97,7 +97,7 @@ router.get('/onboarding-step', requireAuth, async (req, res) => {
 
 router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
-    const { contactEmail, profilePicture, fullName, street, apartmentNumber, companyName, nip, city, postalCode } = req.body;
+    const { contactEmail, profilePicture, fullName, street, apartmentNumber, companyName, nip, city, postalCode, accountType, name } = req.body;
     
     try {
       const user = await User.findById(id);
@@ -108,6 +108,10 @@ router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
 
       if (postalCode) {
         user.postalCode = postalCode;
+      }
+
+      if (accountType) {
+        user.accountType = accountType;
       }
 
       if (city) {
@@ -129,7 +133,11 @@ router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
       if (profilePicture) {
         user.profilePicture = profilePicture;
       }
-      
+
+      if (name) {
+        user.name = name;
+      }
+
       if (street) {
         user.street = street;
       }

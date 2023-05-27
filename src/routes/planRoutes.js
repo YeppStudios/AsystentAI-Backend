@@ -1,15 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
-const requireAuth = require('../middlewares/requireAuth');
-const requireTester = require('../middlewares/requireTester');
 const requireAdmin = require('../middlewares/requireAdmin');
 const Plan = mongoose.model('Plan');
 const User = mongoose.model('User');
 const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
 
-router.get('/getPlans', async (req, res) => {
+router.get('/getPlans', requireAdmin, async (req, res) => {
     try {
         const plans = await Plan.find();
         res.json(plans);
@@ -18,7 +16,7 @@ router.get('/getPlans', async (req, res) => {
     }
 });
 
-router.get('/getPlan/:id', async (req, res) => {
+router.get('/getPlan/:id', requireAdmin, async (req, res) => {
     try {
         const plan = await Plan.findById(req.params.id);
         if (!plan) {

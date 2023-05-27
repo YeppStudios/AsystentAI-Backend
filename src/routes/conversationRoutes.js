@@ -125,6 +125,9 @@ router.delete('/deleteConversation/:id', requireAuth, async (req, res) => {
 router.patch('/updateConversationTitle', requireAuth, async (req, res) => {
     try {
         const conversation = await Conversation.findById(req.body._id);
+        if (conversation.user.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
         conversation.title = req.body.title;
         await conversation.save();
         return res.json(conversation);

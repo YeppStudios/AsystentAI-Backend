@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const requireAuth = require('../middlewares/requireAuth');
+const requireAdmin = require('../middlewares/requireAdmin');
 
 const Assistant = mongoose.model('Assistant');
 
@@ -18,7 +19,7 @@ router.post('/create-assistant', requireAuth, (req, res) => {
 });
 
 // READ
-router.get('/get-assistants', (req, res) => {
+router.get('/get-assistants', requireAdmin, (req, res) => {
   Assistant.find()
     .populate('documents') // populate documents field with actual documents
     .then(assistants => {
@@ -42,19 +43,26 @@ router.get('/getUserAssistants/:userId', requireAuth, (req, res) => {
 });
 
 
-router.get('/get-assistant/:id', (req, res) => {
+router.get('/get-assistant/:id', requireAuth, (req, res) => {
   Assistant.findById(req.params.id)
     .populate('documents') // populate documents field with actual documents
     .then(assistant => {
       if (!assistant) {
         return res.status(404).json({ message: 'Assistant not found' });
       }
+
+      // Check if the logged in user is the owner of the assistant
+      if (assistant.owner.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'You are not authorized to view this assistant' });
+      }
+
       res.json(assistant);
     })
     .catch(err => {
       res.status(500).json({ error: err.message });
     });
 });
+
 
 // UPDATE
 router.put('/update-assistant/:id', requireAuth, (req, res) => {

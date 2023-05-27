@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const requireAdmin = require('../middlewares/requireAdmin');
 const Reservation = mongoose.model('Reservation');
 const BusinessReservation = mongoose.model('BusinessReservation');
 
@@ -22,7 +23,7 @@ router.post('/addReservation', async (req, res) => {
     }
   });
   
-  router.get('/reservations', async (req, res) => {
+  router.get('/reservations', requireAdmin, async (req, res) => {
     try {
       const reservations = await Reservation.find();
       res.json(reservations);
@@ -31,7 +32,7 @@ router.post('/addReservation', async (req, res) => {
     }
   });
 
-  router.get('/sumSpots', async (req, res) => {
+  router.get('/sumSpots', requireAdmin, async (req, res) => {
     try {
       const reservations = await Reservation.find();
       let totalSpots = 0;
@@ -62,7 +63,7 @@ router.post('/addReservation', async (req, res) => {
   });
   
   // Route for getting all reservations
-  router.get('/business-reservations', async (req, res) => {
+  router.get('/business-reservations', requireAdmin, async (req, res) => {
     try {
       const reservations = await BusinessReservation.find();
       res.status(200).json(reservations);

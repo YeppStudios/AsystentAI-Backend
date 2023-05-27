@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
-
+const crypto = require('crypto');
 
     const WorkspaceSchema = new mongoose.Schema({
         admins: [{
-            type: [mongoose.Schema.Types.ObjectId],
+            type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
             required: true
         }],
@@ -48,5 +48,7 @@ const mongoose = require('mongoose');
             type: String
         }
     });
+    
+
     
     mongoose.model('Workspace', WorkspaceSchema);

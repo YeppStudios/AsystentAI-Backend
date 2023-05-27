@@ -5,6 +5,7 @@ router.use(express.json());
 const OpenAI = require('openai');
 const { Configuration, OpenAIApi } = OpenAI;
 const requireTokens = require('../middlewares/requireTokens');
+const requireAuth = require('../middlewares/requireAuth');
 const requireTestTokens = require('../middlewares/requireTestTokens');
 require('dotenv').config();
 const axios = require('axios');
@@ -173,7 +174,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
 });
 
 
-router.post('/fetch-links', async (req, res) => {
+router.post('/fetch-links', requireTokens, async (req, res) => {
   const { query } = req.body;
 
   const messages = [

@@ -58,10 +58,9 @@ router.post('/addPrompt', requireAuth, async (req, res) => {
   });
   
   
-router.get('/user/:userId/likedPrompts', (req, res) => {
-    const userId = req.params.userId;
+router.get('/user/:userId/likedPrompts', requireAuth, (req, res) => {
   
-    Prompt.find({ likes: userId }, (err, prompts) => {
+    Prompt.find({ likes: req.user._id }, (err, prompts) => {
       if (err) {
         console.error(err);
         return res.status(500).send('Internal server error');

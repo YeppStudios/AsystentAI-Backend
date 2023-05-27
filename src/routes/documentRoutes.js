@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const requireAuth = require('../middlewares/requireAuth');
+const requireAdmin = require('../middlewares/requireAdmin');
 const e = require('express');
 const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
@@ -20,7 +21,7 @@ router.post('/add-document', requireAuth, (req, res) => {
 });
 
 // READ
-router.get('/get-documents', (req, res) => {
+router.get('/get-documents', requireAdmin, (req, res) => {
   Document.find()
     .then(documents => {
       return res.json(documents);
@@ -30,7 +31,7 @@ router.get('/get-documents', (req, res) => {
     });
 });
 
-router.post('/documents-by-vector-ids', async (req, res, next) => {
+router.post('/documents-by-vector-ids', requireAuth, async (req, res, next) => {
   try {
     const { vectorIds } = req.body;
     const documents = await Document.find({ vectorId: { $in: vectorIds } });
@@ -44,7 +45,7 @@ router.post('/documents-by-vector-ids', async (req, res, next) => {
 });
 
 
-router.get('/get-document/:id', (req, res) => {
+router.get('/get-document/:id', requireAuth, (req, res) => {
   Document.findById(req.params.id)
     .then(document => {
       if (!document) {
@@ -227,7 +228,7 @@ router.post('/add-folder', requireAuth, (req, res) => {
     });
   });
 
-  router.post('/folders/documents', async (req, res) => {
+  router.post('/folders/documents', requireAuth, async (req, res) => {
     const folderIds = req.body.folderIds;
     const vectorIds = [];
 

@@ -15,6 +15,7 @@ function generateApiKey() {
     return apiKey;
   }
 
+
 router.post('workspaces/add', requireAuth, async (req, res) => {
   const companyId = req.user._id;
   if (req.user.accountType === "compnay") {
@@ -36,7 +37,7 @@ router.post('workspaces/add', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/workspace-company/:workspaceId', async (req, res) => {
+router.get('/workspace-company/:workspaceId', requireAuth, async (req, res) => {
   try {
     const workspaceId = req.params.workspaceId;
 
@@ -44,10 +45,26 @@ router.get('/workspace-company/:workspaceId', async (req, res) => {
       .populate({
         path: 'company',
         select: 'name email tokenBalance _id',
-      });
+      })
+      .populate('admins') 
+      .populate('employees.user');
 
     if (!workspace) {
       return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    // Check if the user is an admin
+    const isAdmin = workspace.admins.some(admin => admin._id.toString() === req.user._id.toString());
+
+    if (isAdmin) {
+      return res.status(200).json({ company: workspace.company });
+    }
+
+    // Check if the user is an employee
+    const employee = workspace.employees.find(emp => emp.user._id.toString() === req.user._id.toString());
+
+    if (!employee) {
+      return res.status(403).json({ error: 'You are not authorized to access this workspace' });
     }
 
     return res.status(200).json({ company: workspace.company });
@@ -57,6 +74,7 @@ router.get('/workspace-company/:workspaceId', async (req, res) => {
     return res.status(500).json({ error });
   }
 });
+
 
 
 router.get('/workspace/:id', requireAuth, async (req, res) => {
@@ -248,5 +266,22 @@ router.put('/workspaces/:id/remove-admin', requireAuth, async (req, res) => {
     }
   });
 
+  router.post('/workspace/:workspaceId/regenerateApiKey', requireAuth, async (req, res) => {
+    const workspace = await Workspace.findById(req.params.workspaceId);
+    if (!workspace) {
+        return res.status(404).send({ error: 'Workspace not found' });
+    }
+    
+    // Only admins should be allowed to regenerate the API key
+    if (!workspace.admins.includes(req.user._id)) {
+        return res.status(403).send({ error: 'Unauthorized' });
+    }
+    
+    const apiKey = generateApiKey();
+    workspace.apiKey = apiKey;
+    await workspace.save();
+    
+    res.send({ apiKey });
+});
   
 module.exports = router;

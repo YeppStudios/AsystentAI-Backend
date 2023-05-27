@@ -117,7 +117,7 @@ router.get('/token-history/:userId', requireAuth, (req, res) => {
         });
 });
 
-router.get('/token-transactions/:userId', async (req, res) => {
+router.get('/token-transactions/:userId', requireAuth, async (req, res) => {
     try {
         const user = await User.findById(req.params.userId).populate({
             path: 'transactions',
