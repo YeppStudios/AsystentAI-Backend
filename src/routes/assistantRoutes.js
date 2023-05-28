@@ -21,7 +21,7 @@ router.post('/create-assistant', requireAuth, (req, res) => {
 // READ
 router.get('/get-assistants', requireAdmin, (req, res) => {
   Assistant.find()
-    .populate('documents') // populate documents field with actual documents
+    .populate('documents')
     .then(assistants => {
       return res.json(assistants);
     })
@@ -32,20 +32,22 @@ router.get('/get-assistants', requireAdmin, (req, res) => {
 
 // READ all assistants for owner by owner id
 router.get('/getUserAssistants/:userId', requireAuth, (req, res) => {
-    Assistant.find({ owner: req.params.userId })
-      .populate('documents') // populate documents field with actual documents
-      .then(assistants => {
-        return res.json({assistants: assistants});
-      })
-      .catch(err => {
-        return res.status(500).json({ error: err.message });
-      });
+  Assistant.find({ owner: req.params.userId })
+    .populate('documents') 
+    .populate('folders') 
+    .then(assistants => {
+      return res.json({assistants: assistants});
+    })
+    .catch(err => {
+      return res.status(500).json({ error: err.message });
+    });
 });
+
 
 
 router.get('/get-assistant/:id', requireAuth, (req, res) => {
   Assistant.findById(req.params.id)
-    .populate('documents') // populate documents field with actual documents
+    .populate('documents')
     .then(assistant => {
       if (!assistant) {
         return res.status(404).json({ message: 'Assistant not found' });

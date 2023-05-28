@@ -98,6 +98,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                     inputTokens += estimateTokens(messagesText);
                     inputTokens += estimateTokens(systemPrompt);
                     inputTokens += estimateTokens(embeddingContext);
+                    inputTokens += estimateTokens(text);
                     let totalTokens = inputTokens + outputTokens;
                     if (browsing) {
                       totalTokens = inputTokens + outputTokens + 150;

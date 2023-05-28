@@ -7,6 +7,7 @@ const e = require('express');
 const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
 const Assistant = mongoose.model('Assistant');
+const axios = require('axios');
 
 // CREATE
 router.post('/add-document', requireAuth, (req, res) => {
@@ -299,18 +300,50 @@ router.post('/add-folder', requireAuth, (req, res) => {
 // DELETE FOLDER
 router.delete('/folders/:id', requireAuth, async (req, res) => {
   try {
-    const folder = await Folder.findById(req.params.id);
-    if (!folder) {
-      return res.status(404).json({ message: 'Folder not found' });
-    }
-    if (folder.owner.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+      const folder = await Folder.findById(req.params.id);
+      if (!folder) {
+          return res.status(404).json({ message: 'Folder not found' });
+      }
+      if (folder.owner.toString() !== req.user._id.toString()) {
+          return res.status(401).json({ message: 'Unauthorized' });
+      }
 
-    await folder.remove();
-    return res.json({ message: 'Folder deleted successfully' });
+      const Document = mongoose.model('Document'); // Assuming Document model is defined
+
+      // Create an array to hold vectorIds of all documents
+      let vectorIds = [];
+
+      // Delete all documents in the folder
+      for (let documentId of folder.documents) {
+          const document = await Document.findById(documentId.toString());
+          if (document) {
+              // Add vectorId of the document to the array
+              vectorIds.push(document.vectorId);
+
+              // Delete document from MongoDB
+              await document.remove();
+          }
+      }
+      // After all documents are deleted from MongoDB, delete them from Whale App
+      if (folder.documents.length > 0) {
+        await axios.delete(
+            "https://whale-app-p64f5.ondigitalocean.app/delete",
+            {
+                data: {
+                    ids: vectorIds, // send all vectorIds at once
+                },
+                headers: {
+                    Authorization: `Bearer ${process.env.PYTHON_API_KEY}`,
+                },
+            }
+        );
+      }
+      // After all documents deleted, remove the folder itself
+      await folder.remove();
+
+      return res.json({ message: 'Folder and its documents deleted successfully' });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: err.message });
   }
 });
 module.exports = router;

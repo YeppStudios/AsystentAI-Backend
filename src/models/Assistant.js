@@ -12,6 +12,7 @@ const AssistantSchema = new mongoose.Schema({
     },
     description: {
         type: String,
+        default: ""
     },
     image: {
         type: String,
@@ -19,9 +20,11 @@ const AssistantSchema = new mongoose.Schema({
     },
     companyName: {
         type: String,
+        default: ""
     },
     aboutCompany: {
         type: String,
+        default: ""
     },
     exampleContent: {
         type: String,
@@ -29,6 +32,7 @@ const AssistantSchema = new mongoose.Schema({
     },
     category: {
         type: String,
+        default: "marketing"
     },
     prompt: {
         type: String,
@@ -36,6 +40,7 @@ const AssistantSchema = new mongoose.Schema({
     },
     noEmbedPrompt: {
         type: String,
+        default: ""
     },
     folders: [{
         type: mongoose.Schema.Types.ObjectId,
