@@ -95,7 +95,7 @@ router.get('/onboarding-step', requireAuth, async (req, res) => {
   }
 });
 
-router.patch('/updateUserData/:id', requireAdmin, async (req, res) => {
+router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     const { contactEmail, profilePicture, fullName, street, apartmentNumber, companyName, nip, city, postalCode, accountType, name, workspace } = req.body;
     
