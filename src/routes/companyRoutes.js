@@ -108,10 +108,10 @@ router.post('/send-invitation', requireAuth, async (req, res) => {
   }
 
   // Check if invitation for this email already exists
-  const existingInvitation = workspace.invitations.find(invitation => invitation.email === email);
-  if (existingInvitation) {
-    return res.status(400).json({ error: 'Invitation already sent to this email' });
-  }
+  // const existingInvitation = workspace.invitations.find(invitation => invitation.email === email);
+  // if (existingInvitation) {
+  //   return res.status(400).json({ error: 'Invitation already sent to this email' });
+  // }
 
   workspace.invitations.push({ email, role, invitedBy });
   await workspace.save();

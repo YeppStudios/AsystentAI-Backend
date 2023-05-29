@@ -95,9 +95,9 @@ router.get('/onboarding-step', requireAuth, async (req, res) => {
   }
 });
 
-router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
+router.patch('/updateUserData/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
-    const { contactEmail, profilePicture, fullName, street, apartmentNumber, companyName, nip, city, postalCode, accountType, name } = req.body;
+    const { contactEmail, profilePicture, fullName, street, apartmentNumber, companyName, nip, city, postalCode, accountType, name, workspace } = req.body;
     
     try {
       const user = await User.findById(id);
@@ -140,6 +140,10 @@ router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
 
       if (street) {
         user.street = street;
+      }
+
+      if (workspace) {
+        user.workspace = workspace;
       }
       
       if (companyName) {
