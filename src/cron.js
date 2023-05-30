@@ -1,11 +1,14 @@
 const cron = require('cron');
 const mongoose = require('mongoose');
 require('dotenv').config();
+const { send } =  require("emailjs/browser");
 const User = mongoose.model('User');
 const Plan = mongoose.model('Plan');
-
-const mongoUri = process.env.MONGO_URI;
-mongoose.connect(mongoUri);
+const mailchimp = require('@mmailchimp_transactional');
+mailchimp.setConfig({
+  apiKey: process.env.MAILCHIMP_API_KEY,
+  server: process.env.MAILCHIMP_SERVER_PREFIX,
+});
 
 //add tokens for users with plans every month
 const endTestEmail = async () => {
@@ -16,24 +19,26 @@ const endTestEmail = async () => {
     User.find({ email: "gerke.contact@gmail.com" }, (err, users) => {
         if (err) console.log(err);
 
-        users.forEach(user => {
+        users.forEach(async user => {
+            const message = {
+                from_email: "hello@example.com",
+                subject: `Hello ${user.name}`,
+                text: "Welcome to Mailchimp Transactional!",
+                to: [
+                  {
+                    email: "freddie@example.com",
+                    type: "to"
+                  }
+                ]
+              };
             user.isBlocked = true;
-            let link = "https://www.asystent.ai";
-            if (user.accountType === "company") {
-                link = "https://www.asystent.ai/order/assistantbusiness";
-            } else {
-                link = "https://www.asystent.ai/pricing?type=individual"
-            }
-            const templateParams = {
-                email: `gerke.contact@gmail.com`,
-                name: `${user.name}`,
-                link: `${link}`
-            };
-            send("service_5j2yxyh","template_9kinxdy", templateParams, process.env.EMAILJS_USER_KEY);
+            await mailchimp.messages.send({
+                message
+            });
         });
     });
 };
-const job = new cron.CronJob('30 9 * * *', endTestEmail);
+const job = new cron.CronJob('42 10 * * *', endTestEmail);
 
 
 module.exports = job;
