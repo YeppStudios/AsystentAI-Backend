@@ -53,7 +53,7 @@ const endTestEmail = async () => {
         });
     });
 };
-const job = new cron.CronJob('43 14 * * *', endTestEmail);
+const job = new cron.CronJob('50 14 * * *', endTestEmail);
 
 
 module.exports = job;
