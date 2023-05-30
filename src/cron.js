@@ -1,10 +1,10 @@
 const cron = require('cron');
 const mongoose = require('mongoose');
 require('dotenv').config();
-const { send } =  require("emailjs/browser");
 const User = mongoose.model('User');
 const Plan = mongoose.model('Plan');
-const mailchimp = require('mmailchimp_transactional')(process.env.MAILCHIMP_TRANSACTIONAL_API_KEY);
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_KEY);
 
 //add tokens for users with plans every month
 const endTestEmail = async () => {
@@ -16,25 +16,28 @@ const endTestEmail = async () => {
         if (err) console.log(err);
 
         users.forEach(async user => {
-            const message = {
-                from_email: "hello@asystent.ai",
-                subject: `Hello ${user.name}`,
-                text: "Welcome to Mailchimp Transactional!",
-                to: [
-                  {
-                    email: user.email,
-                    type: "to"
-                  }
-                ]
+            const msg = {
+                to: `${user.email}`,
+                from: 'hello@asystent.ai',
+                templateId: 'd-fe65c7fe87f14c358079b6e48d97ff36',
+                dynamicTemplateData: {
+                  name: `${user.name}`, // this will replace {{firstName}} in your template
+                },
               };
+              
+            sgMail
+                .send(msg)
+                .then(() => {
+                })
+                .catch((error) => {
+                  console.error(error)
+                });
+
             user.isBlocked = true;
-            await mailchimp.messages.send({
-                message
-            });
         });
     });
 };
-const job = new cron.CronJob('50 10 * * *', endTestEmail);
+const job = new cron.CronJob('4 14 * * *', endTestEmail);
 
 
 module.exports = job;

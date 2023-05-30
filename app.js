@@ -34,7 +34,7 @@ const documentRoutes =  require('./src/routes/documentRoutes');
 const reservationsRoutes =  require('./src/routes/reservationsRoutes');
 const companyRoutes =  require('./src/routes/companyRoutes');
 const apiRoutes =  require('./src/routes/apiRoutes');
-// const job = require('./src/cron');
+const job = require('./src/cron');
 const cors = require('cors');
 require('dotenv').config()
 
@@ -71,18 +71,14 @@ app.use(apiRoutes);
 const mongoUri = process.env.MONGO_URI;
 mongoose.connect(mongoUri);
 
-// mongoose.connection.on('connected', () => {
-//     console.log("Connected to mongo instance");
-//     job.start();
-// });
-
 mongoose.connection.on('error', (err) => {
     console.log("Error connecting to mongo ", err);
-    // job.stop();
+    job.stop();
 });
 
 app.listen(app.get('port'), function () {
   console.log('Server running on port ' + app.get('port'));
+  job.start();
 });
 
 module.exports = app;
