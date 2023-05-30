@@ -71,13 +71,13 @@ app.use(apiRoutes);
 const mongoUri = process.env.MONGO_URI;
 mongoose.connect(mongoUri);
 
-mongoose.connection.on('connected', () => {
-    job.start();
-});
+// mongoose.connection.on('connected', () => {
+//     job.start();
+// });
 
 mongoose.connection.on('error', (err) => {
     console.log("Error connecting to mongo ", err);
-    job.stop();
+    // job.stop();
 });
 
 app.listen(app.get('port'), function () {
