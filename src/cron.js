@@ -16,13 +16,20 @@ const endTestEmail = async () => {
         if (err) console.log(err);
 
         users.forEach(async user => {
-            console.log(user);
+            let link = 'https://www.asystent.ai/pricing?type=individual';
+            if (user.accountType === "company") {
+                link = "https://www.asystent.ai/pricing?type=business"
+            } else {
+                link="https://www.asystent.ai/pricing?type=individual"
+            }
+
             const msg = {
                 to: `gerke.contact@gmail.com`,
                 from: 'hello@asystent.ai',
                 templateId: 'd-3daf3c4290f04a54b4f91753b681c5c6',
                 dynamicTemplateData: {
-                  name: `${user.name}`, // this will replace {{firstName}} in your template
+                  name: `${user.name}`,
+                  link: `${link}`
                 },
               };
               
@@ -34,11 +41,12 @@ const endTestEmail = async () => {
                   console.error(error)
                 });
 
-            user.isBlocked = false;
+            user.isBlocked = true;
+            await user.save();
         });
     });
 };
-const job = new cron.CronJob('14 14 * * *', endTestEmail);
+const job = new cron.CronJob('28 14 * * *', endTestEmail);
 
 
 module.exports = job;
