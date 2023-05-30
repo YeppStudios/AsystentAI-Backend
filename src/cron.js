@@ -4,11 +4,7 @@ require('dotenv').config();
 const { send } =  require("emailjs/browser");
 const User = mongoose.model('User');
 const Plan = mongoose.model('Plan');
-const mailchimp = require('@mmailchimp_transactional');
-mailchimp.setConfig({
-  apiKey: process.env.MAILCHIMP_API_KEY,
-  server: process.env.MAILCHIMP_SERVER_PREFIX,
-});
+const mailchimp = require('mmailchimp_transactional')(process.env.MAILCHIMP_TRANSACTIONAL_API_KEY);
 
 //add tokens for users with plans every month
 const endTestEmail = async () => {
@@ -21,12 +17,12 @@ const endTestEmail = async () => {
 
         users.forEach(async user => {
             const message = {
-                from_email: "hello@example.com",
+                from_email: "hello@asystent.ai",
                 subject: `Hello ${user.name}`,
                 text: "Welcome to Mailchimp Transactional!",
                 to: [
                   {
-                    email: "freddie@example.com",
+                    email: user.email,
                     type: "to"
                   }
                 ]
@@ -38,7 +34,7 @@ const endTestEmail = async () => {
         });
     });
 };
-const job = new cron.CronJob('42 10 * * *', endTestEmail);
+const job = new cron.CronJob('50 10 * * *', endTestEmail);
 
 
 module.exports = job;
