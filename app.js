@@ -34,7 +34,7 @@ const documentRoutes =  require('./src/routes/documentRoutes');
 const reservationsRoutes =  require('./src/routes/reservationsRoutes');
 const companyRoutes =  require('./src/routes/companyRoutes');
 const apiRoutes =  require('./src/routes/apiRoutes');
-const job = require('./src/cron');
+// const job = require('./src/cron');
 const cors = require('cors');
 require('dotenv').config()
 
@@ -72,6 +72,7 @@ const mongoUri = process.env.MONGO_URI;
 mongoose.connect(mongoUri);
 
 // mongoose.connection.on('connected', () => {
+//     console.log("Connected to mongo instance");
 //     job.start();
 // });
 
