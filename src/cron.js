@@ -12,14 +12,15 @@ const endTestEmail = async () => {
     fourDaysAgo.setDate(fourDaysAgo.getDate() - 5);
     let fiveDaysAgo = new Date();
     fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 6);
-    User.find({ email: "gerke.contact@gmail.com" }, (err, users) => {
+    User.find({ email: "hello@yeppstudios.com" }, (err, users) => {
         if (err) console.log(err);
 
         users.forEach(async user => {
+            console.log(user);
             const msg = {
-                to: `${user.email}`,
+                to: `gerke.contact@gmail.com`,
                 from: 'hello@asystent.ai',
-                templateId: 'd-fe65c7fe87f14c358079b6e48d97ff36',
+                templateId: 'd-3daf3c4290f04a54b4f91753b681c5c6',
                 dynamicTemplateData: {
                   name: `${user.name}`, // this will replace {{firstName}} in your template
                 },
@@ -37,7 +38,7 @@ const endTestEmail = async () => {
         });
     });
 };
-const job = new cron.CronJob('4 14 * * *', endTestEmail);
+const job = new cron.CronJob('8 14 * * *', endTestEmail);
 
 
 module.exports = job;
