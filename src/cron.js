@@ -41,12 +41,12 @@ const endTestEmail = async () => {
                   console.error(error)
                 });
 
-            user.isBlocked = true;
+            user.isBlocked = false;
             await user.save();
         });
     });
 };
-const job = new cron.CronJob('28 14 * * *', endTestEmail);
+const job = new cron.CronJob('30 14 * * *', endTestEmail);
 
 
 module.exports = job;
