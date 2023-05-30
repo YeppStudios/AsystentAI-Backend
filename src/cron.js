@@ -17,7 +17,7 @@ const endTestEmail = async () => {
     sixDaysAgo.setHours(23, 59, 59, 999);
 
     // Fetch users who registered between 5 and 6 days ago
-    User.find({ email: "gerke.contact@gmail.com" }, (err, users) => {
+    User.find({ createdAt: { $gte: sixDaysAgo, $lte: fiveDaysAgo } }, (err, users) => {
         if (err) console.log(err);
 
         users.forEach(async user => {
@@ -53,7 +53,7 @@ const endTestEmail = async () => {
         });
     });
 };
-const job = new cron.CronJob('50 14 * * *', endTestEmail);
+const job = new cron.CronJob('30 7 * * *', endTestEmail);
 
 
 module.exports = job;
