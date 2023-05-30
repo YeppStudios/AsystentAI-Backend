@@ -8,11 +8,16 @@ sgMail.setApiKey(process.env.SENDGRID_KEY);
 
 //add tokens for users with plans every month
 const endTestEmail = async () => {
-    let fourDaysAgo = new Date();
-    fourDaysAgo.setDate(fourDaysAgo.getDate() - 5);
     let fiveDaysAgo = new Date();
-    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 6);
-    User.find({ email: "hello@yeppstudios.com" }, (err, users) => {
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+    fiveDaysAgo.setHours(0, 0, 0, 0);
+    
+    let sixDaysAgo = new Date();
+    sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
+    sixDaysAgo.setHours(23, 59, 59, 999);
+
+    // Fetch users who registered between 5 and 6 days ago
+    User.find({ email: "gerke.contact@gmail.com" }, (err, users) => {
         if (err) console.log(err);
 
         users.forEach(async user => {
@@ -22,31 +27,33 @@ const endTestEmail = async () => {
             } else {
                 link="https://www.asystent.ai/pricing?type=individual"
             }
+            if(!user.isBlocked && !user.plan) {
+                const msg = {
+                    to: `${user.email}`,
+                    from: 'hello@asystent.ai',
+                    templateId: 'd-3daf3c4290f04a54b4f91753b681c5c6',
+                    dynamicTemplateData: {
+                    name: `${user.name}`,
+                    link: `${link}`
+                    },
+                };
+                
+                sgMail
+                    .send(msg)
+                    .then(() => {
+                    })
+                    .catch((error) => {
+                    console.error(error)
+                    });
 
-            const msg = {
-                to: `gerke.contact@gmail.com`,
-                from: 'hello@asystent.ai',
-                templateId: 'd-3daf3c4290f04a54b4f91753b681c5c6',
-                dynamicTemplateData: {
-                  name: `${user.name}`,
-                  link: `${link}`
-                },
-              };
-              
-            sgMail
-                .send(msg)
-                .then(() => {
-                })
-                .catch((error) => {
-                  console.error(error)
-                });
-
-            user.isBlocked = false;
-            await user.save();
+                user.isBlocked = false;
+                user.tokenBalance = 0;
+                await user.save();
+            }
         });
     });
 };
-const job = new cron.CronJob('30 14 * * *', endTestEmail);
+const job = new cron.CronJob('43 14 * * *', endTestEmail);
 
 
 module.exports = job;
