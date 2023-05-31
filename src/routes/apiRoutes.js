@@ -34,7 +34,7 @@ function estimateTokens(text) {
 
 router.post('/message-stream', requireTokens, async (req, res) => {
     try {
-        const { query, assistantId, conversationId, knowledge_based, llm } = req.body;
+        const { query, assistant_id, conversation_id, knowledge_based, llm } = req.body;
 
         const user = req.user;
         let inputTokens = 0;
@@ -52,8 +52,8 @@ router.post('/message-stream', requireTokens, async (req, res) => {
             model = llm;
         }
 
-        if (assistantId) {
-            Assistant.findById(assistantId)
+        if (assistant_id) {
+            Assistant.findById(assistant_id)
             .populate('documents') // populate documents field with actual documents
             .then(fetchedAssistant => {
               if (!fetchedAssistant) {
@@ -119,8 +119,8 @@ router.post('/message-stream', requireTokens, async (req, res) => {
             }
         }
 
-        if (conversationId) {
-            conversation = await Conversation.findById(req.params.conversationId)
+        if (conversation_id) {
+            conversation = await Conversation.findById(req.params.conversation_id)
                 .populate({
                     path: 'messages',
                     options: {
@@ -139,7 +139,6 @@ router.post('/message-stream', requireTokens, async (req, res) => {
                 title: "New conversation"
             });
             await conversation.save();
-            console.log(conversation)
         }
               
         if (!conversation) {
@@ -250,7 +249,7 @@ router.post('/message-stream', requireTokens, async (req, res) => {
 
 router.post('/message', requireTokens, async (req, res) => {
     try {
-        const { query, assistantId, conversationId, knowledge_based, llm } = req.body;
+        const { query, assistant_id, conversation_id, knowledge_based, llm } = req.body;
 
         const user = req.user;
         let systemPrompt = "You are helpful Assistant AI. You are always positive, helpful and insightful. You are a great listener and you always do what user says. You communicate in user language.";
@@ -265,8 +264,8 @@ router.post('/message', requireTokens, async (req, res) => {
             model = llm;
         }
 
-        if (assistantId) {
-            Assistant.findById(assistantId)
+        if (assistant_id) {
+            Assistant.findById(assistant_id)
             .populate('documents') // populate documents field with actual documents
             .then(fetchedAssistant => {
               if (!fetchedAssistant) {
@@ -332,8 +331,8 @@ router.post('/message', requireTokens, async (req, res) => {
             }
         }
 
-        if (conversationId) {
-        conversation = await Conversation.findById(req.params.conversationId)
+        if (conversation_id) {
+        conversation = await Conversation.findById(req.params.conversation_id)
             .populate({
                 path: 'messages',
                 options: {
@@ -352,7 +351,6 @@ router.post('/message', requireTokens, async (req, res) => {
                 title: "New conversation"
             });
             await conversation.save();
-            console.log(conversation)
         }
             
         if (!conversation) {
@@ -384,7 +382,7 @@ router.post('/message', requireTokens, async (req, res) => {
 
         console.log(completion.data.usage.total_tokens)
 
-        return res.status(201).json({ response: completion.data.choices[0].message.content, elixir_used: completion.data.usage.total_tokens, based_on: documents.map((document) => document.title), assistant: assistantName });
+        return res.status(201).json({ response: completion.data.choices[0].message.content, elixir_used: completion.data.usage.total_tokens, based_on: documents.map((document) => document.title), assistant: assistantName, conversation_id: conversation._id });
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: error.message });

@@ -35,7 +35,10 @@
     "openai": "^3.2.0",
     "raw-body": "^2.5.1",
     "request": "^2.88.2",
-    "stripe": "^11.10.0"
+    "stripe": "^11.10.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^4.6.3",
+    "yamljs": "^0.3.0"
   },
   "author": "Yepp",
   "license": "ISC",

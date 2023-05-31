@@ -444,6 +444,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
 router.post('/cancel-subscription', requireAuth, async (req, res) => {
   const user = req.user;
   try {
+    await User.updateOne({ _id: user._id }, { plan: null });
     const customer = await stripe.customers.list({ email: user.email });
     const subscriptions = await stripe.subscriptions.list({
       customer: customer.data[0].id,
@@ -452,7 +453,6 @@ router.post('/cancel-subscription', requireAuth, async (req, res) => {
     const deleted = await stripe.subscriptions.del(
       currentSubscriptionID
     );
-    await User.updateOne({ _id: user._id }, { plan: null });
 
     res.status(200).json({ message: "Subscription cancelled", deletedSubscription: deleted });
   } catch (e) {

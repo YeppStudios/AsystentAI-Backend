@@ -38,7 +38,6 @@ const job = require('./src/cron');
 const cors = require('cors');
 require('dotenv').config()
 
-
 const app = express();
 app.set('port', (process.env.PORT || 3004));
 
