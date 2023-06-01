@@ -8,7 +8,7 @@ const requireAdmin = require('../middlewares/requireAdmin');
 const router = express.Router();
 
 
-router.get('/whitelist', requireAdmin, async (req, res) => {
+router.get('/whitelist', async (req, res) => {
     try {
         const whitelist = await Whitelist.find();
         return res.status(200).json(whitelist);
