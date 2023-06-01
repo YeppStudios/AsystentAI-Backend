@@ -42,4 +42,18 @@ router.delete('/whitelist/delete/:id', requireAdmin, async (req, res) => {
     }
 });
 
+router.get('/whitelist/check/:code', async (req, res) => {
+    try {
+        const code = req.params.code;
+        const record = await Whitelist.findOne({ code: code });
+        if (record && new Date(record.expireAt) > new Date()) {
+            res.status(200).json({ valid: true });
+        } else {
+            res.status(200).json({ valid: false });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 module.exports = router;
