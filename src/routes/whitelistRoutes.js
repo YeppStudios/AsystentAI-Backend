@@ -17,10 +17,12 @@ router.get('/whitelist', requireAdmin, async (req, res) => {
     }
 });
 
-router.post('/whitelist/add', requireAdmin, async (req, res) => {
+router.post('/whitelist/add', async (req, res) => {
     try {
-        const { email } = req.body;
-        const whitelist = new Whitelist({ email });
+        const { code, hours } = req.body;
+        const expireAt = new Date();
+        expireAt.setHours(expireAt.getHours() + Number(hours));
+        const whitelist = new Whitelist({ code, expireAt });
 
         await whitelist.save();
         res.status(201).json(whitelist);

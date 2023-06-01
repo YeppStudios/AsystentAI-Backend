@@ -1,9 +1,13 @@
 const mongoose = require('mongoose');
 
 const WhitelistSchema = new mongoose.Schema({
-    email: {
+    code: {
         type: String,
         required: true
+    },
+    expireAt: {
+        type: Date,
+        default: Date.now()
     }
 });
 
