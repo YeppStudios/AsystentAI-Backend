@@ -14,15 +14,29 @@ const axios = require('axios');
 router.post('/add-document', requireAuth, async (req, res) => {
   const user = await User.findById(req.user._id);
   user.uploadedMb += req.body.size;
-  const document = new Document({
-    owner: req.owner,
-    ownerEmail: req.ownerEmail,
-    title: req.body.title,
-    category: req.body.category,
-    timestamp: req.body.timestamp,
-    workspace: req.body.workspace,
-    vectorId: req.body.vectorId,
-  });
+  let document;
+  if (req.body.workspace && req.body.workspace !== 'undefined') {
+    console.log(req.body.workspace);
+    document = new Document({
+      owner: req.owner,
+      ownerEmail: req.ownerEmail,
+      title: req.body.title,
+      category: req.body.category,
+      timestamp: req.body.timestamp,
+      workspace: req.body.workspace,
+      vectorId: req.body.vectorId,
+    });
+  } else {
+    document = new Document({
+      owner: req.owner,
+      ownerEmail: req.ownerEmail,
+      title: req.body.title,
+      category: req.body.category,
+      timestamp: req.body.timestamp,
+      vectorId: req.body.vectorId,
+    });
+  }
+
   user.save();
   document.save()
     .then(() => {
