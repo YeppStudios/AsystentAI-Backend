@@ -7,11 +7,23 @@ const e = require('express');
 const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
 const Assistant = mongoose.model('Assistant');
+const User = mongoose.model('User');
 const axios = require('axios');
 
 // CREATE
-router.post('/add-document', requireAuth, (req, res) => {
-  const document = new Document(req.body);
+router.post('/add-document', requireAuth, async (req, res) => {
+  const user = await User.findById(req.user._id);
+  user.uploadedMb += req.body.size;
+  const document = new Document({
+    owner: req.owner,
+    ownerEmail: req.ownerEmail,
+    title: req.body.title,
+    category: req.body.category,
+    timestamp: req.body.timestamp,
+    workspace: req.body.workspace,
+    vectorId: req.body.vectorId,
+  });
+  user.save();
   document.save()
     .then(() => {
       return res.status(201).json({ document });
@@ -212,13 +224,23 @@ router.post('/add-folder', requireAuth, (req, res) => {
         return res.json({ folder: existingFolder });
       }
       try {
-        const folder = new Folder({
-          owner: req.user._id,
-          title: title || "Untitled",
-          category: category || "other",
-          documents: documents || [],
-          workspace: workspace
-        });
+        let folder;
+        if (workspace && workspace !== 'undefined') {
+          folder = new Folder({
+            owner: req.user._id,
+            title: title || "Untitled",
+            category: category || "other",
+            documents: documents || [],
+            workspace: workspace
+          });
+        } else {
+          folder = new Folder({
+            owner: req.user._id,
+            title: title || "Untitled",
+            category: category || "other",
+            documents: documents || [],
+          });
+        }
         folder.save()
         return res.status(201).json({ folder });
       } catch (e) {
@@ -254,6 +276,16 @@ router.post('/add-folder', requireAuth, (req, res) => {
   // READ
   router.get('/folders/:workspaceId', requireAuth, (req, res) => {
     Folder.find({ workspace: req.params.workspaceId })
+      .then(folders => {
+        return res.json(folders);
+      })
+      .catch(err => {
+        return res.status(500).json({ error: err.message });
+      });
+  });
+
+  router.get('/folders/owner/:userId', requireAuth, (req, res) => {
+    Folder.find({ owner: req.params.userId })
       .then(folders => {
         return res.json(folders);
       })

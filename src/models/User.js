@@ -68,6 +68,10 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    uploadedMb: {
+        type: Number,
+        default: 0
+    },
     plan: { type: mongoose.Schema.Types.ObjectId, ref: 'Plan' },
     accountType: {
         type: String,
