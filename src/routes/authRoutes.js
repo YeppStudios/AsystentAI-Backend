@@ -334,6 +334,7 @@ router.post('/register-to-workspace', async (req, res) => {
 
     } else {
       employee = user;
+      user.plan = null;
       user.workspace = workspace._id;
       await user.save();
     }

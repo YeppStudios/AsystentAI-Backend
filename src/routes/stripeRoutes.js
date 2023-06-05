@@ -11,8 +11,8 @@ const Whitelist = mongoose.model('Whitelist');
 const Workspace = mongoose.model('Workspace');
 const axios = require('axios');
 
-const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_KEY);
-const purchaseEndpointSecret = 'whsec_fe0e42230aa34c7144b0e88040ddf05780490aba5b7cfc9d1e5e0df0213fbdd8';
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
 const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
 const infaktConfig = {
   headers: {

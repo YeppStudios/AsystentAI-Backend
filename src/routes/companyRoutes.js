@@ -16,7 +16,7 @@ function generateApiKey() {
   }
 
 
-router.post('workspaces/add', requireAuth, async (req, res) => {
+router.post('/workspaces/add', requireAuth, async (req, res) => {
   const companyId = req.user._id;
   if (req.user.accountType === "compnay") {
     try {
