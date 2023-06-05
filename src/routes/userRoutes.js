@@ -165,9 +165,9 @@ router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
 
   
 // Delete a user
-router.delete('/deleteUser/:id', requireAdmin, async (req, res) => {
+router.delete('/deleteUser/:id', requireAuth, async (req, res) => {
     try {
-        if(req.user._id === req.params.id || req.user.appAdmin){
+        if((req.user._id).toString() === req.params.id || req.user.appAdmin){
         const deletedUser = await User.findByIdAndDelete(req.params.id);
         if (!deletedUser) {
             return res.status(404).json({ message: 'User not found' });

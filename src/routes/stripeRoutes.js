@@ -8,10 +8,11 @@ const Plan = mongoose.model('Plan');
 const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
 const Whitelist = mongoose.model('Whitelist');
+const Workspace = mongoose.model('Workspace');
 const axios = require('axios');
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
+const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_KEY);
+const purchaseEndpointSecret = 'whsec_fe0e42230aa34c7144b0e88040ddf05780490aba5b7cfc9d1e5e0df0213fbdd8';
 const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
 const infaktConfig = {
   headers: {
@@ -177,6 +178,34 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               await transaction.save();
               await purchase.save();
 
+              //delete workspace if company didnt buy a business plan
+              if (transactionData.metadata.plan_id !== "6444d4394ab2cf9819e5b5f4" && user.workspace) {
+                // Fetch the workspace document for the user's workspace
+                const workspace = await Workspace.findById(user.workspace);
+                if (workspace) {
+                  const isCompany = workspace.company.includes(user._id);
+                
+                  if (isCompany) {
+                    const workspaceUsers = [
+                        ...workspace.admins,
+                        ...workspace.company,
+                        ...workspace.employees.map(employee => employee.user)
+                    ];
+                    for (const userId of workspaceUsers) {
+                        const workspaceUser = await User.findById(userId);
+                        if (userId !== user._id) {
+                          workspaceUser.plan = "647c3294ff40f15b5f6796bf";
+                        }
+                        workspaceUser.workspace = null;
+                        await workspaceUser.save();
+                    }
+                    await Workspace.deleteOne({ _id: workspace._id });
+                  }
+                  user.workspace = null;
+                }
+              }
+              
+
               //checking if transaction was referred
               if (transactionData.metadata.referrer_id && transactionData.metadata.plan_id === "6444d4394ab2cf9819e5b5f4") {
               try {
@@ -292,7 +321,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                         {
                           "name": `${transactionData.metadata.invoiceTitle}`, 
                           "pkwiu": "62.01", 
-                          "tax_symbol": 23,
+                          "tax_symbol": "zw",
                           "gross_price": transactionData.amount_total, 
                         }
                       ]
@@ -396,7 +425,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
                   {
                      "name": `Miesięczna Subskrypcja Oprogramowania Aplikacji AsystentAI (Pakiet ${plan.name})`, 
                      "pkwiu": "62.01", 
-                     "tax_symbol": 23,
+                     "tax_symbol": "zw",
                      "gross_price": plan.price * 100, 
                   }
                 ]
@@ -541,7 +570,7 @@ router.post('/update-subscription', requireAuth, async (req, res) => {
             {
                "name": `Miesięczna Subskrypcja Oprogramowania Aplikacji AsystentAI (Pakiet ${plan.name})`, 
                "pkwiu": "62.01", 
-               "tax_symbol": 23,
+               "tax_symbol": "zw",
                "gross_price": plan.price * 100, 
             }
           ]

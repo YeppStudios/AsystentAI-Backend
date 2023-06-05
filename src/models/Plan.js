@@ -13,7 +13,17 @@ const PlanSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    maxProfiles: {
+    maxFiles: {
+        type: Number,
+        required: true,
+        default: 3
+    },
+    maxUploadedBytes: {
+        type: Number,
+        required: true,
+        default: 5242880
+    },
+    maxAssistants: {
         type: Number,
         required: true,
         default: 1

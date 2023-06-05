@@ -30,6 +30,10 @@ const DocumentSchema = new mongoose.Schema({
         type: Date, 
         default: Date.now 
     },
+    documentSize: {
+      type: Number,
+      default: 0
+    }
 });
 
 mongoose.model('Document', DocumentSchema);

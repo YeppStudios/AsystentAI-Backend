@@ -40,11 +40,11 @@ router.post('workspaces/add', requireAuth, async (req, res) => {
 router.get('/workspace-company/:workspaceId', requireAuth, async (req, res) => {
   try {
     const workspaceId = req.params.workspaceId;
-
+    if (workspaceId !== "null") {
     const workspace = await Workspace.findById(workspaceId)
       .populate({
         path: 'company',
-        select: 'name email tokenBalance _id',
+        select: 'name email tokenBalance _id plan uploadedBytes workspace accountType',
       })
       .populate('admins') 
       .populate('employees.user');
@@ -68,7 +68,9 @@ router.get('/workspace-company/:workspaceId', requireAuth, async (req, res) => {
     }
 
     return res.status(200).json({ company: workspace.company });
-
+  } else {
+    return res.status(404).json({ error: 'Workspace not found' });
+  }
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error });
@@ -80,13 +82,18 @@ router.get('/workspace-company/:workspaceId', requireAuth, async (req, res) => {
 router.get('/workspace/:id', requireAuth, async (req, res) => {
 
   try {
-    const workspace = await Workspace.findById(req.params.id).populate('admins', 'email').populate('employees.user', 'email').exec();
+    if (req.params.id !== "null") {
+      const workspace = await Workspace.findById(req.params.id).populate('admins', 'email').populate('employees.user', 'email').exec();
 
-    if (!workspace) {
+      if (!workspace) {
+        return res.status(404).json({ error: 'Workspace not found' });
+      }
+  
+      return res.json(workspace);
+    } else {
       return res.status(404).json({ error: 'Workspace not found' });
     }
 
-    return res.json(workspace);
   } catch (error) {
     console.error(error);
     return res.status(500).send('Server Error');

@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const User = mongoose.model('User');
 const Workspace = mongoose.model('Workspace');
 const Transaction = mongoose.model('Transaction');
+const Plan = mongoose.model('Plan');
 const requireAuth = require('../middlewares/requireAuth');
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -168,6 +169,7 @@ router.post('/register-free-trial', async (req, res) => {
           accountType: accountType,
           referredBy: referrerId,
           verificationCode,
+          plan: "647c3294ff40f15b5f6796bf"
       });
 
       try {
@@ -327,7 +329,7 @@ router.post('/register-to-workspace', async (req, res) => {
         console.error('Failed to add user to Mailchimp audience:', error.message);
       }
 
-      employee = await User.create({ email, password, name, accountType: 'individual', workspace: workspace.id, isBlocked: false });
+      employee = await User.create({ email, password, name, accountType: 'individual', workspace: workspace.id, isBlocked: false, plan: null });
       await employee.save();
 
     } else {

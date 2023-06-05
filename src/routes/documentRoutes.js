@@ -13,27 +13,28 @@ const axios = require('axios');
 // CREATE
 router.post('/add-document', requireAuth, async (req, res) => {
   const user = await User.findById(req.user._id);
-  user.uploadedMb += req.body.size;
+  user.uploadedBytes += Math.round(req.body.size * 100) / 100;;
   let document;
   if (req.body.workspace && req.body.workspace !== 'undefined') {
-    console.log(req.body.workspace);
     document = new Document({
-      owner: req.owner,
-      ownerEmail: req.ownerEmail,
+      owner: req.body.owner,
+      ownerEmail: req.body.ownerEmail,
       title: req.body.title,
       category: req.body.category,
       timestamp: req.body.timestamp,
       workspace: req.body.workspace,
       vectorId: req.body.vectorId,
+      documentSize: req.body.size,
     });
   } else {
     document = new Document({
-      owner: req.owner,
-      ownerEmail: req.ownerEmail,
+      owner: req.body.owner,
+      ownerEmail: req.body.ownerEmail,
       title: req.body.title,
       category: req.body.category,
       timestamp: req.body.timestamp,
       vectorId: req.body.vectorId,
+      documentSize: req.body.size,
     });
   }
 
@@ -56,6 +57,17 @@ router.get('/get-documents', requireAdmin, (req, res) => {
     .catch(err => {
       return res.status(500).json({ error: err.message });
     });
+});
+
+router.get('/user/:userId/documentCount', requireAuth, async (req, res) => {
+  try {
+      const { userId } = req.params;
+      const documentCount = await Document.countDocuments({ owner: mongoose.Types.ObjectId(userId) });
+
+      return res.status(200).json({ documentCount });
+  } catch(err) {
+      return res.status(500).json({ error: err.message });
+  }
 });
 
 router.post('/documents-by-vector-ids', requireAuth, async (req, res, next) => {
@@ -123,7 +135,7 @@ router.post('/getPineconeIds', requireAuth, async (req, res, next) => {
 
 
 // DELETE DOCUMENT
-router.delete('/delete-document/:vectorId', requireAuth, async (req, res) => {
+router.delete('/user/:userId/delete-document/:vectorId', requireAuth, async (req, res) => {
   const vectorId = req.params.vectorId;
   
   try {
@@ -153,7 +165,16 @@ router.delete('/delete-document/:vectorId', requireAuth, async (req, res) => {
       return Assistant.updateOne({ _id: assistant._id }, { $pull: { documents: document._id } });
     });
     await Promise.all(assistantUpdateOps);
-    
+
+    const user = await User.findById(req.params.userId);
+
+    if (!user) { 
+      return res.status(404).json({ message: 'User not found' });
+    } else {
+      user.uploadedBytes -= document.documentSize;
+      await user.save();
+    }
+
     // Delete the document itself
     const result = await Document.findByIdAndDelete(document._id);
     
@@ -344,7 +365,7 @@ router.post('/add-folder', requireAuth, (req, res) => {
 
 
 // DELETE FOLDER
-router.delete('/folders/:id', requireAuth, async (req, res) => {
+router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
   try {
       const folder = await Folder.findById(req.params.id);
       if (!folder) {
@@ -354,7 +375,7 @@ router.delete('/folders/:id', requireAuth, async (req, res) => {
           return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const Document = mongoose.model('Document'); // Assuming Document model is defined
+      const user = await User.findById(req.params.userId);
 
       // Create an array to hold vectorIds of all documents
       let vectorIds = [];
@@ -366,7 +387,7 @@ router.delete('/folders/:id', requireAuth, async (req, res) => {
               // Add vectorId of the document to the array
               vectorIds.push(document.vectorId);
 
-              // Delete document from MongoDB
+              user.uploadedBytes -= document.documentSize;
               await document.remove();
           }
       }
@@ -386,6 +407,7 @@ router.delete('/folders/:id', requireAuth, async (req, res) => {
       }
       // After all documents deleted, remove the folder itself
       await folder.remove();
+      await user.save();
 
       return res.json({ message: 'Folder and its documents deleted successfully' });
   } catch (err) {

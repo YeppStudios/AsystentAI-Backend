@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 const requireAdmin = require('../middlewares/requireAdmin');
+const requireAuth = require('../middlewares/requireAuth');
 const Plan = mongoose.model('Plan');
 const User = mongoose.model('User');
 const Payment = mongoose.model('Payment');
@@ -16,22 +17,22 @@ router.get('/getPlans', requireAdmin, async (req, res) => {
     }
 });
 
-router.get('/getPlan/:id', requireAdmin, async (req, res) => {
+router.get('/getPlan/:id', requireAuth, async (req, res) => {
     try {
         const plan = await Plan.findById(req.params.id);
         if (!plan) {
             return res.status(404).json({ message: 'Plan not found' });
         }
-        res.json(plan);
+        return res.json(plan);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        return res.status(500).json({ message: error.message });
     }
 });
 
 router.post('/createPlan', requireAdmin, async (req, res) => {
     try {
-        const { name, monthlyTokens, price, maxProfiles } = req.body;
-        const plan = new Plan({ name, monthlyTokens, price, maxProfiles });
+        const { name, monthlyTokens, price, maxFiles, maxUploadedBytes, maxAssistants } = req.body;
+        const plan = new Plan({ name, monthlyTokens, price, maxFiles, maxUploadedBytes, maxAssistants});
 
         await plan.save();
         res.status(201).json(plan);
@@ -48,7 +49,7 @@ router.patch('/updatePlan/:id', requireAdmin, async (req, res) => {
         if (!plan) {
             return res.status(404).json({ message: 'Plan not found' });
         }
-        const { name, monthlyTokens, price, maxProfiles } = req.body;
+        const { name, monthlyTokens, price, maxFiles, maxUploadedBytes, maxAssistants } = req.body;
         if (name) {
             plan.name = name;
         }
@@ -58,8 +59,17 @@ router.patch('/updatePlan/:id', requireAdmin, async (req, res) => {
         if (price) {
             plan.price = price;
         }
-        if(maxProfiles){
-            plan.maxProfiles = maxProfiles;
+
+        if (maxUploadedBytes) {
+            plan.maxUploadedBytes = maxUploadedBytes;
+        }
+
+        if (maxFiles) {
+            plan.maxFiles = maxFiles;
+        }
+
+        if (maxAssistants) {
+            plan.maxAssistants = maxAssistants;
         }
 
         await plan.save();
