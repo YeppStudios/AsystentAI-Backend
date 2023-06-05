@@ -78,7 +78,6 @@ router.get('/workspace-company/:workspaceId', requireAuth, async (req, res) => {
 
 
 router.get('/workspace/:id', requireAuth, async (req, res) => {
-
   try {
     const workspace = await Workspace.findById(req.params.id).populate('admins', 'email').populate('employees.user', 'email').exec();
 

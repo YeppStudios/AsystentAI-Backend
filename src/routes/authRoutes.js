@@ -336,7 +336,7 @@ router.post('/register-to-workspace', async (req, res) => {
       await user.save();
     }
 
-    workspace.employees.push({ user: employee._id, role: invitation.role, name: employee.name , email: employee.email});
+    workspace.employees.push({ user: employee, role: invitation.role, name: employee.name , email: employee.email});
     workspace.invitations = workspace.invitations.filter(i => i.email !== email);
     await workspace.save();
     const token = jwt.sign({ userId: employee._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
