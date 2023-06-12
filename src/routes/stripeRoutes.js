@@ -321,7 +321,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                         {
                           "name": `${transactionData.metadata.invoiceTitle}`, 
                           "pkwiu": "62.01", 
-                          "tax_symbol": "zw",
+                          "tax_symbol": 23,
                           "gross_price": transactionData.amount_total, 
                         }
                       ]
@@ -425,7 +425,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
                   {
                      "name": `Miesięczna Subskrypcja Oprogramowania Aplikacji AsystentAI (Pakiet ${plan.name})`, 
                      "pkwiu": "62.01", 
-                     "tax_symbol": "zw",
+                     "tax_symbol": 23,
                      "gross_price": plan.price * 100, 
                   }
                 ]
@@ -570,7 +570,7 @@ router.post('/update-subscription', requireAuth, async (req, res) => {
             {
                "name": `Miesięczna Subskrypcja Oprogramowania Aplikacji AsystentAI (Pakiet ${plan.name})`, 
                "pkwiu": "62.01", 
-               "tax_symbol": "zw",
+               "tax_symbol": 23,
                "gross_price": plan.price * 100, 
             }
           ]

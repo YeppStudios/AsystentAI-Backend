@@ -35,6 +35,7 @@ function estimateTokens(text) {
 router.post('/completion', requireTokens, async (req, res) => {
   try {
       const { prompt, model, systemPrompt } = req.body;
+      const user = await User.findById(req.user._id);
 
       const messages = [
           { role: 'system', content: systemPrompt },
@@ -47,9 +48,9 @@ router.post('/completion', requireTokens, async (req, res) => {
           messages,
           temperature: 0,
       });
-
-      return res.status(201).json({ completion: completion.data.choices[0].message.content });
-
+      // user.tokenBalance -= completion.data.usage.total_tokens;
+      await user.save();
+      return res.status(201).json({ completion: completion.data.choices[0].message.content, usage: completion.data.usage.total_tokens });
       } catch (error) {
         console.log(error);
         return res.status(500).send({ error: error.message });
@@ -115,7 +116,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
                     const totalTokens = inputTokens + outputTokens;
                     if (user.workspace) {
                       const workspace = await Workspace.findById(user.workspace);
-                      const company = await User.findById(workspace.company);
+                      const company = await User.findById(workspace.company[0].toString());
                       company.tokenBalance -= totalTokens;
                       await company.save();
                     } else {
@@ -265,7 +266,7 @@ router.post('/messageAI', requireTokens, async (req, res) => {
                     const totalTokens = inputTokens + outputTokens;
                     if (user.workspace) {
                       const workspace = await Workspace.findById(user.workspace)
-                      const company = await User.findById(workspace.company);
+                      const company = await User.findById(workspace.company[0].toString());
                       company.tokenBalance -= totalTokens;
                       await company.save();
                     } else {
@@ -360,7 +361,7 @@ router.post('/compose-editor-completion', requireTokens, async (req, res) => {
                   const totalTokens = inputTokens + outputTokens;
                   if (user.workspace) {
                     const workspace = await Workspace.findById(user.workspace)
-                    const company = await User.findById(workspace.company);
+                    const company = await User.findById(workspace.company[0].toString());
                     company.tokenBalance -= totalTokens;
                     await company.save();
                   } else {

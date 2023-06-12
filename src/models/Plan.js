@@ -13,6 +13,9 @@ const PlanSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    priceId: {
+        type: String
+    },
     maxFiles: {
         type: Number,
         required: true,

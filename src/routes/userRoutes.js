@@ -185,7 +185,7 @@ router.delete('/deleteUser/:id', requireAuth, async (req, res) => {
 router.get('/get-refferal-link', requireAuth, async (req, res) => {
   const user = req.user;
   try {
-    const refferalLink = `https://asystent.ai/contentcreator?registration=true&ref=${user._id}`;
+    const refferalLink = `https://asystent.ai/marketing?registration=true&ref=${user._id}`;
     return res.status(200).json({ link: refferalLink });
   } catch (error) {
       return res.status(500).json({ message: error.message });

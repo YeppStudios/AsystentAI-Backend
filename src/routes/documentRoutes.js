@@ -6,16 +6,18 @@ const requireAdmin = require('../middlewares/requireAdmin');
 const e = require('express');
 const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
+const Workspace = mongoose.model('Workspace');
 const Assistant = mongoose.model('Assistant');
 const User = mongoose.model('User');
 const axios = require('axios');
 
 // CREATE
 router.post('/add-document', requireAuth, async (req, res) => {
-  const user = await User.findById(req.user._id);
-  user.uploadedBytes += Math.round(req.body.size * 100) / 100;;
   let document;
   if (req.body.workspace && req.body.workspace !== 'undefined') {
+    const workspace = await Workspace.findById(req.body.workspace);
+    const company = await User.findById(workspace.company[0].toString());
+    company.uploadedBytes += Math.round(req.body.size * 100) / 100;
     document = new Document({
       owner: req.body.owner,
       ownerEmail: req.body.ownerEmail,
@@ -26,7 +28,10 @@ router.post('/add-document', requireAuth, async (req, res) => {
       vectorId: req.body.vectorId,
       documentSize: req.body.size,
     });
+    await company.save();
   } else {
+    const user = await User.findById(req.user._id);
+    user.uploadedBytes += Math.round(req.body.size * 100) / 100;
     document = new Document({
       owner: req.body.owner,
       ownerEmail: req.body.ownerEmail,
@@ -36,9 +41,9 @@ router.post('/add-document', requireAuth, async (req, res) => {
       vectorId: req.body.vectorId,
       documentSize: req.body.size,
     });
+    user.save();
   }
 
-  user.save();
   document.save()
     .then(() => {
       return res.status(201).json({ document });
@@ -59,12 +64,13 @@ router.get('/get-documents', requireAdmin, (req, res) => {
     });
 });
 
-router.get('/user/:userId/documentCount', requireAuth, async (req, res) => {
+router.get('/user/:userId/uploadStats', requireAuth, async (req, res) => {
   try {
       const { userId } = req.params;
       const documentCount = await Document.countDocuments({ owner: mongoose.Types.ObjectId(userId) });
+      const user = await User.findById(userId);
 
-      return res.status(200).json({ documentCount });
+      return res.status(200).json({ documentCount, uploadedBytes: user.uploadedBytes });
   } catch(err) {
       return res.status(500).json({ error: err.message });
   }
@@ -177,7 +183,7 @@ router.delete('/user/:userId/delete-document/:vectorId', requireAuth, async (req
 
     // Delete the document itself
     const result = await Document.findByIdAndDelete(document._id);
-    
+
     if (!result) {
       return res.status(404).json({ message: 'Document not found' });
     }
@@ -309,25 +315,41 @@ router.post('/add-folder', requireAuth, (req, res) => {
   });
 
   // READ
-  router.get('/folders/:workspaceId', requireAuth, (req, res) => {
-    Folder.find({ workspace: req.params.workspaceId })
-      .then(folders => {
-        return res.json(folders);
-      })
-      .catch(err => {
-        return res.status(500).json({ error: err.message });
-      });
-  });
+router.get('/folders/:workspaceId', requireAuth, (req, res) => {
+  let { page = 0, limit = 10 } = req.query;
+  page = parseInt(page);
+  limit = parseInt(limit);
 
-  router.get('/folders/owner/:userId', requireAuth, (req, res) => {
-    Folder.find({ owner: req.params.userId })
-      .then(folders => {
-        return res.json(folders);
-      })
-      .catch(err => {
-        return res.status(500).json({ error: err.message });
-      });
-  });
+  Folder.find({ workspace: req.params.workspaceId })
+    .sort({ updatedAt: -1 }) // Sort folders by updatedAt in descending order
+    .skip(page * limit)
+    .limit(limit)
+    .then(folders => {
+      return res.json(folders);
+    })
+    .catch(err => {
+      return res.status(500).json({ error: err.message });
+    });
+});
+
+router.get('/folders/owner/:userId', requireAuth, (req, res) => {
+  let { page = 0, limit = 10 } = req.query;
+  page = parseInt(page);
+  limit = parseInt(limit);
+
+  Folder.find({ owner: req.params.userId })
+    .sort({ updatedAt: -1 }) // Sort folders by updatedAt in descending order
+    .skip(page * limit)
+    .limit(limit)
+    .then(folders => {
+      return res.json(folders);
+    })
+    .catch(err => {
+      return res.status(500).json({ error: err.message });
+    });
+});
+
+
   
   router.get('/getFolder/:id', requireAuth, (req, res) => {
     Folder.findById(req.params.id)
