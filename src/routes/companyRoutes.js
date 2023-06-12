@@ -16,7 +16,7 @@ function generateApiKey() {
   }
 
 
-router.post('workspaces/add', requireAuth, async (req, res) => {
+router.post('/workspaces/add', requireAuth, async (req, res) => {
   const companyId = req.user._id;
   if (req.user.accountType === "compnay") {
     try {
@@ -40,11 +40,15 @@ router.post('workspaces/add', requireAuth, async (req, res) => {
 router.get('/workspace-company/:workspaceId', requireAuth, async (req, res) => {
   try {
     const workspaceId = req.params.workspaceId;
-
+    if (workspaceId !== "null") {
     const workspace = await Workspace.findById(workspaceId)
       .populate({
         path: 'company',
-        select: 'name email tokenBalance _id',
+        select: 'email tokenBalance _id plan uploadedBytes workspace accountType',
+        populate: {
+          path: 'plan',
+          model: 'Plan'
+        }
       })
       .populate('admins') 
       .populate('employees.user');
@@ -57,7 +61,7 @@ router.get('/workspace-company/:workspaceId', requireAuth, async (req, res) => {
     const isAdmin = workspace.admins.some(admin => admin._id.toString() === req.user._id.toString());
 
     if (isAdmin) {
-      return res.status(200).json({ company: workspace.company });
+      return res.status(200).json({ company: workspace.company[0] });
     }
 
     // Check if the user is an employee
@@ -67,8 +71,10 @@ router.get('/workspace-company/:workspaceId', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'You are not authorized to access this workspace' });
     }
 
-    return res.status(200).json({ company: workspace.company });
-
+    return res.status(200).json({ company: workspace.company[0] });
+  } else {
+    return res.status(404).json({ error: 'Workspace not found' });
+  }
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error });
@@ -80,13 +86,18 @@ router.get('/workspace-company/:workspaceId', requireAuth, async (req, res) => {
 router.get('/workspace/:id', requireAuth, async (req, res) => {
 
   try {
-    const workspace = await Workspace.findById(req.params.id).populate('admins', 'email').populate('employees.user', 'email').exec();
+    if (req.params.id !== "null") {
+      const workspace = await Workspace.findById(req.params.id).populate('admins', 'email').populate('employees.user', 'email').exec();
 
-    if (!workspace) {
+      if (!workspace) {
+        return res.status(404).json({ error: 'Workspace not found' });
+      }
+  
+      return res.json(workspace);
+    } else {
       return res.status(404).json({ error: 'Workspace not found' });
     }
 
-    return res.json(workspace);
   } catch (error) {
     console.error(error);
     return res.status(500).send('Server Error');
@@ -116,7 +127,7 @@ router.post('/send-invitation', requireAuth, async (req, res) => {
   workspace.invitations.push({ email, role, invitedBy });
   await workspace.save();
 
-  const inviteUrl = `https://www.asystent.ai/contentcreator?registration=true&workspace=${workspace._id}`;
+  const inviteUrl = `https://www.asystent.ai/marketing?registration=true&workspace=${workspace._id}`;
 
   return res.status(201).json({ invitationLink: inviteUrl });
 });

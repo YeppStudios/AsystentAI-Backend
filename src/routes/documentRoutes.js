@@ -6,12 +6,44 @@ const requireAdmin = require('../middlewares/requireAdmin');
 const e = require('express');
 const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
+const Workspace = mongoose.model('Workspace');
 const Assistant = mongoose.model('Assistant');
+const User = mongoose.model('User');
 const axios = require('axios');
 
 // CREATE
-router.post('/add-document', requireAuth, (req, res) => {
-  const document = new Document(req.body);
+router.post('/add-document', requireAuth, async (req, res) => {
+  let document;
+  if (req.body.workspace && req.body.workspace !== 'undefined') {
+    const workspace = await Workspace.findById(req.body.workspace);
+    const company = await User.findById(workspace.company[0].toString());
+    company.uploadedBytes += Math.round(req.body.size * 100) / 100;
+    document = new Document({
+      owner: req.body.owner,
+      ownerEmail: req.body.ownerEmail,
+      title: req.body.title,
+      category: req.body.category,
+      timestamp: req.body.timestamp,
+      workspace: req.body.workspace,
+      vectorId: req.body.vectorId,
+      documentSize: req.body.size,
+    });
+    await company.save();
+  } else {
+    const user = await User.findById(req.user._id);
+    user.uploadedBytes += Math.round(req.body.size * 100) / 100;
+    document = new Document({
+      owner: req.body.owner,
+      ownerEmail: req.body.ownerEmail,
+      title: req.body.title,
+      category: req.body.category,
+      timestamp: req.body.timestamp,
+      vectorId: req.body.vectorId,
+      documentSize: req.body.size,
+    });
+    user.save();
+  }
+
   document.save()
     .then(() => {
       return res.status(201).json({ document });
@@ -30,6 +62,18 @@ router.get('/get-documents', requireAdmin, (req, res) => {
     .catch(err => {
       return res.status(500).json({ error: err.message });
     });
+});
+
+router.get('/user/:userId/uploadStats', requireAuth, async (req, res) => {
+  try {
+      const { userId } = req.params;
+      const documentCount = await Document.countDocuments({ owner: mongoose.Types.ObjectId(userId) });
+      const user = await User.findById(userId);
+
+      return res.status(200).json({ documentCount, uploadedBytes: user.uploadedBytes });
+  } catch(err) {
+      return res.status(500).json({ error: err.message });
+  }
 });
 
 router.post('/documents-by-vector-ids', requireAuth, async (req, res, next) => {
@@ -97,7 +141,7 @@ router.post('/getPineconeIds', requireAuth, async (req, res, next) => {
 
 
 // DELETE DOCUMENT
-router.delete('/delete-document/:vectorId', requireAuth, async (req, res) => {
+router.delete('/user/:userId/delete-document/:vectorId', requireAuth, async (req, res) => {
   const vectorId = req.params.vectorId;
   
   try {
@@ -127,10 +171,19 @@ router.delete('/delete-document/:vectorId', requireAuth, async (req, res) => {
       return Assistant.updateOne({ _id: assistant._id }, { $pull: { documents: document._id } });
     });
     await Promise.all(assistantUpdateOps);
-    
+
+    const user = await User.findById(req.params.userId);
+
+    if (!user) { 
+      return res.status(404).json({ message: 'User not found' });
+    } else {
+      user.uploadedBytes -= document.documentSize;
+      await user.save();
+    }
+
     // Delete the document itself
     const result = await Document.findByIdAndDelete(document._id);
-    
+
     if (!result) {
       return res.status(404).json({ message: 'Document not found' });
     }
@@ -212,13 +265,23 @@ router.post('/add-folder', requireAuth, (req, res) => {
         return res.json({ folder: existingFolder });
       }
       try {
-        const folder = new Folder({
-          owner: req.user._id,
-          title: title || "Untitled",
-          category: category || "other",
-          documents: documents || [],
-          workspace: workspace
-        });
+        let folder;
+        if (workspace && workspace !== 'undefined') {
+          folder = new Folder({
+            owner: req.user._id,
+            title: title || "Untitled",
+            category: category || "other",
+            documents: documents || [],
+            workspace: workspace
+          });
+        } else {
+          folder = new Folder({
+            owner: req.user._id,
+            title: title || "Untitled",
+            category: category || "other",
+            documents: documents || [],
+          });
+        }
         folder.save()
         return res.status(201).json({ folder });
       } catch (e) {
@@ -252,15 +315,41 @@ router.post('/add-folder', requireAuth, (req, res) => {
   });
 
   // READ
-  router.get('/folders/:workspaceId', requireAuth, (req, res) => {
-    Folder.find({ workspace: req.params.workspaceId })
-      .then(folders => {
-        return res.json(folders);
-      })
-      .catch(err => {
-        return res.status(500).json({ error: err.message });
-      });
-  });
+router.get('/folders/:workspaceId', requireAuth, (req, res) => {
+  let { page = 0, limit = 10 } = req.query;
+  page = parseInt(page);
+  limit = parseInt(limit);
+
+  Folder.find({ workspace: req.params.workspaceId })
+    .sort({ updatedAt: -1 }) // Sort folders by updatedAt in descending order
+    .skip(page * limit)
+    .limit(limit)
+    .then(folders => {
+      return res.json(folders);
+    })
+    .catch(err => {
+      return res.status(500).json({ error: err.message });
+    });
+});
+
+router.get('/folders/owner/:userId', requireAuth, (req, res) => {
+  let { page = 0, limit = 10 } = req.query;
+  page = parseInt(page);
+  limit = parseInt(limit);
+
+  Folder.find({ owner: req.params.userId })
+    .sort({ updatedAt: -1 }) // Sort folders by updatedAt in descending order
+    .skip(page * limit)
+    .limit(limit)
+    .then(folders => {
+      return res.json(folders);
+    })
+    .catch(err => {
+      return res.status(500).json({ error: err.message });
+    });
+});
+
+
   
   router.get('/getFolder/:id', requireAuth, (req, res) => {
     Folder.findById(req.params.id)
@@ -298,7 +387,7 @@ router.post('/add-folder', requireAuth, (req, res) => {
 
 
 // DELETE FOLDER
-router.delete('/folders/:id', requireAuth, async (req, res) => {
+router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
   try {
       const folder = await Folder.findById(req.params.id);
       if (!folder) {
@@ -308,7 +397,7 @@ router.delete('/folders/:id', requireAuth, async (req, res) => {
           return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const Document = mongoose.model('Document'); // Assuming Document model is defined
+      const user = await User.findById(req.params.userId);
 
       // Create an array to hold vectorIds of all documents
       let vectorIds = [];
@@ -320,7 +409,7 @@ router.delete('/folders/:id', requireAuth, async (req, res) => {
               // Add vectorId of the document to the array
               vectorIds.push(document.vectorId);
 
-              // Delete document from MongoDB
+              user.uploadedBytes -= document.documentSize;
               await document.remove();
           }
       }
@@ -340,6 +429,7 @@ router.delete('/folders/:id', requireAuth, async (req, res) => {
       }
       // After all documents deleted, remove the folder itself
       await folder.remove();
+      await user.save();
 
       return res.json({ message: 'Folder and its documents deleted successfully' });
   } catch (err) {

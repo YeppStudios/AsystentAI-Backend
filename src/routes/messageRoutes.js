@@ -105,7 +105,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
                     }
                     if (user.workspace) {
                         const workspace = await Workspace.findById(user.workspace)
-                        const company = await User.findById(workspace.company);
+                        const company = await User.findById(workspace.company[0].toString());
                         company.tokenBalance -= totalTokens;
                         await company.save();
                       } else {

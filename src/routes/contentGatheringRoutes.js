@@ -7,8 +7,8 @@ const Content = mongoose.model('Content');
 const moment = require('moment');
 
 router.post('/addContent', requireAuth, async (req, res) => {
-    const { text, prompt, category, savedBy } = req.body;
-    const newContent = new Content({ text, prompt, category, savedBy });
+    const { text, prompt, category, savedBy, title } = req.body;
+    const newContent = new Content({ text, prompt, category, savedBy, title });
 
     try {
         const savedContent = await newContent.save();
