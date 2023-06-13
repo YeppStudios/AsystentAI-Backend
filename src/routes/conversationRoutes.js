@@ -30,11 +30,16 @@ router.post('/createConversation', requireAuth, async (req, res) => {
     }
 });
 
-router.get('/getConversations', requireAuth, async (req, res) => {
+router.get('/getConversations/:assistantId', requireAuth, async (req, res) => {
     const user = req.user;
+    const assistantId = req.params.assistantId;
   
     try {
-      const conversations = await Conversation.find({ user: user._id }).sort({ lastUpdated: -1 }).lean();
+      const conversations = await Conversation.find({ 
+        user: user._id, 
+        assistant: mongoose.Types.ObjectId(assistantId) 
+      }).sort({ lastUpdated: -1 }).lean();
+  
       const conversationsWithCustomTimestamp = conversations.map((conversation) => {
         // Calculate time difference in days
         const daysAgo = moment().diff(moment(conversation.startTime), 'days');

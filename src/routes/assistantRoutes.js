@@ -3,12 +3,25 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');
-
+const requireTokens = require('../middlewares/requireTokens');
+const User = mongoose.model('User');
+const Workspace = mongoose.model('Workspace');
 const Assistant = mongoose.model('Assistant');
 
 // CREATE
-router.post('/create-assistant', requireAuth, (req, res) => {
+router.post('/create-assistant', requireTokens, async (req, res) => {
   const assistant = new Assistant(req.body);
+  if (req.user.workspace && req.user.workspace !== 'undefined') {
+    const workspace = await Workspace.findById(req.user.workspace);
+    const company = await User.findById(workspace.company[0].toString());
+    company.tokenBalance -= 1000
+    company.save();
+  } else {
+    const user = await User.findById(req.user._id);
+    user.tokenBalance -= 1000;
+    user.save();
+  }
+
   assistant.save()
     .then(() => {
       res.status(201).json({ assistant });
@@ -43,7 +56,16 @@ router.get('/getUserAssistants/:userId', requireAuth, (req, res) => {
     });
 });
 
-
+router.get('/countAssistants/:userId', requireAuth, async (req, res) => {
+  try {
+      const userId = req.params.userId;
+      const count = await Assistant.countDocuments({ owner: mongoose.Types.ObjectId(userId) });
+      res.json({ assistantCount: count });
+  } catch (error) {
+      console.error('An error occurred while counting the assistants: ', error);
+      res.status(500).json({ error: 'An error occurred while counting the assistants.' });
+  }
+});
 
 router.get('/get-assistant/:id', requireAuth, (req, res) => {
   Assistant.findById(req.params.id)

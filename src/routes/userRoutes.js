@@ -165,9 +165,9 @@ router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
 
   
 // Delete a user
-router.delete('/deleteUser/:id', requireAdmin, async (req, res) => {
+router.delete('/deleteUser/:id', requireAuth, async (req, res) => {
     try {
-        if(req.user._id === req.params.id || req.user.appAdmin){
+        if((req.user._id).toString() === req.params.id || req.user.appAdmin){
         const deletedUser = await User.findByIdAndDelete(req.params.id);
         if (!deletedUser) {
             return res.status(404).json({ message: 'User not found' });
@@ -185,7 +185,7 @@ router.delete('/deleteUser/:id', requireAdmin, async (req, res) => {
 router.get('/get-refferal-link', requireAuth, async (req, res) => {
   const user = req.user;
   try {
-    const refferalLink = `https://asystent.ai/contentcreator?registration=true&ref=${user._id}`;
+    const refferalLink = `https://asystent.ai/marketing?registration=true&ref=${user._id}`;
     return res.status(200).json({ link: refferalLink });
   } catch (error) {
       return res.status(500).json({ message: error.message });

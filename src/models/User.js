@@ -68,7 +68,14 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
-    plan: { type: mongoose.Schema.Types.ObjectId, ref: 'Plan' },
+    uploadedBytes: {
+        type: Number,
+        default: 0
+    },
+    plan: { 
+        type: mongoose.Schema.Types.ObjectId, ref: 'Plan',
+        default: '647c3294ff40f15b5f6796bf'
+    },
     accountType: {
         type: String,
         required: true,
@@ -76,7 +83,8 @@ const UserSchema = new mongoose.Schema({
     },
     workspace:{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Workspace'
+        ref: 'Workspace',
+        allowNull: true
     },
     createdAt: {
         type: Date,
