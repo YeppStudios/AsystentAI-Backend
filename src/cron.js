@@ -27,7 +27,7 @@ const endTestEmail = async () => {
             } else {
                 link="https://www.asystent.ai/pricing?type=individual"
             }
-            if(!user.isBlocked && !user.plan) {
+            if(!user.isBlocked && user.plan ==="647c3294ff40f15b5f6796bf") {
                 const msg = {
                     to: `${user.email}`,
                     from: 'hello@asystent.ai',
