@@ -72,6 +72,10 @@ const UserSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    subscriptionEndDate: {
+        type: Date,
+        default: null
+    },
     plan: { 
         type: mongoose.Schema.Types.ObjectId, ref: 'Plan',
         default: '647c3294ff40f15b5f6796bf'

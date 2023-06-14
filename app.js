@@ -34,7 +34,7 @@ const documentRoutes =  require('./src/routes/documentRoutes');
 const reservationsRoutes =  require('./src/routes/reservationsRoutes');
 const companyRoutes =  require('./src/routes/companyRoutes');
 const apiRoutes =  require('./src/routes/apiRoutes');
-const job = require('./src/cron');
+const { emailJob, blockSubscriptionsJob } = require('./src/cron');
 const cors = require('cors');
 require('dotenv').config()
 
@@ -72,12 +72,14 @@ mongoose.connect(mongoUri);
 
 mongoose.connection.on('error', (err) => {
     console.log("Error connecting to mongo ", err);
-    job.stop();
+    emailJob.stop();
+    blockSubscriptionsJob.stop();
 });
 
 app.listen(app.get('port'), function () {
   console.log('Server running on port ' + app.get('port'));
-  job.start();
+  emailJob.start();
+  blockSubscriptionsJob.start();
 });
 
 module.exports = app;

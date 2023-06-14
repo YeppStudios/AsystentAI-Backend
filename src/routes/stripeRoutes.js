@@ -24,7 +24,7 @@ const infaktConfig = {
 const router = express.Router();
 
 router.post('/create-checkout-session', async (req, res) => {
-  const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId, referrerId, isTrial, asCompany, invoiceTitle } = req.body;
+  const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId, referrerId, isTrial, asCompany, invoiceTitle, months } = req.body;
   try {
     let customer;
     try {
@@ -44,43 +44,6 @@ router.post('/create-checkout-session', async (req, res) => {
     }
 
     let session;
-
-    //if trial check planId(assistant) and mode to create trial stripe checkout
-    if(isTrial && planId == "63f0e7d075de0ef12bb8c484" && mode === "subscription"){
-      try {
-        const whitelist = await Whitelist.findOne({ email });
-    
-        if (whitelist && planId) {
-          session = await stripe.checkout.sessions.create({
-            customer: customer.id,
-            line_items: [
-              {
-                price: `${priceId}`,
-                quantity: 1,
-              },
-            ],
-            metadata: {
-              tokens_to_add: `${tokensAmount}`,
-              plan_id: `${planId}`, //plan id
-              referrer_id: `${referrerId}`,
-              trial: true,
-              asCompany: asCompany,
-            },
-            mode: `${mode}`,
-            subscription_data: {
-              trial_settings: {end_behavior: {missing_payment_method: 'cancel'}},
-              trial_period_days: 30,
-            },
-            payment_method_collection: 'if_required',
-            success_url: `${successURL}`,
-            cancel_url: `${cancelURL}`,
-          });
-        } 
-
-      } catch (error) {
-        console.error(error);
-      }
-    } else {
       session = await stripe.checkout.sessions.create({
         customer: customer.id,
         line_items: [
@@ -95,14 +58,13 @@ router.post('/create-checkout-session', async (req, res) => {
           referrer_id: `${referrerId}`,
           trial: false,
           asCompany: asCompany,
-          invoiceTitle: invoiceTitle
+          invoiceTitle: invoiceTitle,
+          months
         },
         mode: `${mode}`,
         success_url: `${successURL}`,
         cancel_url: `${cancelURL}`,
       });
-    }
-
 
     res.status(200).json({ url: session.url });
   } catch (e) {
@@ -146,7 +108,14 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               const planId = transactionData.metadata.plan_id;
               const plan = await Plan.findById(planId);
               user.plan = plan;
-              user.tokenBalance += plan.monthlyTokens;
+              if (transactionData.metadata.months && Number(transactionData.metadata.months) > 1) {
+                user.tokenBalance += plan.monthlyTokens*transactionData.metadata.months;
+                let subscriptionEndDate = new Date();
+                subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + Number(transactionData.metadata.months));
+                user.subscriptionEndDate = subscriptionEndDate;
+              } else {
+                user.tokenBalance += plan.monthlyTokens;
+              }
 
               if(transactionData.metadata.trial){
                 await Whitelist.deleteOne({ email });

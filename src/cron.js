@@ -53,10 +53,29 @@ const endTestEmail = async () => {
         });
     });
 };
-const job = new cron.CronJob('30 7 * * *', endTestEmail);
 
+const blockExpiredSubscriptions = async () => {
+    const now = new Date();
 
-module.exports = job;
+    // Fetch users whose subscriptions have expired and are not blocked yet
+    const usersToBlock = await User.find({ 
+        subscriptionEndDate: { $lt: now },
+        isBlocked: false
+    });
+
+    for (const user of usersToBlock) {
+        user.isBlocked = true;
+        await user.save();
+    }
+}
+
+const emailJob = new cron.CronJob('30 7 * * *', endTestEmail);
+const blockSubscriptionsJob = new cron.CronJob('00 12 * * *', blockExpiredSubscriptions);
+
+module.exports = {
+    emailJob,
+    blockSubscriptionsJob
+};
 // job.start();
 // job.stop();
 // mongoose.connection.close();
