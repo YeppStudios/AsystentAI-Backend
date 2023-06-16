@@ -14,6 +14,7 @@ require('./src/models/Document');
 require('./src/models/Reservations');
 require('./src/models/Folder');
 require('./src/models/OnboardingSurveyData');
+require('./src/models/UserLogin');
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser =  require('body-parser');
