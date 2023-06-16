@@ -89,8 +89,8 @@ router.get('/get-assistant/:id', requireAuth, (req, res) => {
 
 
 // UPDATE
-router.put('/update-assistant/:id', requireAuth, (req, res) => {
-  Assistant.findOneAndUpdate({ _id: req.params.id, owner: req.user._id }, req.body)
+router.patch('/update-assistant/:id', requireAuth, (req, res) => {
+  Assistant.findOneAndUpdate({ _id: req.params.id }, req.body)
     .then(assistant => {
       if (!assistant) {
         return res.status(404).json({ message: 'Assistant not found or not authorized to modify' });

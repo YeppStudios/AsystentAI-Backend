@@ -81,19 +81,31 @@ router.get('/newUsersCount', requireAdmin, async (req, res) => {
   }
 });
 
-router.get('/onboarding-step', requireAuth, async (req, res) => {
+router.post('/addOnboardingData', requireAuth, async (req, res) => {
   try {
-      const user = await User.findById(req.user._id, 'onboardingStep');
+      const { industry, role, companySize, hasUsedAI } = req.body;
+      const user = req.user._id;
+      
+      // create new onboarding data object
+      const newOnboardingData = new OnboardingSruveyData({
+          user,
+          industry,
+          role,
+          companySize,
+          hasUsedAI,
+      });
 
-      if (!user) {
-          return res.status(404).send({ message: 'User not found' });
-      }
+      // save the new onboarding data to the database
+      const savedOnboardingData = await newOnboardingData.save();
 
-      res.send({ onboardingStep: user.onboardingStep });
-  } catch (error) {
-      res.status(500).send({ message: error.message });
+      // send back the saved onboarding data
+      res.status(201).json(savedOnboardingData);
+  } catch (err) {
+      // send error message if there is any
+      res.status(500).json({ error: err.message });
   }
 });
+
 
 router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
     const { id } = req.params;

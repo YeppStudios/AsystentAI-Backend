@@ -68,7 +68,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         }), { role: "user", content: `${embeddingContext} ${text}`},];
 
         const completion = await openai.createChatCompletion({
-            model: "gpt-4",
+            model: "gpt-4-0613",
             messages,
             temperature: 0,
             frequency_penalty: 0.35,

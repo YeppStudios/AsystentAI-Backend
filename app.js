@@ -13,6 +13,7 @@ require('./src/models/Assistant');
 require('./src/models/Document');
 require('./src/models/Reservations');
 require('./src/models/Folder');
+require('./src/models/OnboardingSurveyData');
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser =  require('body-parser');
