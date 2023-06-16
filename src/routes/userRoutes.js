@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
-const Plan = mongoose.model('Plan');
+const OnboardingSruveyData = mongoose.model('OnboardingSruveyData');
 const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');
 
