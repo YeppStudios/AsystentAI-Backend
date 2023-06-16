@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
-const OnboardingSruveyData = mongoose.model('OnboardingSruveyData');
+// const OnboardingSruveyData = mongoose.model('OnboardingSruveyData');
 const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');
 
@@ -81,30 +81,30 @@ router.get('/newUsersCount', requireAdmin, async (req, res) => {
   }
 });
 
-router.post('/addOnboardingData', requireAuth, async (req, res) => {
-  try {
-      const { industry, role, companySize, hasUsedAI } = req.body;
-      const user = req.user._id;
+// router.post('/addOnboardingData', requireAuth, async (req, res) => {
+//   try {
+//       const { industry, role, companySize, hasUsedAI } = req.body;
+//       const user = req.user._id;
       
-      // create new onboarding data object
-      const newOnboardingData = new OnboardingSruveyData({
-          user,
-          industry,
-          role,
-          companySize,
-          hasUsedAI,
-      });
+//       // create new onboarding data object
+//       const newOnboardingData = new OnboardingSruveyData({
+//           user,
+//           industry,
+//           role,
+//           companySize,
+//           hasUsedAI,
+//       });
 
-      // save the new onboarding data to the database
-      const savedOnboardingData = await newOnboardingData.save();
+//       // save the new onboarding data to the database
+//       const savedOnboardingData = await newOnboardingData.save();
 
-      // send back the saved onboarding data
-      res.status(201).json(savedOnboardingData);
-  } catch (err) {
-      // send error message if there is any
-      res.status(500).json({ error: err.message });
-  }
-});
+//       // send back the saved onboarding data
+//       res.status(201).json(savedOnboardingData);
+//   } catch (err) {
+//       // send error message if there is any
+//       res.status(500).json({ error: err.message });
+//   }
+// });
 
 
 router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
