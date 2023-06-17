@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
-const OnboardingSruveyData = mongoose.model('OnboardingSruveyData');
+const OnboardingSurveyData = mongoose.model('OnboardingSurveyData');
 const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');
 
@@ -87,7 +87,7 @@ router.post('/addOnboardingData', requireAuth, async (req, res) => {
       const user = req.user._id;
       
       // create new onboarding data object
-      const newOnboardingData = new OnboardingSruveyData({
+      const newOnboardingData = new OnboardingSurveyData({
           user,
           industry,
           role,
@@ -103,6 +103,35 @@ router.post('/addOnboardingData', requireAuth, async (req, res) => {
   } catch (err) {
       // send error message if there is any
       res.status(500).json({ error: err.message });
+  }
+});
+
+router.patch('/updateOnboardingData', requireAuth, async (req, res) => {
+  try {
+    const { industry, role, companySize, hasUsedAI, firstChosenCategory } = req.body;
+    const userId = req.user._id;
+
+    const update = {
+      ...(industry && { industry }),
+      ...(role && { role }),
+      ...(companySize && { companySize }),
+      ...(hasUsedAI !== undefined && { hasUsedAI }),
+      ...(firstChosenCategory && { firstChosenCategory })
+    };
+
+    const updatedOnboardingData = await mongoose.model('OnboardingSurveyData').findOneAndUpdate(
+      { user: userId },
+      { $set: update },
+      { new: true, useFindAndModify: false } // new: true to return the updated document
+    );
+
+    if (!updatedOnboardingData) {
+      return res.status(404).json({ error: "Onboarding data not found for this user" });
+    }
+
+    res.status(200).json(updatedOnboardingData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

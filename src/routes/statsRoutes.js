@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
 const Transaction = mongoose.model('Transaction');
+const OnboardingSurveyData = mongoose.model('OnboardingSurveyData');
 const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');
 
@@ -268,6 +269,16 @@ router.post('/user/:userId/addPosts', requireAuth, (req, res) => {
     } catch (error) {
       res.status(500).json({ message: 'Error retrieving transactions for the last 7 days.' });
       console.log(error);
+    }
+  });
+  
+
+  router.get('/getOnboardingSurveyData', requireAdmin, async (req, res) => {
+    try {
+        const data = await OnboardingSurveyData.find();
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
   });
   

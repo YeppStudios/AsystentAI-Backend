@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const OnboardingSruveyDataSchema = new mongoose.Schema({
+const OnboardingSurveyDataSchema = new mongoose.Schema({
     user: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'User' 
@@ -22,4 +22,4 @@ const OnboardingSruveyDataSchema = new mongoose.Schema({
     }
 });
 
-mongoose.model('OnboardingSruveyData', OnboardingSruveyDataSchema);
+mongoose.model('OnboardingSurveyData', OnboardingSurveyDataSchema);
