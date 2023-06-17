@@ -41,7 +41,6 @@ router.post('/completion', requireTokens, async (req, res) => {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt }
       ]
-
       try {
         const completion = await openai.createChatCompletion({
           model: model,
@@ -89,8 +88,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
         const completion = await openai.createChatCompletion({
             model: model,
             messages,
-            temperature: 0.8,
-            frequency_penalty: 0.35,
+            temperature: 0.5,
             stream: true,
         }, { responseType: 'stream' });
         res.set({

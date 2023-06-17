@@ -23,6 +23,17 @@ const infaktConfig = {
 
 const router = express.Router();
 
+function generateApiKey() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let apiKey = '';
+  for (let i = 0; i < 32; i++) {
+    const randomIndex = Math.floor(Math.random() * chars.length);
+    apiKey += chars[randomIndex];
+  }
+  return apiKey;
+}
+
+
 router.post('/create-checkout-session', async (req, res) => {
   const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId, referrerId, isTrial, asCompany, invoiceTitle, months } = req.body;
   try {
@@ -172,6 +183,15 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                   }
                   user.workspace = null;
                 }
+              } else if (!user.workspace && transactionData.metadata.plan_id === "6444d4394ab2cf9819e5b5f4") {
+                const key = generateApiKey();
+                let workspace = new Workspace({
+                  admins: [user._id],
+                  company: user._id,
+                  employees: [],
+                  apiKey: key
+                });
+                await workspace.save();
               }
               
 
