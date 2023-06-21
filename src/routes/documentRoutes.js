@@ -259,7 +259,7 @@ router.post('/add-folder', requireAuth, (req, res) => {
   const { title, category, workspace, documents } = req.body;
   Folder.findOne({ owner: req.user._id, title: title })
     .populate('documents')
-    .then(existingFolder => {
+    .then(async existingFolder => {
       if (existingFolder) {
         existingFolder.documents.push(...documents);
         existingFolder.save();
@@ -268,8 +268,10 @@ router.post('/add-folder', requireAuth, (req, res) => {
       try {
         let folder;
         if (workspace && workspace !== 'undefined' && workspace !== 'null') {
+          const workspace = await Workspace.findById(req.body.workspace);
+          const company = await User.findById(workspace.company[0].toString());
           folder = new Folder({
-            owner: req.user._id,
+            owner: company._id,
             title: title || "Untitled",
             category: category || "other",
             documents: documents || [],
