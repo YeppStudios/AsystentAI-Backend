@@ -49,7 +49,7 @@ router.patch('/updatePlan/:id', requireAdmin, async (req, res) => {
         if (!plan) {
             return res.status(404).json({ message: 'Plan not found' });
         }
-        const { name, monthlyTokens, price, maxFiles, maxUploadedBytes, maxAssistants, priceId } = req.body;
+        const { name, monthlyTokens, price, maxFiles, maxUploadedBytes, maxAssistants, priceId, maxFolders } = req.body;
         if (name) {
             plan.name = name;
         }
@@ -66,6 +66,10 @@ router.patch('/updatePlan/:id', requireAdmin, async (req, res) => {
 
         if (maxFiles !== undefined) {
             plan.maxFiles = maxFiles;
+        }
+
+        if (maxFolders !== undefined) {
+            plan.maxFolders = maxFolders;
         }
 
         if (maxAssistants !== undefined) {

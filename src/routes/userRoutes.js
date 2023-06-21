@@ -119,14 +119,20 @@ router.patch('/updateOnboardingData', requireAuth, async (req, res) => {
       ...(firstChosenCategory && { firstChosenCategory })
     };
 
-    const updatedOnboardingData = await mongoose.model('OnboardingSurveyData').findOneAndUpdate(
+    let updatedOnboardingData = await mongoose.model('OnboardingSurveyData').findOneAndUpdate(
       { user: userId },
       { $set: update },
       { new: true, useFindAndModify: false } // new: true to return the updated document
     );
 
+    // If no OnboardingSurveyData document was found, create a new one
     if (!updatedOnboardingData) {
-      return res.status(404).json({ error: "Onboarding data not found for this user" });
+      updatedOnboardingData = new (mongoose.model('OnboardingSurveyData'))({
+        user: userId,
+        ...update
+      });
+
+      await updatedOnboardingData.save();
     }
 
     res.status(200).json(updatedOnboardingData);
@@ -134,6 +140,7 @@ router.patch('/updateOnboardingData', requireAuth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 router.patch('/updateUserData/:id', requireAuth, async (req, res) => {

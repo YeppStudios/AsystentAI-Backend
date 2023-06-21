@@ -21,6 +21,10 @@ const PlanSchema = new mongoose.Schema({
         required: true,
         default: 3
     },
+    maxFolders: {
+        type: Number,
+        default: 1
+    },
     maxUploadedBytes: {
         type: Number,
         required: true,

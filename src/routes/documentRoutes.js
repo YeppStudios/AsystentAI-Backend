@@ -68,9 +68,10 @@ router.get('/user/:userId/uploadStats', requireAuth, async (req, res) => {
   try {
       const { userId } = req.params;
       const documentCount = await Document.countDocuments({ owner: mongoose.Types.ObjectId(userId) });
+      const folderCount = await Document.countDocuments({ owner: mongoose.Types.ObjectId(userId) });
       const user = await User.findById(userId);
 
-      return res.status(200).json({ documentCount, uploadedBytes: user.uploadedBytes });
+      return res.status(200).json({ documentCount, uploadedBytes: user.uploadedBytes, folderCount });
   } catch(err) {
       return res.status(500).json({ error: err.message });
   }
@@ -266,7 +267,7 @@ router.post('/add-folder', requireAuth, (req, res) => {
       }
       try {
         let folder;
-        if (workspace && workspace !== 'undefined') {
+        if (workspace && workspace !== 'undefined' && workspace !== 'null') {
           folder = new Folder({
             owner: req.user._id,
             title: title || "Untitled",
@@ -413,6 +414,7 @@ router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
               await document.remove();
           }
       }
+
       // After all documents are deleted from MongoDB, delete them from Whale App
       if (folder.documents.length > 0) {
         await axios.delete(
