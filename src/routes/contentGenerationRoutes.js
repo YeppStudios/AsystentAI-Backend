@@ -47,7 +47,15 @@ router.post('/completion', requireTokens, async (req, res) => {
           messages,
           temperature: 0,
       });
-      // user.tokenBalance -= completion.data.usage.total_tokens;
+      if (user.workspace) {
+        const workspace = await Workspace.findById(user.workspace)
+        const company = await User.findById(workspace.company[0].toString());
+        company.tokenBalance -= completion.data.usage.total_tokens;
+      } else {
+        user.tokenBalance -= completion.data.usage.total_tokens;
+      }
+
+
       await user.save();
       return res.status(201).json({ completion: completion.data.choices[0].message.content, usage: completion.data.usage.total_tokens });
       } catch (error) {
@@ -428,7 +436,7 @@ router.post('/testMessageAI', requireTestTokens, async (req, res) => {
             inputTokens += estimateTokens(message.content);
         });
         const completion = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo",
+            model: "gpt-4",
             messages: conversationContext,
             temperature: 0.7,
             frequency_penalty: 0.35,
