@@ -319,7 +319,7 @@ router.post('/add-folder', requireAuth, (req, res) => {
 
   // READ
 router.get('/folders/:workspaceId', requireAuth, (req, res) => {
-  let { page = 0, limit = 10 } = req.query;
+  let { page = 0, limit = 50 } = req.query;
   page = parseInt(page);
   limit = parseInt(limit);
 
@@ -336,7 +336,7 @@ router.get('/folders/:workspaceId', requireAuth, (req, res) => {
 });
 
 router.get('/folders/owner/:userId', requireAuth, (req, res) => {
-  let { page = 0, limit = 10 } = req.query;
+  let { page = 0, limit = 50 } = req.query;
   page = parseInt(page);
   limit = parseInt(limit);
 
