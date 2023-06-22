@@ -7,6 +7,9 @@ const Plan = mongoose.model('Plan');
 const User = mongoose.model('User');
 const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_KEY);
+
 
 router.get('/getPlans', requireAdmin, async (req, res) => {
     try {
@@ -140,5 +143,32 @@ router.patch('/updateUserPlan/:userId', requireAdmin, async (req, res) => {
     }
 });
 
+
+//write an endpoint to send an email using sendgrid
+router.post('/sendPaymentFailedEmail', requireAdmin, async (req, res) => {
+    try {
+        const { email, name } = req.body;
+        const msg = {
+            to: `${email}`,
+            from: 'hello@asystent.ai',
+            templateId: 'd-555679e4d7c248d6ac8bf1da521a17c8',
+            dynamicTemplateData: {
+            name: `${name}`,
+            link: `https://www.asystent.ai/pricing`
+            },
+        };
+        
+        sgMail
+            .send(msg)
+            .then(() => {
+            })
+            .catch((error) => {
+            console.error(error)
+            });
+        res.json({ message: 'Email sent' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
 module.exports = router;

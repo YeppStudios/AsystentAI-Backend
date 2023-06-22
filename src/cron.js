@@ -21,20 +21,14 @@ const endTestEmail = async () => {
         if (err) console.log(err);
 
         users.forEach(async user => {
-            let link = 'https://www.asystent.ai/pricing?type=individual';
-            if (user.accountType === "company") {
-                link = "https://www.asystent.ai/pricing?type=business"
-            } else {
-                link="https://www.asystent.ai/pricing?type=individual"
-            }
-            if(!user.isBlocked && user.plan ==="647c3294ff40f15b5f6796bf") {
+            if(user.tokenBalance !== 0 && user.plan ==="647c3294ff40f15b5f6796bf") {
                 const msg = {
                     to: `${user.email}`,
                     from: 'hello@asystent.ai',
                     templateId: 'd-3daf3c4290f04a54b4f91753b681c5c6',
                     dynamicTemplateData: {
                     name: `${user.name}`,
-                    link: `${link}`
+                    link: `https://www.asystent.ai/pricing`
                     },
                 };
                 
@@ -46,7 +40,6 @@ const endTestEmail = async () => {
                     console.error(error)
                     });
 
-                user.isBlocked = false;
                 user.tokenBalance = 0;
                 await user.save();
             }
