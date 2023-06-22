@@ -67,7 +67,7 @@ router.post('/register', async (req, res) => {
     let user = await User.findOne({ email });
     if (user) {
       // User already exists, log them in
-      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
       return res.status(200).json({ token, user });
     }
 
@@ -106,7 +106,7 @@ router.post('/register', async (req, res) => {
       newUser.workspace = workspace._id;
 
     await newUser.save();
-    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
     return res.status(201).json({ token, user: newUser });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -137,7 +137,7 @@ router.post('/register-free-trial', async (req, res) => {
           user.accountType = 'company';
           await user.save();
         }
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
         return res.status(200).json({ token, newUser: user });
       }
 
@@ -199,7 +199,7 @@ router.post('/register-free-trial', async (req, res) => {
       newUser.transactions.push(transaction);
       await transaction.save();
       await newUser.save();
-      const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
       return res.status(201).json({ newUser, verificationCode, token });
   } catch (error) {
       return res.status(500).json({ message: error.message });
@@ -226,7 +226,7 @@ router.post('/register-no-password', async (req, res) => {
         user.accountType = 'company';
         await user.save();
       }
-      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
       return res.status(200).json({ token, user });
     }
 
@@ -281,7 +281,7 @@ router.post('/register-no-password', async (req, res) => {
     await transaction.save();
     await newUser.save();
 
-    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
     return res.status(201).json({ token, user: newUser, verificationCode });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -333,7 +333,7 @@ router.post('/register-to-workspace', async (req, res) => {
     workspace.employees.push({ user: employee, role: invitation.role, name: employee.name , email: employee.email});
     workspace.invitations = workspace.invitations.filter(i => i.email !== email);
     await workspace.save();
-    const token = jwt.sign({ userId: employee._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: employee._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
     return res.status(200).json({ token, newUser: employee });
 
   } catch (error) {
@@ -366,7 +366,7 @@ router.post('/verify-email', async (req, res) => {
       }
       user.isBlocked = false;
       await user.save();
-      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
       res.status(200).json({ newUser: user, token });
     } else {
       res.status(400).json({ message: 'Invalid verification code' });
@@ -448,7 +448,7 @@ router.post('/refresh', requireAuth, async (req, res) => { //refresh token
   try {
       const user = req.user;
       const accessToken = generateAccessToken(user);
-      const refreshToken = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '7d' });
+      const refreshToken = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '2h' });
       user.refreshToken = refreshToken;
       await user.save();
       res.json({ accessToken, refreshToken });

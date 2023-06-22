@@ -19,6 +19,9 @@ const OnboardingSurveyDataSchema = new mongoose.Schema({
     },
     firstChosenCategory: {
         type: String
+    },
+    englishPanel: {
+        type: Boolean
     }
 });
 

@@ -108,7 +108,7 @@ router.post('/addOnboardingData', requireAuth, async (req, res) => {
 
 router.patch('/updateOnboardingData', requireAuth, async (req, res) => {
   try {
-    const { industry, role, companySize, hasUsedAI, firstChosenCategory } = req.body;
+    const { industry, role, companySize, hasUsedAI, firstChosenCategory, englishPanel } = req.body;
     const userId = req.user._id;
 
     const update = {
@@ -116,7 +116,8 @@ router.patch('/updateOnboardingData', requireAuth, async (req, res) => {
       ...(role && { role }),
       ...(companySize && { companySize }),
       ...(hasUsedAI !== undefined && { hasUsedAI }),
-      ...(firstChosenCategory && { firstChosenCategory })
+      ...(firstChosenCategory && { firstChosenCategory }),
+      ...(englishPanel !== undefined && { englishPanel }) // Add update for englishPanel
     };
 
     let updatedOnboardingData = await mongoose.model('OnboardingSurveyData').findOneAndUpdate(
