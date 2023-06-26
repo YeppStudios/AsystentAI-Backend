@@ -162,7 +162,7 @@ router.post('/register-free-trial', async (req, res) => {
           isCompany: true,
           referredBy: referrerId,
           verificationCode,
-          plan: "647c3294ff40f15b5f6796bf"
+          plan: "6444d4394ab2cf9819e5b5f4"
       });
 
       try {
@@ -195,7 +195,7 @@ router.post('/register-free-trial', async (req, res) => {
           timestamp: Date.now()
       });
 
-      newUser.tokenBalance += freeTokens;
+      newUser.tokenBalance = freeTokens;
       newUser.transactions.push(transaction);
       await transaction.save();
       await newUser.save();

@@ -78,7 +78,7 @@ const UserSchema = new mongoose.Schema({
     },
     plan: { 
         type: mongoose.Schema.Types.ObjectId, ref: 'Plan',
-        default: '647c3294ff40f15b5f6796bf'
+        default: '6444d4394ab2cf9819e5b5f4'
     },
     accountType: {
         type: String,

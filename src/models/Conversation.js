@@ -23,7 +23,7 @@ const ConversationSchema = new mongoose.Schema({
     },
     title: {
         type: String,
-        default: 'Nowa Konwersacja'
+        default: 'New Conversation'
     }
 });
 
