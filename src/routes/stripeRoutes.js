@@ -9,6 +9,7 @@ const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
 const Whitelist = mongoose.model('Whitelist');
 const Workspace = mongoose.model('Workspace');
+const Folder = mongoose.model('Folder');
 const axios = require('axios');
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -183,6 +184,11 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                   }
                   user.workspace = null;
                 }
+                // Find the user's folders and remove them
+                await Folder.deleteMany({ owner: user._id });
+
+                // Find the user's documents and remove them
+                await Document.deleteMany({ owner: user._id });
               } else if (!user.workspace && transactionData.metadata.plan_id === "6444d4394ab2cf9819e5b5f4") {
                 const key = generateApiKey();
                 let workspace = new Workspace({
