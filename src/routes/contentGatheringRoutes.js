@@ -4,6 +4,7 @@ const router = express.Router();
 const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');
 const Content = mongoose.model('Content');
+const SeoContent = mongoose.model('SeoContent');
 const moment = require('moment');
 
 router.post('/addContent', requireAuth, async (req, res) => {
@@ -118,5 +119,125 @@ router.get('/getSavedContent', requireAdmin, async (req, res) => {
     }
   });
   
+
+  // Endpoint to fetch all SeoContent documents
+router.get('/seocontents', requireAdmin, async (req, res) => {
+  try {
+    const seocontents = await SeoContent.find();
+    return res.json(seocontents);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+router.get('/getUserSeoContent', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const seocontents = await SeoContent.find({ owner: userId }).sort({ timestamp: -1 });
+    const contentsWithCustomTimestamp = seocontents.map((content) => {
+      const daysAgo = moment().diff(moment(content.timestamp), 'days');
+
+      // Format timestamp based on daysAgo
+      const customTimestamp = daysAgo === 0
+        ? 'Dzisiaj'
+        : daysAgo === 1
+          ? '1 Dzień temu'
+          : `${daysAgo} dni temu`;
+
+      return {
+        ...content,
+        timestamp: customTimestamp,
+        title: content.title,
+        owner: content.owner,
+        content: content.content,
+        savedBy: content.savedBy,
+        _id: content._id,
+      };
+    });
+    return res.json(contentsWithCustomTimestamp);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+
+// Endpoint to fetch a single SeoContent document by id
+router.get('/seoContent/:id', requireAuth, async (req, res) => {
+  try {
+    let seocontent = await SeoContent.findById(req.params.id);
+    if (seocontent == null) {
+      return res.status(404).json({ message: 'Cannot find SeoContent' });
+    } else {
+      return res.json(seocontent);
+    }
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// Endpoint to save a new SeoContent document
+router.post('/addSeoContent', requireAuth, async (req, res) => {
+  const seocontent = new SeoContent({
+    title: req.body.title,
+    content: req.body.content,
+    owner: req.body.owner,
+    savedBy: req.body.savedBy
+  });
+
+  try {
+    const newSeoContent = await seocontent.save();
+    return res.status(201).json(newSeoContent);
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+});
+
+router.patch('/updateSeoContent/:id', requireAuth, async (req, res) => {
+  try {
+    // verify owner
+    const seocontent = await SeoContent.findById(req.params.id);
+    if (seocontent.owner.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+    if (seocontent) {
+      const { title, content } = req.body;
+      if (title) {
+        seocontent.title = title;
+      }
+      if (content) {
+        seocontent.content = content;
+      }
+      seocontent.timestamp = Date.now();
+      await seocontent.save();
+      return res.json(seocontent);
+    } else {
+      return res.status(404).json({ message: 'No such SEO content found' });
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+router.delete('/deleteSeoContent/:id', requireAuth, async (req, res) => {
+  try {
+    const seocontent = await SeoContent.findById(req.params.id);
+
+    if (!seocontent) {
+      return res.status(404).json({ message: 'No such SEO content found' });
+    }
+
+    if (seocontent.owner.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    await seocontent.remove();
+    res.json({ message: 'SEO Content deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 
 module.exports = router;

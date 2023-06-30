@@ -34,7 +34,7 @@ function estimateTokens(text) {
 
 router.post('/completion', requireTokens, async (req, res) => {
   try {
-      const { prompt, model, systemPrompt } = req.body;
+      const { prompt, model, systemPrompt, temperature } = req.body;
       const user = await User.findById(req.user._id);
 
       const messages = [
@@ -45,7 +45,7 @@ router.post('/completion', requireTokens, async (req, res) => {
         const completion = await openai.createChatCompletion({
           model: model,
           messages,
-          temperature: 0,
+          temperature
       });
       if (user.workspace) {
         const workspace = await Workspace.findById(user.workspace)
@@ -71,7 +71,7 @@ router.post('/completion', requireTokens, async (req, res) => {
 
 router.post('/askAI', requireTokens, async (req, res) => {
     try {
-        const { prompt, title, preprompt, model, systemPrompt } = req.body;
+        const { prompt, title, preprompt, model, systemPrompt, temperature } = req.body;
         const user = req.user;
         let inputTokens = 0;
         let outputTokens = 0;
@@ -96,7 +96,7 @@ router.post('/askAI', requireTokens, async (req, res) => {
         const completion = await openai.createChatCompletion({
             model: model,
             messages,
-            temperature: 0.5,
+            temperature: temperature | 0.5,
             stream: true,
         }, { responseType: 'stream' });
         res.set({
