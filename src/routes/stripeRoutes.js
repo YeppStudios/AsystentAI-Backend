@@ -377,8 +377,12 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
             planId = "63f0e6968e1b9d507c38a749";
           } else if (priceId === "price_1MdbUeFe80Kn2YGGRlKvmre4") {
             planId = "63f0e7d075de0ef12bb8c484";
-          } else if (priceId === "price_1MdbWFFe80Kn2YGG3w8Xg2ub") {
-            planId = "63f0e7ed75de0ef12bb8c487";
+          } else if (priceId === "price_1NFwcqFe80Kn2YGGi4iIulhc") {
+            planId = "647895cf404e31bfe8753398";
+          } else if (priceId === "price_1NFwxWFe80Kn2YGGvpHuUfpi") {
+            planId = "6478970a404e31bfe87533a0"
+          } else if (priceId === "price_1MzNh9Fe80Kn2YGGkv8OaQ0T") {
+            planId = "6444d4394ab2cf9819e5b5f4"
           }
           const plan = await Plan.findById(planId);
 
