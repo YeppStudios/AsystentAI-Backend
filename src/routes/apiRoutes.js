@@ -11,6 +11,8 @@ const Transaction = mongoose.model('Transaction');
 const User = mongoose.model('User');
 const Workspace = mongoose.model('Workspace');
 const Assistant = mongoose.model('Assistant');
+const Document = mongoose.model('Document');
+const axios = require('axios');
 require('dotenv').config();
 
 const configuration = new Configuration({
@@ -40,7 +42,8 @@ router.post('/message-stream', requireTokens, async (req, res) => {
         let inputTokens = 0;
         let outputTokens = 0;
         let response = '';
-        let systemPrompt = "Jesteś pomocnym asystentem AI, który specjalizuje się w marketingu.";
+        let  context = "";
+        let systemPrompt = "You are a helpful AI assistant with expert knowledge in marketing. You avoid controversial topics and you never guarantee anything.";
         let documents = [];
         let conversation = null;
         let embeddingContext = "";
@@ -53,34 +56,22 @@ router.post('/message-stream', requireTokens, async (req, res) => {
         }
 
         if (assistant_id) {
-            Assistant.findById(assistant_id)
-            .populate('documents') // populate documents field with actual documents
-            .then(fetchedAssistant => {
-              if (!fetchedAssistant) {
+            let fetchedAssistant = await Assistant.findById(assistant_id).populate('documents');
+            if (!fetchedAssistant) {
                 return res.status(404).json({ message: 'Assistant not found' });
-              }
+            }
         
-              // Check if the logged in user is the owner of the assistant
               if (fetchedAssistant.owner.toString() !== req.user._id.toString()) {
                 return res.status(403).json({ message: 'You are not authorized- this Assistant is not yours' });
               }
               assistant = fetchedAssistant;
+              systemPrompt = assistant.noEmbedPrompt;
               assistantName = assistant.name;
-              if (knowledge_based) {
-                systemPrompt = assistant.prompt;
-              } else {
-                systemPrompt = assistant.noEmbedPrompt;
-              }
-            })
-            .catch(err => {
-                res.status(500).json({ error: err.message });
-            });
         }
 
-        if (assistant) {
+        if (knowledge_based) {
             const vectorIds = await Document.find({ _id: { $in: assistant.documents } }).distinct('vectorId');
 
-            if (knowledge_based) {
                 try {
                     const chunks = await axios.post(
                     "https://whale-app-p64f5.ondigitalocean.app/query",
@@ -97,7 +88,7 @@ router.post('/message-stream', requireTokens, async (req, res) => {
                     },
                     {
                         headers: {
-                        "Authorization": `Bearer ${process.env.NEXT_PUBLIC_PYTHON_API_KEY}`
+                        "Authorization": `Bearer ${process.env.PYTHON_API_KEY}`
                         }
                     }
                     );          
@@ -105,7 +96,7 @@ router.post('/message-stream', requireTokens, async (req, res) => {
                     chunks.data.results[0].results.forEach((item) => {
                         context += item.text + " ";
                     });
-                    embeddingContext = `Kontekst: ${context}. Odpowiedz na: `;
+                    embeddingContext = `Extra context: ${context}. Please respond to: `;
 
                     const documentIds = chunks.data.results[0].results.map((result) => result.metadata.document_id);
                     const uniqueDocumentIds = documentIds.filter((id, index) => {
@@ -114,13 +105,12 @@ router.post('/message-stream', requireTokens, async (req, res) => {
                     documents = await Document.find({ vectorId: { $in: uniqueDocumentIds } });
 
                 } catch (e) {
-                    res.status(500).json({ error: e.message });
+                    return res.status(500).json({ error: e.message });
                 }
-            }
         }
 
         if (conversation_id) {
-            conversation = await Conversation.findById(req.params.conversation_id)
+            conversation = await Conversation.findById(conversation_id)
                 .populate({
                     path: 'messages',
                     options: {
@@ -156,7 +146,7 @@ router.post('/message-stream', requireTokens, async (req, res) => {
         const completion = await openai.createChatCompletion({
             model: model,
             messages,
-            temperature: 0.8,
+            temperature: 0.25,
             frequency_penalty: 0.35,
             stream: true,
         }, { responseType: 'stream' });
@@ -256,6 +246,7 @@ router.post('/message', requireTokens, async (req, res) => {
         let documents = [];
         let embeddingContext = "";
         let conversation = null;
+        let context = "";
         let assistant = null;
         let assistantName = "Default Assistant"
         let model = "gpt-4"
@@ -263,36 +254,22 @@ router.post('/message', requireTokens, async (req, res) => {
         if (llm) {
             model = llm;
         }
-
         if (assistant_id) {
-            Assistant.findById(assistant_id)
-            .populate('documents') // populate documents field with actual documents
-            .then(fetchedAssistant => {
-              if (!fetchedAssistant) {
+            let fetchedAssistant = await Assistant.findById(assistant_id).populate('documents');
+            if (!fetchedAssistant) {
                 return res.status(404).json({ message: 'Assistant not found' });
-              }
+            }
         
-              // Check if the logged in user is the owner of the assistant
               if (fetchedAssistant.owner.toString() !== req.user._id.toString()) {
                 return res.status(403).json({ message: 'You are not authorized- this Assistant is not yours' });
               }
               assistant = fetchedAssistant;
-              if (knowledge_based) {
-                systemPrompt = assistant.prompt;
-              } else {
-                systemPrompt = assistant.noEmbedPrompt;
-              }
+              systemPrompt = assistant.noEmbedPrompt;
               assistantName = assistant.name;
-            })
-            .catch(err => {
-                res.status(500).json({ error: err.message });
-            });
         }
 
-        if (assistant) {
-            const vectorIds = await Document.find({ _id: { $in: assistant.documents } }).distinct('vectorId');
-
             if (knowledge_based) {
+                const vectorIds = await Document.find({ _id: { $in: assistant.documents } }).distinct('vectorId');
                 try {
                     const chunks = await axios.post(
                     "https://whale-app-p64f5.ondigitalocean.app/query",
@@ -303,13 +280,13 @@ router.post('/message', requireTokens, async (req, res) => {
                             "filter": {
                             "document_id": vectorIds.data
                             },
-                            "top_k": 2
+                            "top_k": 3
                         }
                         ]
                     },
                     {
                         headers: {
-                        "Authorization": `Bearer ${process.env.NEXT_PUBLIC_PYTHON_API_KEY}`
+                        "Authorization": `Bearer ${process.env.PYTHON_API_KEY}`
                         }
                     }
                     );          
@@ -317,7 +294,7 @@ router.post('/message', requireTokens, async (req, res) => {
                     chunks.data.results[0].results.forEach((item) => {
                         context += item.text + " ";
                     });
-                    embeddingContext = `Kontekst: ${context}. Odpowiedz na: `;
+                    embeddingContext = `Context you might find helpful: ${context}. Task for you to do: `;
 
                     const documentIds = chunks.data.results[0].results.map((result) => result.metadata.document_id);
                     const uniqueDocumentIds = documentIds.filter((id, index) => {
@@ -326,13 +303,12 @@ router.post('/message', requireTokens, async (req, res) => {
                     documents = await Document.find({ vectorId: { $in: uniqueDocumentIds } });
 
                 } catch (e) {
-                    res.status(500).json({ error: e.message });
+                    return res.status(500).json({ error: e.message });
                 }
             }
-        }
 
         if (conversation_id) {
-        conversation = await Conversation.findById(req.params.conversation_id)
+        conversation = await Conversation.findById(conversation_id)
             .populate({
                 path: 'messages',
                 options: {
@@ -363,13 +339,27 @@ router.post('/message', requireTokens, async (req, res) => {
         const messages = [  { role: "system", content: systemPrompt },  ...latestMessages.map((message) => {    
             return {role: message.sender,  content: message.text};
         }), { role: "user", content: `${embeddingContext} ${query}`},];
-
         const completion = await openai.createChatCompletion({
             model: model,
             messages,
-            temperature: 0.8,
+            temperature: 0.25,
             frequency_penalty: 0.35,
         });
+
+        const userMessage = new Message({
+            text: query,
+            conversation,
+            sender: "user"
+        });
+        const assistantResponse = new Message({
+            text: completion.data.choices[0].message.content,
+            conversation,
+            sender: "assistant",
+            documents
+        });
+
+        await userMessage.save();
+        await assistantResponse.save();
 
         if (user.workspace) {
             const workspace = await Workspace.findById(user.workspace)
@@ -379,8 +369,6 @@ router.post('/message', requireTokens, async (req, res) => {
         } else {
             user.tokenBalance -= completion.data.usage.total_tokens;
         }
-
-        console.log(completion.data.usage.total_tokens)
 
         return res.status(201).json({ response: completion.data.choices[0].message.content, elixir_used: completion.data.usage.total_tokens, based_on: documents.map((document) => document.title), assistant: assistantName, conversation_id: conversation._id });
     } catch (error) {

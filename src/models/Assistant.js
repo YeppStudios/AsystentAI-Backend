@@ -8,7 +8,7 @@ const AssistantSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
-        default: "Assistant"
+        default: "Assistant AI"
     },
     description: {
         type: String,
@@ -32,7 +32,7 @@ const AssistantSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        default: "marketing"
+        default: "caht"
     },
     prompt: {
         type: String,
@@ -48,7 +48,8 @@ const AssistantSchema = new mongoose.Schema({
     }],
     documents: [{
         type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Document' 
+        ref: 'Document',
+        default: []
     }],
     createdAt: { 
         type: Date, 

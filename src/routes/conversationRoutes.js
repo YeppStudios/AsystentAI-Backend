@@ -8,11 +8,11 @@ const moment = require('moment');
 
 router.post('/createConversation', requireAuth, async (req, res) => {
     const user = req.user;
-    const { assistantId } = req.body;
+    const { assistant_id, title } = req.body;
     let id = "1";
 
     if(assistantId) {
-        id = assistantId;
+        id = assistant_id;
     }
 
     try {      
@@ -21,7 +21,7 @@ router.post('/createConversation', requireAuth, async (req, res) => {
             startTime: Date.now(),
             assistant: id,
             lastUpdated: Date.now(),
-            title: "Nowa konwersacja"
+            title: "New conversation" | title
         });
         await conversation.save();
         return res.status(201).json({ conversation });
