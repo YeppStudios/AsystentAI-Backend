@@ -10,6 +10,10 @@ router.post('/createConversation', requireAuth, async (req, res) => {
     const user = req.user;
     const { assistant_id, title } = req.body;
     let id = "1";
+    let conversationTitle = "New conversation";
+    if (title) {
+        conversationTitle = title;
+    }
 
     if(assistant_id) {
         id = assistant_id;
@@ -21,7 +25,7 @@ router.post('/createConversation', requireAuth, async (req, res) => {
             startTime: Date.now(),
             assistant: id,
             lastUpdated: Date.now(),
-            title: "New conversation" | title
+            title: conversationTitle
         });
         await conversation.save();
         return res.status(201).json({ conversation });
