@@ -11,7 +11,7 @@ router.post('/createConversation', requireAuth, async (req, res) => {
     const { assistant_id, title } = req.body;
     let id = "1";
 
-    if(assistantId) {
+    if(assistant_id) {
         id = assistant_id;
     }
 
