@@ -90,6 +90,10 @@ const UserSchema = new mongoose.Schema({
         ref: 'Workspace',
         allowNull: true
     },
+    dashboardAccess: {
+        type: Boolean,
+        default: true
+    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -155,37 +159,38 @@ const UserSchema = new mongoose.Schema({
 
 UserSchema.pre('save', function(next){
     const user = this;
-
-    if(!user.isModified('password')){
-        return next();
-    }
-    if (user.password.startsWith('$2')){
-        // Password is already hashed, so skip hashing step
-        return next();
-    }
-    
-    bcrypt.genSalt(10, (err, salt) => {
-
-        if (err){
-            return next(err);
+    if (user.password) {
+        if(!user.isModified('password')){
+            return next();
         }
-
-        bcrypt.hash(user.password, salt, (err, hash) => {
-
+        if (user.password.startsWith('$2')){
+            // Password is already hashed, so skip hashing step
+            return next();
+        }
+        
+        bcrypt.genSalt(10, (err, salt) => {
+    
             if (err){
                 return next(err);
             }
-
-            user.password = hash;
-
-            this.stats = {
-                totalPosts: 0,
-                totalEmails: 0,
-                totalIdeas: 0,
-            };
-            next();
+    
+            bcrypt.hash(user.password, salt, (err, hash) => {
+    
+                if (err){
+                    return next(err);
+                }
+    
+                user.password = hash;
+    
+                this.stats = {
+                    totalPosts: 0,
+                    totalEmails: 0,
+                    totalIdeas: 0,
+                };
+                next();
+            })
         })
-    })
+    }
 })
 
 UserSchema.methods.comparePassword = function(userPassword) {

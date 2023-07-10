@@ -115,30 +115,14 @@ router.post('/register', async (req, res) => {
 
 router.post('/register-free-trial', async (req, res) => {
   try {
-      const { email, password, name, isCompany, referrerId } = req.body;
+      const { email, password, name, isCompany, referrerId, blockAccess } = req.body;
       const user = await User.findOne({ email });
 
       let workspace = null;
       let freeTokens = 2500;
 
       if (user) {
-        // User already exists, log them in
-        await user.comparePassword(password);
-        if(!user.workspace) {
-          const key = generateApiKey();
-          let workspace = new Workspace({
-            admins: [user._id],
-            company: user._id,
-            employees: [],
-            apiKey: key
-          });
-          await workspace.save();
-          user.workspace = workspace._id;
-          user.accountType = 'company';
-          await user.save();
-        }
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
-        return res.status(200).json({ token, newUser: user });
+        return res.status(500).json({ message: "User already exists" });
       }
 
       if(referrerId){
@@ -166,13 +150,13 @@ router.post('/register-free-trial', async (req, res) => {
       });
 
       try {
-        await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
-          email_address: email,
-          status: 'subscribed',
-          merge_fields: {
-            FNAME: name,
-          },
-        });
+        // await mailchimp.lists.addListMember(process.env.MAILCHIMP_AUDIENCE_ID, {
+        //   email_address: email,
+        //   status: 'subscribed',
+        //   merge_fields: {
+        //     FNAME: name,
+        //   },
+        // });
       } catch (error) {
         console.error('Failed to add user to Mailchimp audience:', error.message);
       }
@@ -188,12 +172,16 @@ router.post('/register-free-trial', async (req, res) => {
         newUser.workspace = workspace._id;
         freeTokens = 7500;
 
-      let transaction = new Transaction({
+        let transaction = new Transaction({
           value: freeTokens,
           title: `+${freeTokens} elixiru na start`,
           type: "income",
           timestamp: Date.now()
       });
+
+      if (blockAccess) {
+        newUser.dashboardAccess = false;
+      }
 
       newUser.tokenBalance = freeTokens;
       newUser.transactions.push(transaction);

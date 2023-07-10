@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 const requireAuth = require('../middlewares/requireAuth');
+const requireAdmin = require('../middlewares/requireAdmin');
 const User = mongoose.model('User');
 const Workspace = mongoose.model('Workspace');
 
@@ -100,6 +101,26 @@ router.get('/workspace/:id', requireAuth, async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).send('Server Error');
+  }
+});
+
+router.delete('/delete-employees-and-invitations/:workspaceId', requireAdmin, async (req, res) => {
+  const workspaceId = req.params.workspaceId;
+  
+  try {
+    const workspace = await Workspace.findById(workspaceId);
+    if (!workspace) {
+      return res.status(400).json({ message: 'Workspace not found.' });
+    }
+
+    workspace.employees = [];
+    workspace.invitations = [];
+
+    await workspace.save();
+
+    return res.json({ message: 'Employees and invitations successfully deleted.' });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
 });
 

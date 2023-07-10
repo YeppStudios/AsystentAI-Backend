@@ -24,37 +24,18 @@ router.get('/balance/:userId', requireAuth, async (req, res) => {
     }
 });
 
-router.put('/:userId/deduct', requireAdmin, async (req, res) => {
+router.patch('/:userId/deduct', requireAdmin, async (req, res) => {
     try {
         const { amount, title } = req.body;
         const user = await User.findById(req.params.userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        if (user._id.toString() !== req.user._id.toString()) {
-            return res.status(401).json({ message: 'Not authorized' });
-        }
         if (amount > user.tokenBalance) {
             return res.status(400).json({ message: 'Insufficient token balance' });
         }
-        // Create a new transaction for the expense
-        const transaction = new Transaction({
-            value: amount,
-            title: title,
-            type: "expense",
-            timestamp: Date.now()
-        });
 
-        // Add the new transaction to the user's transactions
-        user.transactions.push(transaction);
         user.tokenBalance -= amount;
-
-        // Create a new balance snapshot and add it to the user's tokenHistory
-        const balanceSnapshot = {
-            timestamp: new Date(),
-            balance: user.tokenBalance
-        };
-        user.tokenHistory.push(balanceSnapshot);
 
         // Save the user
         await user.save();

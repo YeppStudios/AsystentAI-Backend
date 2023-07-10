@@ -9,11 +9,12 @@ const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
 const Whitelist = mongoose.model('Whitelist');
 const Workspace = mongoose.model('Workspace');
+const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
 const axios = require('axios');
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
+const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_KEY);
+const purchaseEndpointSecret = 'whsec_fe0e42230aa34c7144b0e88040ddf05780490aba5b7cfc9d1e5e0df0213fbdd8';
 const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
 const infaktConfig = {
   headers: {
@@ -36,16 +37,14 @@ function generateApiKey() {
 
 
 router.post('/create-checkout-session', async (req, res) => {
-  const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId, referrerId, isTrial, asCompany, invoiceTitle, months } = req.body;
+  const { priceId, mode, successURL, cancelURL, email, tokensAmount, planId, referrerId, global, asCompany, invoiceTitle, months, trial } = req.body;
   try {
     let customer;
     try {
       const customerList = await stripe.customers.list({ email: email, limit: 1 });
       if (customerList.data.length > 0) {
-        // Use existing customer object
         customer = customerList.data[0];
       } else {
-        // Create new customer object
         customer = await stripe.customers.create({
           email: email
         });
@@ -56,6 +55,92 @@ router.post('/create-checkout-session', async (req, res) => {
     }
 
     let session;
+    if (global) {
+      if (trial) {
+        session = await stripe.checkout.sessions.create({
+          line_items: [
+            {
+              price: `${priceId}`,
+              quantity: 1,
+            },
+          ],
+          metadata: {
+            tokens_to_add: `${tokensAmount}`,
+            plan_id: `${planId}`,
+            referrer_id: `${referrerId}`,
+            months,
+            trial: true
+          },
+          subscription_data: {
+            trial_period_days: 5,
+          },
+          billing_address_collection: 'required',
+          allow_promotion_codes: true,
+          automatic_tax: {
+            enabled: true,
+          },
+          tax_id_collection: {
+            enabled: true,
+          },
+          customer_email: email,
+          mode: `${mode}`,
+          success_url: `${successURL}`,
+          cancel_url: `${cancelURL}`,
+        });
+      } else if (mode === "payment") {
+        session = await stripe.checkout.sessions.create({
+          line_items: [
+            {
+              price: `${priceId}`,
+              quantity: 1,
+            },
+          ],
+          metadata: {
+            tokens_to_add: `${tokensAmount}`,
+            plan_id: `${planId}`,
+            referrer_id: `${referrerId}`,
+            months
+          },
+          invoice_creation: {
+            enabled: true,
+          },
+          customer: customer.id,
+          automatic_tax: {
+            enabled: true,
+          },
+          mode: `${mode}`,
+          success_url: `${successURL}`,
+          cancel_url: `${cancelURL}`,
+        });
+      } else if (mode === "subscription") { 
+        session = await stripe.checkout.sessions.create({
+          line_items: [
+            {
+              price: `${priceId}`,
+              quantity: 1,
+            },
+          ],
+          metadata: {
+            tokens_to_add: `${tokensAmount}`,
+            plan_id: `${planId}`,
+            referrer_id: `${referrerId}`,
+            months
+          },
+          billing_address_collection: 'required',
+          allow_promotion_codes: true,
+          automatic_tax: {
+            enabled: true,
+          },
+          tax_id_collection: {
+            enabled: true,
+          },
+          customer_email: email,
+          mode: `${mode}`,
+          success_url: `${successURL}`,
+          cancel_url: `${cancelURL}`,
+        });
+      }  
+    } else {
       session = await stripe.checkout.sessions.create({
         customer: customer.id,
         line_items: [
@@ -69,7 +154,7 @@ router.post('/create-checkout-session', async (req, res) => {
           plan_id: `${planId}`,
           referrer_id: `${referrerId}`,
           trial: false,
-          asCompany: asCompany,
+          infaktInvoice: asCompany,
           invoiceTitle: invoiceTitle,
           months
         },
@@ -77,6 +162,7 @@ router.post('/create-checkout-session', async (req, res) => {
         success_url: `${successURL}`,
         cancel_url: `${cancelURL}`,
       });
+    }
 
     res.status(200).json({ url: session.url });
   } catch (e) {
@@ -102,9 +188,18 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
   const transactionData = event.data.object;
   if (event.type === 'checkout.session.completed') {
     let email = transactionData.customer_details.email;
-    try{
-      User.findOne({ email: email }, async (err, user) => {
-
+    let firstName = transactionData.customer_details.name.split(" ")[0];
+    try {
+      User.findOneAndUpdate(
+        { email: email }, 
+        { $setOnInsert: { name: firstName } },
+        { $setOnInsert: { accountType: "company" } },
+        {
+          new: true,
+          upsert: true
+        }, 
+        async (err, user) => {
+        user.dashboardAccess = true;
         if(user){
           let transaction;
           let purchase;
@@ -118,46 +213,43 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           if (transactionData.metadata.plan_id) { //initial subscription purchase
             try {
               const planId = transactionData.metadata.plan_id;
-              const plan = await Plan.findById(planId);
-              user.plan = plan;
-              if (transactionData.metadata.months && Number(transactionData.metadata.months) > 1) {
-                user.tokenBalance += plan.monthlyTokens*transactionData.metadata.months;
-                let subscriptionEndDate = new Date();
-                subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + Number(transactionData.metadata.months));
-                user.subscriptionEndDate = subscriptionEndDate;
+
+              if (transactionData.metadata.trial) {
+                user.tokenBalance += 10000;
               } else {
-                user.tokenBalance += plan.monthlyTokens;
+
+                const plan = await Plan.findById(planId);
+                user.plan = plan;
+
+                if (transactionData.metadata.months && Number(transactionData.metadata.months) > 1) {
+                  user.tokenBalance += plan.monthlyTokens*transactionData.metadata.months;
+                  let subscriptionEndDate = new Date();
+                  subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + Number(transactionData.metadata.months));
+                  user.subscriptionEndDate = subscriptionEndDate;
+
+                } else {
+                  user.tokenBalance += plan.monthlyTokens;
+                }
+  
+                if(transactionData.metadata.trial){
+                  await Whitelist.deleteOne({ email });
+                }
+                // Create a new transaction
+                transaction = new Transaction({
+                    value: plan.monthlyTokens,
+                    title: `${plan.name} subscription activated`,
+                    type: 'income',
+                    timestamp: Date.now()
+                });
+                const balanceSnapshot = {
+                  timestamp: Date.now(),
+                  balance: user.tokenBalance
+                };
+                user.tokenHistory.push(balanceSnapshot);
+                user.transactions.push(transaction);
+                await transaction.save();
               }
-
-              if(transactionData.metadata.trial){
-                await Whitelist.deleteOne({ email });
-              }
-
-              // Create a new purchase
-              purchase = new Payment({
-                price: plan.price,
-                tokens: plan.monthlyTokens,
-                title: `Aktywacja subskrypcji ${plan.name}`,
-                type: "one-time",
-                timestamp: new Date()
-              });
-              user.purchases.push(purchase);
-
-              // Create a new transaction
-              transaction = new Transaction({
-                  value: plan.monthlyTokens,
-                  title: `Aktywacja subskrypcji ${plan.name}`,
-                  type: 'income',
-                  timestamp: Date.now()
-              });
-              const balanceSnapshot = {
-                timestamp: Date.now(),
-                balance: user.tokenBalance
-              };
-              user.tokenHistory.push(balanceSnapshot);
-              user.transactions.push(transaction);
-              await transaction.save();
-              await purchase.save();
+              
 
               //delete workspace if company didnt buy a business plan
               if (transactionData.metadata.plan_id !== "6444d4394ab2cf9819e5b5f4" && user.workspace) {
@@ -277,7 +369,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           await user.save();
           // Save the user and send invoice
           try {
-            if (user.accountType === "company" && transactionData.metadata.asCompany === "true") {
+            if (user.accountType === "company" && transactionData.metadata.infaktInvoice === "true") {
               //check if client is in infakt if not then create new one
                 try {
                   let infaktClientsResponse = await axios.get(`https://api.infakt.pl/v3/clients.json?q[email_eq]=${user.contactEmail}`, infaktConfig);
