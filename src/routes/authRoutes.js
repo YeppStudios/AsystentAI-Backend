@@ -168,6 +168,10 @@ router.post('/register-free-trial', async (req, res) => {
           employees: [],
           apiKey: key
         });
+
+      if (blockAccess) {
+        newUser.dashboardAccess = false;
+      } else {
         await workspace.save();
         newUser.workspace = workspace._id;
         freeTokens = 7500;
@@ -177,15 +181,12 @@ router.post('/register-free-trial', async (req, res) => {
           title: `+${freeTokens} elixiru na start`,
           type: "income",
           timestamp: Date.now()
-      });
-
-      if (blockAccess) {
-        newUser.dashboardAccess = false;
+        });
+        newUser.tokenBalance = freeTokens;
+        newUser.transactions.push(transaction);
+        await transaction.save();
       }
 
-      newUser.tokenBalance = freeTokens;
-      newUser.transactions.push(transaction);
-      await transaction.save();
       await newUser.save();
       const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
       return res.status(201).json({ newUser, verificationCode, token });

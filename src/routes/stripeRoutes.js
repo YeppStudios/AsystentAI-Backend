@@ -13,8 +13,8 @@ const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
 const axios = require('axios');
 
-const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_KEY);
-const purchaseEndpointSecret = 'whsec_fe0e42230aa34c7144b0e88040ddf05780490aba5b7cfc9d1e5e0df0213fbdd8';
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
 const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
 const infaktConfig = {
   headers: {
@@ -74,7 +74,6 @@ router.post('/create-checkout-session', async (req, res) => {
           subscription_data: {
             trial_period_days: 5,
           },
-          billing_address_collection: 'required',
           allow_promotion_codes: true,
           automatic_tax: {
             enabled: true,
@@ -123,10 +122,11 @@ router.post('/create-checkout-session', async (req, res) => {
           metadata: {
             tokens_to_add: `${tokensAmount}`,
             plan_id: `${planId}`,
+            infaktInvoice: asCompany,
+            invoiceTitle: invoiceTitle,
             referrer_id: `${referrerId}`,
             months
           },
-          billing_address_collection: 'required',
           allow_promotion_codes: true,
           automatic_tax: {
             enabled: true,
@@ -140,28 +140,6 @@ router.post('/create-checkout-session', async (req, res) => {
           cancel_url: `${cancelURL}`,
         });
       }  
-    } else {
-      session = await stripe.checkout.sessions.create({
-        customer: customer.id,
-        line_items: [
-          {
-            price: `${priceId}`,
-            quantity: 1,
-          },
-        ],
-        metadata: {
-          tokens_to_add: `${tokensAmount}`,
-          plan_id: `${planId}`,
-          referrer_id: `${referrerId}`,
-          trial: false,
-          infaktInvoice: asCompany,
-          invoiceTitle: invoiceTitle,
-          months
-        },
-        mode: `${mode}`,
-        success_url: `${successURL}`,
-        cancel_url: `${cancelURL}`,
-      });
     }
 
     res.status(200).json({ url: session.url });
@@ -188,18 +166,8 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
   const transactionData = event.data.object;
   if (event.type === 'checkout.session.completed') {
     let email = transactionData.customer_details.email;
-    let firstName = transactionData.customer_details.name.split(" ")[0];
-    try {
-      User.findOneAndUpdate(
-        { email: email }, 
-        { $setOnInsert: { name: firstName } },
-        { $setOnInsert: { accountType: "company" } },
-        {
-          new: true,
-          upsert: true
-        }, 
-        async (err, user) => {
-        user.dashboardAccess = true;
+    try{
+      User.findOne({ email: email }, async (err, user) => {
         if(user){
           let transaction;
           let purchase;
@@ -210,34 +178,80 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           const month = String(today.getMonth() + 1).padStart(2, '0');
           const day = String(today.getDate()).padStart(2, '0');
 
-          if (transactionData.metadata.plan_id) { //initial subscription purchase
-            try {
-              const planId = transactionData.metadata.plan_id;
+          user.dashboardAccess = true;
 
-              if (transactionData.metadata.trial) {
-                user.tokenBalance += 10000;
-              } else {
+          //set or delete workspace for subscription activation
+          if (transactionData.metadata.plan_id !== "64ad0d250e40385f299bceea" && user.workspace && transactionData.metadata.plan_id) {
+            const workspace = await Workspace.findById(user.workspace);
+            if (workspace) {
+              const isCompany = workspace.company.includes(user._id);
+            
+              if (isCompany) {
+                const workspaceUsers = [
+                    ...workspace.admins,
+                    ...workspace.company,
+                    ...workspace.employees.map(employee => employee.user)
+                ];
+                for (const userId of workspaceUsers) {
+                    const workspaceUser = await User.findById(userId);
+                    if (userId !== user._id) {
+                      workspaceUser.plan = "647c3294ff40f15b5f6796bf";
+                    }
+                    workspaceUser.workspace = null;
+                    await workspaceUser.save();
+                }
+                await Workspace.deleteOne({ _id: workspace._id });
+              }
+              user.workspace = null;
+            }
+            // Find the user's folders and remove them
+            await Folder.deleteMany({ owner: user._id });
 
+            // Find the user's documents and remove them
+            await Document.deleteMany({ owner: user._id });
+          } else if (!user.workspace && transactionData.metadata.plan_id === "64ad0d250e40385f299bceea") {
+            const key = generateApiKey();
+            let workspace = new Workspace({
+              admins: [user._id],
+              company: user._id,
+              employees: [],
+              apiKey: key
+            });
+            await workspace.save();
+            user.workspace = workspace._id;
+          }
+
+          //add tokens if trial
+          if (transactionData.metadata.trial) {
+            user.tokenBalance += 10000;
+            user.plan = "64ad0d250e40385f299bceea";
+            
+          } else {
+            if (transactionData.metadata.plan_id) { //handle initial subscription purchase
+              try {
+                const planId = transactionData.metadata.plan_id;
                 const plan = await Plan.findById(planId);
                 user.plan = plan;
-
-                if (transactionData.metadata.months && Number(transactionData.metadata.months) > 1) {
-                  user.tokenBalance += plan.monthlyTokens*transactionData.metadata.months;
-                  let subscriptionEndDate = new Date();
-                  subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + Number(transactionData.metadata.months));
-                  user.subscriptionEndDate = subscriptionEndDate;
-
-                } else {
-                  user.tokenBalance += plan.monthlyTokens;
-                }
+                user.tokenBalance += plan.monthlyTokens*transactionData.metadata.months;
   
                 if(transactionData.metadata.trial){
                   await Whitelist.deleteOne({ email });
                 }
+  
+                // Create a new purchase
+                purchase = new Payment({
+                  price: plan.price,
+                  tokens: plan.monthlyTokens,
+                  title: `${plan.name} plan activated`,
+                  type: "one-time",
+                  timestamp: new Date()
+                });
+                user.purchases.push(purchase);
+  
                 // Create a new transaction
                 transaction = new Transaction({
                     value: plan.monthlyTokens,
-                    title: `${plan.name} subscription activated`,
+                    title: `${plan.name} plan activated`,
                     type: 'income',
                     timestamp: Date.now()
                 });
@@ -248,123 +262,81 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                 user.tokenHistory.push(balanceSnapshot);
                 user.transactions.push(transaction);
                 await transaction.save();
-              }
-              
-
-              //delete workspace if company didnt buy a business plan
-              if (transactionData.metadata.plan_id !== "6444d4394ab2cf9819e5b5f4" && user.workspace) {
-                // Fetch the workspace document for the user's workspace
-                const workspace = await Workspace.findById(user.workspace);
-                if (workspace) {
-                  const isCompany = workspace.company.includes(user._id);
-                
-                  if (isCompany) {
-                    const workspaceUsers = [
-                        ...workspace.admins,
-                        ...workspace.company,
-                        ...workspace.employees.map(employee => employee.user)
-                    ];
-                    for (const userId of workspaceUsers) {
-                        const workspaceUser = await User.findById(userId);
-                        if (userId !== user._id) {
-                          workspaceUser.plan = "647c3294ff40f15b5f6796bf";
-                        }
-                        workspaceUser.workspace = null;
-                        await workspaceUser.save();
-                    }
-                    await Workspace.deleteOne({ _id: workspace._id });
+                await purchase.save();
+  
+                //checking if transaction was referred
+                if (transactionData.metadata.referrer_id && transactionData.metadata.plan_id === "64ad0d250e40385f299bceea") {
+                try {
+                  const referrer = await User.findOne({ _id: transactionData.metadata.referrer_id });
+                  if(referrer){
+                    user.tokenBalance += 30000;
+                    referrer.tokenBalance += 30000;
+        
+                    const referralTransaction = new Transaction({
+                        value: 30000,
+                        title: "30 000 elixir for referral",
+                        type: "income",
+                        timestamp: Date.now()
+                    });
+  
+                    user.transactions.push(referralTransaction);
+                    referrer.transactions.push(referralTransaction);
+        
+                    const referrerBalanceSnapshot = {
+                      timestamp: new Date(),
+                      balance: referrer.tokenBalance
+                    };
+                    referrer.tokenHistory.push(referrerBalanceSnapshot);
+        
+                    User.findOneAndUpdate(
+                      { _id: transactionData.metadata.referrer_id },
+                      { $inc: { "referralCount": 1 } },
+                      { upsert: true },
+                      function(err, user) {
+                        if (err) throw err;
+                      }
+                    );
+                    await referrer.save();
+                    await referralTransaction.save();
                   }
-                  user.workspace = null;
+                } catch (e) {
+                  console.log(e)
                 }
-                // Find the user's folders and remove them
-                await Folder.deleteMany({ owner: user._id });
-
-                // Find the user's documents and remove them
-                await Document.deleteMany({ owner: user._id });
-              } else if (!user.workspace && transactionData.metadata.plan_id === "6444d4394ab2cf9819e5b5f4") {
-                const key = generateApiKey();
-                let workspace = new Workspace({
-                  admins: [user._id],
-                  company: user._id,
-                  employees: [],
-                  apiKey: key
-                });
-                await workspace.save();
               }
-              
-
-              //checking if transaction was referred
-              if (transactionData.metadata.referrer_id && transactionData.metadata.plan_id === "6444d4394ab2cf9819e5b5f4") {
-              try {
-                const referrer = await User.findOne({ _id: transactionData.metadata.referrer_id });
-                if(referrer){
-                  user.tokenBalance += 30000;
-                  referrer.tokenBalance += 30000;
-      
-                  const referralTransaction = new Transaction({
-                      value: 30000,
-                      title: "30 000 elixiru w prezencie za polecenie",
-                      type: "income",
-                      timestamp: Date.now()
-                  });
-
-                  user.transactions.push(referralTransaction);
-                  referrer.transactions.push(referralTransaction);
-      
-                  const referrerBalanceSnapshot = {
-                    timestamp: new Date(),
-                    balance: referrer.tokenBalance
-                  };
-                  referrer.tokenHistory.push(referrerBalanceSnapshot);
-      
-                  User.findOneAndUpdate(
-                    { _id: transactionData.metadata.referrer_id },
-                    { $inc: { "referralCount": 1 } },
-                    { upsert: true },
-                    function(err, user) {
-                      if (err) throw err;
-                    }
-                  );
-                  await referrer.save();
-                  await referralTransaction.save();
-                }
-              } catch (e) {
-                console.log(e)
+              } catch (err) {
+                console.log(err)
               }
+  
+            } else if (transactionData.metadata.tokens_to_add !== "undefined") { //one-time elixir purchase
+              const tokensToAdd = parseInt(transactionData.metadata.tokens_to_add);
+              user.tokenBalance += tokensToAdd;
+  
+              // Create a new purchase
+              purchase = new Payment({
+                price: transactionData.amount_total / 100,
+                tokens: tokensToAdd,
+                title: `+ ${tokensToAdd} tokens`,
+                type: "one-time",
+                timestamp: new Date()
+              });
+              user.purchases.push(purchase);
+  
+              // Create a new transaction
+              transaction = new Transaction({
+                  value: tokensToAdd,
+                  title: `+ ${tokensToAdd} tokens`,
+                  type: 'income',
+                  timestamp: Date.now()
+              });
+              const balanceSnapshot = {
+                timestamp: Date.now(),
+                balance: user.tokenBalance
+            };
+            user.tokenHistory.push(balanceSnapshot);
+              user.transactions.push(transaction);
+              await transaction.save();
+              await purchase.save();
             }
-            } catch (err) {
-              console.log(err)
-            }
-
-          } else if (transactionData.metadata.tokens_to_add !== "undefined") { //one-time elixir purchase
-            const tokensToAdd = parseInt(transactionData.metadata.tokens_to_add);
-            user.tokenBalance += tokensToAdd;
-
-            // Create a new purchase
-            purchase = new Payment({
-              price: transactionData.amount_total / 100,
-              tokens: tokensToAdd,
-              title: `Doładowanie ${tokensToAdd} tokenów`,
-              type: "one-time",
-              timestamp: new Date()
-            });
-            user.purchases.push(purchase);
-
-            // Create a new transaction
-            transaction = new Transaction({
-                value: tokensToAdd,
-                title: `Doładowanie ${tokensToAdd} tokenów`,
-                type: 'income',
-                timestamp: Date.now()
-            });
-            const balanceSnapshot = {
-              timestamp: Date.now(),
-              balance: user.tokenBalance
-          };
-          user.tokenHistory.push(balanceSnapshot);
-            user.transactions.push(transaction);
-            await transaction.save();
-            await purchase.save();
           }
           await user.save();
           // Save the user and send invoice
@@ -483,7 +455,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
           // Create a new transaction
           transaction = new Transaction({
               value: plan.monthlyTokens,
-              title: `Miesięczne doładowanie ${plan.monthlyTokens} tokenów`,
+              title: `+${plan.monthlyTokens} tokens`,
               type: 'income',
               timestamp: Date.now()
           });
