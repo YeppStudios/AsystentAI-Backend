@@ -198,7 +198,7 @@ router.delete('/user/:userId/delete-document/:vectorId', requireAuth, async (req
 // ADD DOCUMENT TO FOLDER
 router.post('/folders/:id/add-document', requireAuth, async (req, res) => {
   try {
-    const folder = await Folder.findOne({ _id: req.params.id, owner: req.user._id });
+    const folder = await Folder.findOne({ _id: req.params.id });
 
     if (!folder) {
       return res.status(404).json({ message: 'Folder not found' });
@@ -208,10 +208,6 @@ router.post('/folders/:id/add-document', requireAuth, async (req, res) => {
 
     if (!documentId) {
       return res.status(400).json({ message: 'documentId is required' });
-    }
-
-    if (folder.documents.includes(documentId)) {
-      return res.status(400).json({ message: 'Document already exists in the folder' });
     }
 
     folder.documents.push(documentId);
