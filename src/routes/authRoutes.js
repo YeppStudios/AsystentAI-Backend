@@ -119,7 +119,7 @@ router.post('/register-free-trial', async (req, res) => {
       const user = await User.findOne({ email });
 
       let workspace = null;
-      let freeTokens = 2500;
+      let freeTokens = 25000;
 
       if (user) {
         return res.status(500).json({ message: "User already exists" });
@@ -174,7 +174,7 @@ router.post('/register-free-trial', async (req, res) => {
       } else {
         await workspace.save();
         newUser.workspace = workspace._id;
-        freeTokens = 7500;
+        freeTokens = 25000;
 
         let transaction = new Transaction({
           value: freeTokens,

@@ -223,7 +223,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
 
           //add tokens if trial
           if (transactionData.metadata.trial) {
-            user.tokenBalance += 10000;
+            user.tokenBalance += 25000;
             user.plan = "64ad0d250e40385f299bceea";
             
           } else {
