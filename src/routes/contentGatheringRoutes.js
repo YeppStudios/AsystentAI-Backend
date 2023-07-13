@@ -101,10 +101,10 @@ router.get('/getSavedContent', requireAdmin, async (req, res) => {
   
         // Format timestamp based on daysAgo
         const customTimestamp = daysAgo === 0
-          ? 'Dzisiaj'
+          ? 'Today'
           : daysAgo === 1
-            ? '1 Dzień temu'
-            : `${daysAgo} dni temu`;
+            ? '1 day ago'
+            : `${daysAgo} days ago`;
   
         return {
           ...content,
@@ -139,10 +139,10 @@ router.get('/getUserSeoContent', requireAuth, async (req, res) => {
 
       // Format timestamp based on daysAgo
       const customTimestamp = daysAgo === 0
-        ? 'Dzisiaj'
+        ? 'Today'
         : daysAgo === 1
-          ? '1 Dzień temu'
-          : `${daysAgo} dni temu`;
+          ? '1 Day ago'
+          : `${daysAgo} days ago`;
 
       return {
         ...content,
