@@ -230,7 +230,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
 
             // Find the user's documents and remove them
             await Document.deleteMany({ owner: user._id });
-          } else if (!user.workspace && transactionData.metadata.plan_id === "64ad0d250e40385f299bceea") {
+          } else if (!user.workspace && (transactionData.metadata.plan_id === "64ad0d250e40385f299bceea" || transactionData.metadata.plan_id === "647c3294ff40f15b5f6796bf")) {
             const key = generateApiKey();
             let workspace = new Workspace({
               admins: [user._id],
@@ -245,7 +245,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           //add tokens if trial
           if (transactionData.metadata.trial) {
             user.tokenBalance += 25000;
-            user.plan = "64ad0d250e40385f299bceea";
+            user.plan = "647c3294ff40f15b5f6796bf";
             
           } else {
             if (transactionData.metadata.plan_id) { //handle initial subscription purchase
@@ -487,7 +487,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
           }  else if (priceId === "price_1NSaglFe80Kn2YGGZZ8msY1r") { //Standard 12mo
             planId = "64ad0d740e40385f299bcef9"
           } 
-          
+
           const plan = await Plan.findById(planId);
 
           user.tokenBalance += plan.monthlyTokens;

@@ -146,7 +146,7 @@ router.post('/register-free-trial', async (req, res) => {
           isCompany: true,
           referredBy: referrerId,
           verificationCode,
-          plan: "6444d4394ab2cf9819e5b5f4"
+          plan: "647c3294ff40f15b5f6796bf"
       });
 
       try {
