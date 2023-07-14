@@ -68,7 +68,7 @@ router.get('/user/:userId/uploadStats', requireAuth, async (req, res) => {
   try {
       const { userId } = req.params;
       const documentCount = await Document.countDocuments({ owner: mongoose.Types.ObjectId(userId) });
-      const folderCount = await Document.countDocuments({ owner: mongoose.Types.ObjectId(userId) });
+      const folderCount = await Folder.countDocuments({ owner: mongoose.Types.ObjectId(userId) });
       const user = await User.findById(userId);
 
       return res.status(200).json({ documentCount, uploadedBytes: user.uploadedBytes, folderCount });
