@@ -253,7 +253,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                 const planId = transactionData.metadata.plan_id;
                 const plan = await Plan.findById(planId);
                 user.plan = plan;
-                user.tokenBalance += plan.monthlyTokens*transactionData.metadata.months;
+                user.tokenBalance += plan.monthlyTokens*Number(transactionData.metadata.months);
   
                 if(transactionData.metadata.trial){
                   await Whitelist.deleteOne({ email });
