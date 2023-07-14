@@ -486,8 +486,8 @@ router.get('/checkJWT', (req, res) => {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     // Send an email to the user's email address containing the password reset link
-    const resetLink = `https://www.asystent.ai/password-reset-confirm?token=${token}&userId=${user._id}`;
-    return res.status(200).json({ link: resetLink });
+    const resetLink = `https://www.yepp.ai/password-reset-confirm?token=${token}&userId=${user._id}`;
+    return res.status(200).json({ link: resetLink, name: user.name });
   });
   
   router.post('/reset-password-confirm', async (req, res) => {

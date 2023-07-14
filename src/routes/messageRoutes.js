@@ -11,6 +11,8 @@ const Transaction = mongoose.model('Transaction');
 const User = mongoose.model('User');
 const Workspace = mongoose.model('Workspace');
 require('dotenv').config();
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_KEY);
 
 const configuration = new Configuration({
     organization: "org-oP1kxBXnJo6VGoYOLxzHnNSV",
@@ -205,5 +207,17 @@ router.get('/messages/:conversationId', requireAuth, async (req, res) => {
 //         return res.status(500).json({ message: error.message });
 //     }
 // });
+
+router.post('/send-email', async (req, res) => {
+    sgMail
+        .send(req.body.msg)
+        .then(() => {
+            res.status(200).json({ status: 'Email sent' });
+        })
+        .catch((error) => {
+            res.status(500).json({ error: 'Failed to send email' });
+        });
+});
+
 
 module.exports = router;
