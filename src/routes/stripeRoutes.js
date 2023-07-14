@@ -140,8 +140,28 @@ router.post('/create-checkout-session', async (req, res) => {
           cancel_url: `${cancelURL}`,
         });
       }  
+    } else {
+      session = await stripe.checkout.sessions.create({
+        customer: customer.id,
+        line_items: [
+          {
+            price: `${priceId}`,
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          tokens_to_add: `${tokensAmount}`,
+          plan_id: `${planId}`,
+          referrer_id: `${referrerId}`,
+          trial: false,
+          asCompany: asCompany,
+          invoiceTitle: invoiceTitle
+        },
+        mode: `${mode}`,
+        success_url: `${successURL}`,
+        cancel_url: `${cancelURL}`,
+      });
     }
-
     res.status(200).json({ url: session.url });
   } catch (e) {
     res.status(500).json({ message: "Error creating session for price" });
