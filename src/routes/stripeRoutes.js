@@ -154,7 +154,7 @@ router.post('/create-checkout-session', async (req, res) => {
           plan_id: `${planId}`,
           referrer_id: `${referrerId}`,
           trial: false,
-          asCompany: asCompany,
+          infaktInvoice: asCompany,
           invoiceTitle: invoiceTitle
         },
         mode: `${mode}`,
