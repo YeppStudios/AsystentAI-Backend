@@ -458,17 +458,36 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
         let priceId = event.data.object.lines.data[0].price.id;
 
         try {
-          if(priceId === "price_1MdbTMFe80Kn2YGG5QDfmjvS") {
+          if(priceId === "price_1MdbTMFe80Kn2YGG5QDfmjvS") { //Basic Monthly price
             planId = "63f0e6968e1b9d507c38a749";
-          } else if (priceId === "price_1MdbUeFe80Kn2YGGRlKvmre4") {
+          } else if (priceId === "price_1MdbUeFe80Kn2YGGRlKvmre4") { //Assistant Monthly price (old)
             planId = "63f0e7d075de0ef12bb8c484";
           } else if (priceId === "price_1NFwcqFe80Kn2YGGi4iIulhc") {
             planId = "647895cf404e31bfe8753398";
-          } else if (priceId === "price_1NFwxWFe80Kn2YGGvpHuUfpi") {
+          } else if (priceId === "price_1NFwxWFe80Kn2YGGvpHuUfpi") { //Assistant Pro Monthly
             planId = "6478970a404e31bfe87533a0"
-          } else if (priceId === "price_1MzNh9Fe80Kn2YGGkv8OaQ0T") {
+          } else if (priceId === "price_1MzNh9Fe80Kn2YGGkv8OaQ0T") { //Assistant Business Monthly
             planId = "6444d4394ab2cf9819e5b5f4"
-          }
+          } else if (priceId === "price_1NFx0EFe80Kn2YGGCWikSSti") { //Assistant Business Monthly Full Price
+            planId = "6444d4394ab2cf9819e5b5f4"
+          } else if (priceId === "price_1NSZghFe80Kn2YGGOiClJUPM") { //Agency Monthly Full Price
+            planId = "64ad0d250e40385f299bceea"
+          } else if (priceId === "price_1NSai5Fe80Kn2YGGHrwmUEqe") { //Agency 3mo
+            planId = "64ad0d250e40385f299bceea"
+          } else if (priceId === "price_1NSaiNFe80Kn2YGGG88egvhI") { //Agency 6mo
+            planId = "64ad0d250e40385f299bceea"
+          } else if (priceId === "price_1NSaieFe80Kn2YGGilwS3SNl") { //Agency 12mo
+            planId = "64ad0d250e40385f299bceea"
+          }  else if (priceId === "price_1NSZjsFe80Kn2YGGYa3pzseT") { //Standard mo
+            planId = "64ad0d740e40385f299bcef9"
+          }  else if (priceId === "price_1NSafTFe80Kn2YGG5LVrITu1") { //Standard 3mo
+            planId = "64ad0d740e40385f299bcef9"
+          }  else if (priceId === "price_1NSagKFe80Kn2YGGFhOuum7Z") { //Standard 6mo
+            planId = "64ad0d740e40385f299bcef9"
+          }  else if (priceId === "price_1NSaglFe80Kn2YGGZZ8msY1r") { //Standard 12mo
+            planId = "64ad0d740e40385f299bcef9"
+          } 
+          
           const plan = await Plan.findById(planId);
 
           user.tokenBalance += plan.monthlyTokens;
