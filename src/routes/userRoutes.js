@@ -18,6 +18,19 @@ router.get('/users', requireAdmin, async (req, res) => {
     }
 });
 
+
+router.get('/users/emails/from/:date', requireAdmin, async (req, res) => {
+  try {
+      const date = new Date(req.params.date);
+      const users = await User.find({ createdAt: { $gte: date }}, 'email');
+      const emails = users.map(user => user.email);
+      return res.status(200).json(emails);
+  } catch (error) {
+      return res.status(500).json({ message: error.message });
+  }
+});
+
+
 // Get a single user
 router.get('/users/:id', requireAuth, async (req, res) => {
     try {

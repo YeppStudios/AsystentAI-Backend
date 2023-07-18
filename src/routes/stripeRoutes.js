@@ -74,7 +74,6 @@ router.post('/create-checkout-session', async (req, res) => {
           subscription_data: {
             trial_period_days: 5,
           },
-          allow_promotion_codes: true,
           automatic_tax: {
             enabled: true,
           },
@@ -103,8 +102,11 @@ router.post('/create-checkout-session', async (req, res) => {
           invoice_creation: {
             enabled: true,
           },
-          customer: customer.id,
+          customer_email: email,
           automatic_tax: {
+            enabled: true,
+          },
+          tax_id_collection: {
             enabled: true,
           },
           mode: `${mode}`,
@@ -155,7 +157,7 @@ router.post('/create-checkout-session', async (req, res) => {
           referrer_id: `${referrerId}`,
           trial: false,
           months,
-          infaktInvoice: asCompany,
+          infaktInvoice: false,
           invoiceTitle: invoiceTitle
         },
         mode: `${mode}`,
@@ -192,17 +194,11 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
         if(user){
           let transaction;
           let purchase;
-          let invoiceData;
-          let infaktClientId;
-          const today = new Date();
-          const year = today.getFullYear();
-          const month = String(today.getMonth() + 1).padStart(2, '0');
-          const day = String(today.getDate()).padStart(2, '0');
 
           user.dashboardAccess = true;
 
           //set or delete workspace for subscription activation
-          if (transactionData.metadata.plan_id !== "64ad0d250e40385f299bceea" && user.workspace && transactionData.metadata.plan_id) {
+          if (transactionData.metadata.plan_id !== "64ad0d250e40385f299bceea" && transactionData.metadata.plan_id !== "647895cf404e31bfe8753398" && user.workspace && transactionData.metadata.plan_id) {
             const workspace = await Workspace.findById(user.workspace);
             if (workspace) {
               const isCompany = workspace.company.includes(user._id);
@@ -225,10 +221,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
               }
               user.workspace = null;
             }
-            // Find the user's folders and remove them
             await Folder.deleteMany({ owner: user._id });
-
-            // Find the user's documents and remove them
             await Document.deleteMany({ owner: user._id });
           } else if (!user.workspace && (transactionData.metadata.plan_id === "64ad0d250e40385f299bceea" || transactionData.metadata.plan_id === "647c3294ff40f15b5f6796bf")) {
             const key = generateApiKey();
@@ -246,7 +239,6 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           if (transactionData.metadata.trial) {
             user.tokenBalance += 25000;
             user.plan = "647c3294ff40f15b5f6796bf";
-            
           } else {
             if (transactionData.metadata.plan_id) { //handle initial subscription purchase
               try {
@@ -255,7 +247,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                 user.plan = plan;
                 user.tokenBalance += plan.monthlyTokens*Number(transactionData.metadata.months);
   
-                if(transactionData.metadata.trial){
+                if(transactionData.metadata.trial) {
                   await Whitelist.deleteOne({ email });
                 }
   
@@ -360,67 +352,6 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
             }
           }
           await user.save();
-          // Save the user and send invoice
-          try {
-            if (user.accountType === "company" && transactionData.metadata.infaktInvoice === "true") {
-              //check if client is in infakt if not then create new one
-                try {
-                  let infaktClientsResponse = await axios.get(`https://api.infakt.pl/v3/clients.json?q[email_eq]=${user.contactEmail}`, infaktConfig);
-                  let infaktClients = infaktClientsResponse.data;
-                  if (infaktClients.length > 0) {
-                    infaktClientId = infaktClients[0].id;
-                  } else {
-                    let createdInfaktClient = await axios.post('https://api.infakt.pl/v3/clients.json', {
-                      client: {
-                        "name": user.fullName,
-                        "email": user.email,
-                        "company_name": user.companyName,
-                        "street": user.street,
-                        "street_number": user.streetNumber,
-                        "flat_number": user.apartmentNumber,
-                        "city": user.city,
-                        "country": "Polska",
-                        "postal_code": user.postalCode,
-                        "nip": user.nip,
-                        "mailing_company_mail": user.contactEmail
-                      }
-                    }, infaktConfig);
-                    infaktClientId = createdInfaktClient.data.id;
-                  }            
-                  invoiceData = {
-                    invoice: {
-                      "client_company_name": user.companyName, 
-                      "invoice_date": `${year}-${month}-${day}`,
-                      "sale_date": `${year}-${month}-${day}`,
-                      "status": "paid",
-                      "paid_date": `${year}-${month}-${day}`,
-                      "payment_method": "card",
-                      "client_id": infaktClientId,
-                      "paid_price": transactionData.amount_total, 
-                      "services":[
-                        {
-                          "name": `${transactionData.metadata.invoiceTitle}`, 
-                          "pkwiu": "62.01", 
-                          "tax_symbol": 23,
-                          "gross_price": transactionData.amount_total, 
-                        }
-                      ]
-                    },
-                  };
-                } catch (e) {
-                  console.log(e);
-                }
-
-              await axios.post('https://api.infakt.pl/v3/invoices.json', invoiceData, infaktConfig);
-              await new Promise(resolve => setTimeout(resolve, 3000));
-              const latestInvoice = await axios.get('https://api.infakt.pl/v3/invoices.json?limit=1', infaktConfig);
-              const lastInvoiceID = latestInvoice.data.entities[0].uuid;
-              // await axios.post(`https://api.infakt.pl/api/v3/invoices/${lastInvoiceID}/paid.json`, {}, infaktConfig);
-              await axios.post(`https://api.infakt.pl/api/v3/invoices/${lastInvoiceID}/deliver_via_email.json`, {"print_type": "original"}, infaktConfig);
-            }
-          } catch (error) {
-            console.error(error);
-          }
         }
       });
     } catch (e) {
@@ -501,41 +432,6 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
           });
           user.transactions.push(transaction);
 
-
-          if(user.accountType === "company"){
-             //generate infakt invoice for first subscription payment
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-          
-            let infaktClientsResponse = await axios.get(`https://api.infakt.pl/v3/clients.json?q[email_eq]=${user.contactEmail}`, infaktConfig);
-            let infaktClients = infaktClientsResponse.data;
-            if (infaktClients.length > 0) {
-              infaktClientId = infaktClients[0].id;
-            }
-            invoiceData = { //for companies
-              invoice: {
-                "client_company_name": user.companyName, 
-                "invoice_date": `${year}-${month}-${day}`,
-                "sale_date": `${year}-${month}-${day}`,
-                "status": "paid",
-                "paid_date": `${year}-${month}-${day}`,
-                "payment_method": "card",
-                "client_id": infaktClientId,
-                "paid_price": plan.price * 100, 
-                "services":[
-                  {
-                     "name": `Miesięczna Subskrypcja Oprogramowania Aplikacji AsystentAI (Pakiet ${plan.name})`, 
-                     "pkwiu": "62.01", 
-                     "tax_symbol": 23,
-                     "gross_price": plan.price * 100, 
-                  }
-                ]
-              },
-            };
-          }
-
         } catch (error) {
           console.error(`Error saving user: ${error.message}`);
         }
@@ -547,21 +443,8 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
         };
         user.tokenHistory.push(balanceSnapshot);
 
-        // Save the user
-        try {
-          if (user.accountType === "company"){
-            await axios.post('https://api.infakt.pl/v3/invoices.json', invoiceData, infaktConfig);
-            await new Promise(resolve => setTimeout(resolve, 2500));
-            const latestInvoice = await axios.get('https://api.infakt.pl/v3/invoices.json?limit=1', infaktConfig);
-            const lastInvoiceID = latestInvoice.data.entities[0].id;
-            await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/paid.json`, {invoice: {"status": "paid"}}, infaktConfig);
-            await axios.post(`https://api.infakt.pl/v3/invoices/${lastInvoiceID}/deliver_via_email.json`, {"print_type": "original"}, infaktConfig);
-          }
-          await user.save();
-          await transaction.save();
-        } catch (error) {
-          console.error(`Error saving user: ${error.message}`);
-        }
+        await user.save();
+        await transaction.save();
       }
     });
     } catch (e) {
