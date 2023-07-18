@@ -19,12 +19,12 @@ function generateApiKey() {
 
 router.post('/workspaces/add', requireAuth, async (req, res) => {
   const companyId = req.user._id;
-  if (req.user.accountType === "compnay") {
+  if (req.user.accountType === "company") {
     try {
       const { admins, employees } = req.body;
       const apiKey = generateApiKey(); // generate an API key
       const workspace = new Workspace({ 
-        admins: [...admins, companyId], // add the company ID as an admin
+        admins: [companyId], // add the company ID as an admin
         company: companyId, // set the company ID
         employees,
         apiKey // set the generated API key

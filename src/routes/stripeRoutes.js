@@ -593,4 +593,27 @@ router.post('/update-subscription', requireAuth, async (req, res) => {
 });
 
 
+router.post('/create-customer-portal-session', requireAuth, async (req, res) => {
+  try {
+    let customer = null;
+    const customerList = await stripe.customers.list({ email: req.body.email, limit: 1 });
+    if (customerList.data.length > 0) {
+      customer = customerList.data[0];
+    } else {
+      customer = await stripe.customers.create({
+        email: email
+      });
+    }
+    const session = await stripe.billingPortal.sessions.create({
+      customer: `${customer.id}`,
+      return_url: 'https://yepp.ai/profile',
+    });
+  
+    res.status(200).json({ url: session.url });
+  } catch (e) {
+    res.status(500).json({message: "Error displaying subscription portal", error: e})
+  }
+
+});
+
 module.exports = router;   
