@@ -417,7 +417,9 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
             planId = "64ad0d740e40385f299bcef9"
           }  else if (priceId === "price_1NSaglFe80Kn2YGGZZ8msY1r") { //Standard 12mo
             planId = "64ad0d740e40385f299bcef9"
-          } 
+          } else if (priceId === "price_1NVVfpFe80Kn2YGGDCHIg1aX") { ///Assistant Business Monthly discount
+            planId = "6444d4394ab2cf9819e5b5f4";
+          }
 
           const plan = await Plan.findById(planId);
 
