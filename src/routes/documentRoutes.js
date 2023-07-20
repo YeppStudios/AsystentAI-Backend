@@ -220,6 +220,24 @@ router.post('/folders/:id/add-document', requireAuth, async (req, res) => {
 });
 
 
+// ADD DOCUMENTS TO FOLDER
+router.post('/folders/:id/add-documents', requireAuth, async (req, res) => {
+  try {
+    const folder = await Folder.findOne({ _id: req.params.id });
+
+    if (!folder) {
+      return res.status(404).json({ message: 'Folder not found' });
+    }
+
+    folder.documents.push(req.body.documents);
+    await folder.save();
+    await Assistant.updateMany({ folders: req.params.id }, { $push: { documents: documentId } });
+    return res.status(200).json({ message: 'Document added to folder and assistants successfully' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE DOCUMENT FROM FOLDER
 router.delete('/folders/:id/delete-document', requireAuth, (req, res) => {
   Folder.findOne({ _id: req.params.id, owner: req.user._id })
