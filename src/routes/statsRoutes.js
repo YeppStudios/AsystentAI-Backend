@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const User = mongoose.model('User');
 const Transaction = mongoose.model('Transaction');
 const OnboardingSurveyData = mongoose.model('OnboardingSurveyData');
+const CompanyLogin = mongoose.model('CompanyLogin');
 const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');
 
@@ -279,6 +280,38 @@ router.post('/user/:userId/addPosts', requireAuth, (req, res) => {
         res.json(data);
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+  });
+  
+  router.get('/unique-company-logins', async (req, res) => {
+    try {
+      // Get the date one week ago
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - req.body.days);
+  
+      // Use MongoDB's aggregation framework to get unique workspaceIds
+      const uniqueLogins = await CompanyLogin.aggregate([
+        {
+          $match: {
+            timestamp: {
+              $gte: oneWeekAgo
+            }
+          }
+        },
+        {
+          $group: {
+            _id: '$workspaceId',
+          }
+        }
+      ]);
+  
+      // Extract workspaceIds from the response
+      const workspaceIds = uniqueLogins.map(login => login._id);
+  
+      // Send the list of unique workspaceIds
+      res.json({ workspaceIds: workspaceIds });
+    } catch (error) {
+      res.status(500).json({ error: error.toString() });
     }
   });
   

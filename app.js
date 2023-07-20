@@ -14,7 +14,7 @@ require('./src/models/Document');
 require('./src/models/Reservations');
 require('./src/models/Folder');
 require('./src/models/OnboardingSurveyData');
-require('./src/models/UserLogin');
+require('./src/models/CompanyLogin');
 require('./src/models/SeoContent');
 require('./src/models/Template');
 const express = require('express');

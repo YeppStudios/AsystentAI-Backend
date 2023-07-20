@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const User = mongoose.model('User');
 const Workspace = mongoose.model('Workspace');
 const Transaction = mongoose.model('Transaction');
-const UserLogin = mongoose.model('UserLogin');
+const CompanyLogin = mongoose.model('CompanyLogin');
 const requireAuth = require('../middlewares/requireAuth');
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -46,13 +46,10 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(400).json({ message: 'User not found' });
     await user.comparePassword(password);
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-
-    //save login to stats
-    if (user.email !== "hello@yeppstudios.com" && user.email !== "piotrg2003@gmail.com" && user.email !== "gerke.contact@gmail.com") {
-      const login = new UserLogin({ userId: user._id });
-      await login.save();
-    }
-
+    const login = new CompanyLogin({ workspaceId: user.workspace });
+    await login.save();
+    user.lastSeen = Date.now();
+    await user.save();
     return res.json({ token, user });
   } catch (error) {
     return res.status(500).json({ message: error.message });

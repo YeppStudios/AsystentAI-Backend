@@ -147,6 +147,9 @@ const UserSchema = new mongoose.Schema({
     transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction'}],
     tokenHistory: [{BalanceSnapshotSchema}],
     stats: StatsSchema,
+    lastSeen: {
+        type: Date,
+    },
     isBlocked: {
         type: Boolean,
         default: false

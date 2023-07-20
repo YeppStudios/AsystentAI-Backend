@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
-const UserLoginSchema = new mongoose.Schema({
-  userId: {
+const CompanyLoginSchema = new mongoose.Schema({
+  workspaceId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',  // This should match the model name of your User model
     required: true,
@@ -13,4 +13,4 @@ const UserLoginSchema = new mongoose.Schema({
   },
 });
 
-mongoose.model('UserLogin', UserLoginSchema);
+mongoose.model('CompanyLogin', CompanyLoginSchema);
