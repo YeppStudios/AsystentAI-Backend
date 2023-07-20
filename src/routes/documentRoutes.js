@@ -314,7 +314,7 @@ router.post('/add-folder', requireAuth, (req, res) => {
   });
 
   // READ
-router.get('/folders/:workspaceId', requireAuth, (req, res) => {
+router.get('/folders/:workspaceId', (req, res) => {
   let { page = 0, limit = 50 } = req.query;
   page = parseInt(page);
   limit = parseInt(limit);
@@ -365,7 +365,7 @@ router.get('/folders/owner/:userId', requireAuth, (req, res) => {
   });
   
   // UPDATE
-  router.put('/folders/:id', requireAuth, (req, res) => {
+  router.patch('/folders/:id', requireAuth, (req, res) => {
     Folder.findById(req.params.id)
       .then(folder => {
         if (!folder) {
@@ -374,7 +374,8 @@ router.get('/folders/owner/:userId', requireAuth, (req, res) => {
         if (folder.owner.toString() !== req.user._id.toString()) {
           return res.status(403).json({ message: 'You are not authorized to update this folder' });
         }
-        return Folder.findByIdAndUpdate(req.params.id, req.body);
+        folder.workspace = req.body.workspace;
+        return folder.save();
       })
       .then(() => {
         return res.json({ message: 'Folder updated successfully' });
@@ -382,7 +383,8 @@ router.get('/folders/owner/:userId', requireAuth, (req, res) => {
       .catch(err => {
         return res.status(500).json({ error: err.message });
       });
-  });
+});
+
 
 
 // DELETE FOLDER

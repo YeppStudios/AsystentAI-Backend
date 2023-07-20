@@ -189,16 +189,16 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
   const transactionData = event.data.object;
   if (event.type === 'checkout.session.completed') {
     let email = transactionData.customer_details.email;
-    try{
+    try {
       User.findOne({ email: email }, async (err, user) => {
-        if(user){
+        if(user) {
           let transaction;
           let purchase;
 
           user.dashboardAccess = true;
 
           //set or delete workspace for subscription activation
-          if (transactionData.metadata.plan_id !== "64ad0d250e40385f299bceea" && transactionData.metadata.plan_id !== "647895cf404e31bfe8753398" && user.workspace && transactionData.metadata.plan_id) {
+          if (transactionData.metadata.plan_id !== "64ad0d250e40385f299bceea" && transactionData.metadata.plan_id !== "6444d4394ab2cf9819e5b5f4" && user.workspace && transactionData.metadata.plan_id) {
             const workspace = await Workspace.findById(user.workspace);
             if (workspace) {
               const isCompany = workspace.company.includes(user._id);
@@ -241,6 +241,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
             user.plan = "647c3294ff40f15b5f6796bf";
           } else {
             if (transactionData.metadata.plan_id) { //handle initial subscription purchase
+              console.log(transactionData)
               try {
                 const planId = transactionData.metadata.plan_id;
                 const plan = await Plan.findById(planId);

@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Prompt = mongoose.model('Prompt');
+const Template = mongoose.model('Template');
 const requireAuth = require('../middlewares/requireAuth');
 
 const router = express.Router();
@@ -135,5 +136,80 @@ router.patch('/prompts/:id/like', requireAuth, async (req, res) => {
       res.status(500).send('Internal server error');
     }
   });
+
+
+//templates for marketing tab
+
+router.get('/templates', async (req, res) => {
+    try {
+        const templates = await Template.find({});
+        return res.send(templates);
+    } catch (err) {
+      return res.status(500).send();
+    }
+});
+
+router.get('/templates/:id', async (req, res) => {
+  try {
+      const template = await Template.findById(req.params.id);
+      if (!template) {
+          return res.status(404).send();
+      }
+      return res.send(template);
+  } catch (err) {
+      return res.status(500).send();
+  }
+});
+
+  // Add template
+router.post('/addTemplate', async (req, res) => {
+  const template = new Template(req.body);
+  try {
+      await template.save();
+      return res.status(201).send(template);
+  } catch (err) {
+    return res.status(400).send(err);
+  }
+});
+
+// Update specific fields of a template
+router.patch('/updateTemplate/:id', async (req, res) => {
+  const updates = Object.keys(req.body);
+  const allowedUpdates = ['title', 'description', 'category', 'author', 'likes'];
+  const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
+
+  if (!isValidOperation) {
+      return res.status(400).send({ error: 'Invalid updates!' });
+  }
+
+  try {
+      const template = await Template.findById(req.params.id);
+
+      if (!template) {
+          return res.status(404).send();
+      }
+
+      updates.forEach((update) => template[update] = req.body[update]);
+      await template.save();
+
+      return res.send(template);
+  } catch (err) {
+    return res.status(400).send(err);
+  }
+});
+
+
+// Delete template
+router.delete('/templates/:id', async (req, res) => {
+  try {
+      const template = await Template.findByIdAndDelete(req.params.id);
+      if (!template) {
+          return res.status(404).send();
+      }
+      return res.send(template);
+  } catch (err) {
+    return res.status(500).send();
+  }
+});
   
 module.exports = router;
