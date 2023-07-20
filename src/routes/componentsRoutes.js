@@ -174,22 +174,25 @@ router.post('/addTemplate', async (req, res) => {
 
 // Update specific fields of a template
 router.patch('/updateTemplate/:id', async (req, res) => {
-  const updates = Object.keys(req.body);
-  const allowedUpdates = ['title', 'description', 'category', 'author', 'likes'];
-  const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
-
-  if (!isValidOperation) {
-      return res.status(400).send({ error: 'Invalid updates!' });
-  }
-
   try {
       const template = await Template.findById(req.params.id);
-
       if (!template) {
-          return res.status(404).send();
+        return res.status(404).send();
       }
 
-      updates.forEach((update) => template[update] = req.body[update]);
+      if (req.body.title) {
+          template.title = req.body.title;
+      }
+      if (req.body.icon) {
+          template.icon = req.body.icon;
+      }
+      if (req.body.description) {
+          template.description = req.body.description;
+      }
+      if (req.body.category) {
+          template.category = req.body.category;
+      }
+
       await template.save();
 
       return res.send(template);

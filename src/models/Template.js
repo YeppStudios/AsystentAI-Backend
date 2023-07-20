@@ -9,6 +9,9 @@ const TemplateSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    icon: {
+        type: String,
+    },
     category: {
         type: String,
         required: true
