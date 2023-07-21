@@ -67,7 +67,8 @@ router.post('/register', async (req, res) => {
     let user = await User.findOne({ email });
     if (user) {
       // User already exists, log them in
-      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
+      await user.comparePassword(password);
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
       return res.status(200).json({ token, user });
     }
 
@@ -122,7 +123,10 @@ router.post('/register-free-trial', async (req, res) => {
       let freeTokens = 25000;
 
       if (user) {
-        return res.status(500).json({ message: "User already exists" });
+        // User already exists, log them in
+        await user.comparePassword(password);
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        return res.status(200).json({ token, user });
       }
 
       if(referrerId){
