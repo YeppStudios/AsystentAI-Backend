@@ -6,6 +6,7 @@ const Workspace = mongoose.model('Workspace');
 const Transaction = mongoose.model('Transaction');
 const CompanyLogin = mongoose.model('CompanyLogin');
 const requireAuth = require('../middlewares/requireAuth');
+const requireAdmin = require('../middlewares/requireAdmin');
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const router = express.Router();
@@ -46,8 +47,10 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(400).json({ message: 'User not found' });
     await user.comparePassword(password);
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    const login = new CompanyLogin({ workspaceId: user.workspace });
-    await login.save();
+    if (user.workspace) {
+      const login = new CompanyLogin({ workspaceId: user.workspace });
+      await login.save();
+    }
     user.lastSeen = Date.now();
     await user.save();
     return res.json({ token, user });
@@ -525,6 +528,38 @@ router.get('/checkJWT', (req, res) => {
       }
     });
   });
+  
+
+  router.patch('/password-reset-admin', requireAdmin, async (req, res) => {
+    const user = await User.findById(req.body.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (req.body.password) {
+
+      if (req.body.password.startsWith('$2')){
+        return res.status(5000).json({ message: 'Error' });
+      }
+      
+      bcrypt.genSalt(10, (err, salt) => {
+  
+          if (err){
+            return res.status(5000).json({ message: 'Error' });
+          }
+  
+          bcrypt.hash(req.body.password, salt, async (err, hash) => {
+  
+              if (err){
+                return res.status(5000).json({ message: 'Error' });
+              }
+  
+              user.password = hash;
+              console.log(user)
+              await user.save();
+              return res.status(200).json({ message: 'Password updated' });
+          })
+      })
+
+    }
+  })
   
 
 module.exports = router;
