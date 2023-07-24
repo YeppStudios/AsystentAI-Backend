@@ -192,6 +192,9 @@ router.patch('/updateTemplate/:id', async (req, res) => {
       if (req.body.category) {
           template.category = req.body.category;
       }
+      if (req.body.query) {
+          template.query = req.body.query;
+      }
 
       await template.save();
 

@@ -8,8 +8,8 @@ const SeoContent = mongoose.model('SeoContent');
 const moment = require('moment');
 
 router.post('/addContent', requireAuth, async (req, res) => {
-    const { text, prompt, category, savedBy, title } = req.body;
-    const newContent = new Content({ text, prompt, category, savedBy, title });
+    const { text, prompt, category, savedBy, title, query, icon } = req.body;
+    const newContent = new Content({ text, prompt, category, savedBy, title, query, icon });
 
     try {
         const savedContent = await newContent.save();
@@ -77,7 +77,13 @@ router.get('/getSavedContent', requireAdmin, async (req, res) => {
 
   router.get('/getContentPiece/:id', requireAuth, async (req, res) => {
     try {
-      const content = await Content.findById(req.params.id);
+      const contentId = req.params.id;
+      if (!mongoose.Types.ObjectId.isValid(contentId)) {
+        res.status(400).json({ message: 'Invalid content ID' });
+        return;
+      }
+  
+      const content = await Content.findById(contentId);
       if (!content) {
         res.status(404).json({ message: 'Content not found' });
       } else {

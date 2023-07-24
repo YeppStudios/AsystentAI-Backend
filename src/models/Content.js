@@ -25,6 +25,13 @@ const ContentSchema = new mongoose.Schema({
         type: String,
         default: "Nowa treść"
     },
+    icon: {
+        type: String,
+    },
+    query: {
+        type: String,
+        default: "post"
+    },
     contentType: {
         type: String,
         enum: [

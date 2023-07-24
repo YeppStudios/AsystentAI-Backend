@@ -16,6 +16,9 @@ const TemplateSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    query: {
+        type: String,
+    },
     author: {
         type: String,
         default: ""
