@@ -241,7 +241,6 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
             user.plan = "647c3294ff40f15b5f6796bf";
           } else {
             if (transactionData.metadata.plan_id) { //handle initial subscription purchase
-              console.log(transactionData)
               try {
                 const planId = transactionData.metadata.plan_id;
                 const plan = await Plan.findById(planId);
