@@ -147,7 +147,7 @@ router.post('/send-invitation', requireAuth, async (req, res) => {
   workspace.invitations.push({ email, role, invitedBy });
   await workspace.save();
 
-  const inviteUrl = `https://www.asystent.ai/marketing?registration=true&workspace=${workspace._id}&invitedEmail=${email}`;
+  const inviteUrl = `https://www.yepp.ai/marketing?registration=true&workspace=${workspace._id}&invitedEmail=${email}`;
 
   return res.status(201).json({ invitationLink: inviteUrl });
 });

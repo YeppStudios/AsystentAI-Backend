@@ -38,6 +38,7 @@ const documentRoutes =  require('./src/routes/documentRoutes');
 const reservationsRoutes =  require('./src/routes/reservationsRoutes');
 const companyRoutes =  require('./src/routes/companyRoutes');
 const apiRoutes =  require('./src/routes/apiRoutes');
+const agentRoutes =  require('./src/routes/agentRoutes');
 const { emailJob, blockSubscriptionsJob } = require('./src/cron');
 const cors = require('cors');
 require('dotenv').config()
@@ -70,6 +71,7 @@ app.use(assistantRoutes);
 app.use(documentRoutes);
 app.use(companyRoutes);
 app.use(apiRoutes);
+app.use(agentRoutes);
 
 const mongoUri = process.env.MONGO_URI;
 mongoose.connect(mongoUri);
