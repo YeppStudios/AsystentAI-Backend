@@ -72,7 +72,7 @@ router.post('/create-checkout-session', async (req, res) => {
             trial: true
           },
           subscription_data: {
-            trial_period_days: 5,
+            trial_period_days: 7
           },
           automatic_tax: {
             enabled: true,
