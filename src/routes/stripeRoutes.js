@@ -424,6 +424,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
           const plan = await Plan.findById(planId);
 
           user.tokenBalance += plan.monthlyTokens;
+          user.plan = planId;
   
           // Create a new transaction
           transaction = new Transaction({
