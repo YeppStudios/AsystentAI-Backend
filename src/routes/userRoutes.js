@@ -11,8 +11,13 @@ const router = express.Router();
 // Get all users
 router.get('/users', requireAdmin, async (req, res) => {
     try {
+      if (req.query.email) {
+        const users = await User.find({ email: req.query.email });
+        return res.status(200).json(users);
+      } else {
         const users = await User.find();
         return res.status(200).json(users);
+      }
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }

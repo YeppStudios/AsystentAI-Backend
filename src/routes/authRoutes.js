@@ -556,7 +556,6 @@ router.get('/checkJWT', (req, res) => {
               }
   
               user.password = hash;
-              console.log(user)
               await user.save();
               return res.status(200).json({ message: 'Password updated' });
           })
