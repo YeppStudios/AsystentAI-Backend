@@ -200,7 +200,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           //set or delete workspace for subscription activation
           if (transactionData.metadata.plan_id !== "64ad0d250e40385f299bceea" && transactionData.metadata.plan_id !== "6444d4394ab2cf9819e5b5f4" && user.workspace && transactionData.metadata.plan_id) {
             const workspace = await Workspace.findById(user.workspace);
-            if (workspace) {
+            if (workspace && workspace.metadata.plan_id !== "64ad0d740e40385f299bcef9") {
               const isCompany = workspace.company.includes(user._id);
             
               if (isCompany) {
