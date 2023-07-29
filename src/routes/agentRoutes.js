@@ -12,6 +12,7 @@ router.post('/askAgent', async (req, res) => {
         temperature: 0,
         modelName: "gpt-3.5-turbo",
         verbose: true,
+
     });
     const executor = PlanAndExecuteAgentExecutor.fromLLMAndTools({
         llm: model,
@@ -19,7 +20,7 @@ router.post('/askAgent', async (req, res) => {
     });
 
     const result = await executor.call({
-        input: `Gather and summarize all crutial information for marketing brief about Mennica Polska S.A.`,
+        input: `Who won the latest footbal world cup? Search in in google and tell me the result.`,
     });
 
     console.log({ result });
