@@ -71,7 +71,7 @@ router.post('/create-checkout-session', async (req, res) => {
             months,
             trial: true
           },
-          allow_promotion_codes: true,
+                    allow_promotion_codes: true,
           subscription_data: {
             trial_period_days: 7
           },

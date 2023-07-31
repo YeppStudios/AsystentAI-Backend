@@ -358,9 +358,13 @@ router.post('/message', requireTokens, async (req, res) => {
             documents
         });
 
+        await user.save();
         await userMessage.save();
         await assistantResponse.save();
-
+        conversation.messages.push(userMessage);
+        conversation.messages.push(assistantResponse);
+        conversation.lastUpdated = Date.now();
+        await conversation.save();
         if (user.workspace) {
             const workspace = await Workspace.findById(user.workspace)
             const company = await User.findById(workspace.company);
