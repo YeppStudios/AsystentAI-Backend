@@ -36,7 +36,7 @@ function estimateTokens(text) {
 
 router.post('/message-stream', requireTokens, async (req, res) => {
     try {
-        const { query, assistant_id, conversation_id, knowledge_based, llm } = req.body;
+        const { query, assistant_id, conversation_id, llm } = req.body;
 
         const user = req.user;
         let inputTokens = 0;
@@ -44,7 +44,6 @@ router.post('/message-stream', requireTokens, async (req, res) => {
         let response = '';
         let  context = "";
         let systemPrompt = "You are a helpful AI assistant with expert knowledge in marketing. You avoid controversial topics and you never guarantee anything.";
-        let documents = [];
         let conversation = null;
         let embeddingContext = "";
         let assistant = null;
@@ -56,7 +55,7 @@ router.post('/message-stream', requireTokens, async (req, res) => {
         }
 
         if (assistant_id) {
-            let fetchedAssistant = await Assistant.findById(assistant_id).populate('documents');
+            let fetchedAssistant = await Assistant.findById(assistant_id).populate('documents').exec();
             if (!fetchedAssistant) {
                 return res.status(404).json({ message: 'Assistant not found' });
             }
@@ -67,46 +66,37 @@ router.post('/message-stream', requireTokens, async (req, res) => {
               assistant = fetchedAssistant;
               systemPrompt = assistant.noEmbedPrompt;
               assistantName = assistant.name;
-        }
 
-        if (knowledge_based) {
-            const vectorIds = await Document.find({ _id: { $in: assistant.documents } }).distinct('vectorId');
+              let vectorIds = assistant.documents.map(doc => doc.vectorId);
+              try {
+                  const chunks = await axios.post(
+                  "https://whale-app-p64f5.ondigitalocean.app/query",
+                  {
+                      "queries": [
+                      {
+                          "query": query,
+                          "filter": {
+                          "document_id": vectorIds
+                          },
+                          "top_k": 3
+                      }
+                      ]
+                  },
+                  {
+                      headers: {
+                      "Authorization": `Bearer ${process.env.PYTHON_API_KEY}`
+                      }
+                  }
+                  );          
+          
+                  chunks.data.results[0].results.forEach((item) => {
+                      context += item.text + " ";
+                  });
+                  embeddingContext = `Context you might find helpful: ${context}. Task for you to do: `;
 
-                try {
-                    const chunks = await axios.post(
-                    "https://whale-app-p64f5.ondigitalocean.app/query",
-                    {
-                        "queries": [
-                        {
-                            "query": query,
-                            "filter": {
-                            "document_id": vectorIds.data
-                            },
-                            "top_k": 2
-                        }
-                        ]
-                    },
-                    {
-                        headers: {
-                        "Authorization": `Bearer ${process.env.PYTHON_API_KEY}`
-                        }
-                    }
-                    );          
-            
-                    chunks.data.results[0].results.forEach((item) => {
-                        context += item.text + " ";
-                    });
-                    embeddingContext = `Extra context: ${context}. Please respond to: `;
-
-                    const documentIds = chunks.data.results[0].results.map((result) => result.metadata.document_id);
-                    const uniqueDocumentIds = documentIds.filter((id, index) => {
-                        return documentIds.indexOf(id) === index;
-                    });
-                    documents = await Document.find({ vectorId: { $in: uniqueDocumentIds } });
-
-                } catch (e) {
-                    return res.status(500).json({ error: e.message });
-                }
+              } catch (e) {
+                  return res.status(500).json({ error: e.message });
+              }
         }
 
         if (conversation_id) {
@@ -146,8 +136,7 @@ router.post('/message-stream', requireTokens, async (req, res) => {
         const completion = await openai.createChatCompletion({
             model: model,
             messages,
-            temperature: 0.25,
-            frequency_penalty: 0.35,
+            temperature: 0.4,
             stream: true,
         }, { responseType: 'stream' });
         res.set({
@@ -213,10 +202,12 @@ router.post('/message-stream', requireTokens, async (req, res) => {
                         await userMessage.save();
                         await assistantResponse.save();
                         await transaction.save();
-                        conversation.messages.push(userMessage);
-                        conversation.messages.push(assistantResponse);
-                        conversation.lastUpdated = Date.now();
-                        await conversation.save();
+                        if (assistant_id) {
+                            conversation.messages.push(userMessage);
+                            conversation.messages.push(assistantResponse);
+                            conversation.lastUpdated = Date.now();
+                            await conversation.save();
+                        }
                     }
                     res.end();
                     return;
@@ -239,7 +230,7 @@ router.post('/message-stream', requireTokens, async (req, res) => {
 
 router.post('/message', requireTokens, async (req, res) => {
     try {
-        const { query, assistant_id, conversation_id, knowledge_based, llm } = req.body;
+        const { query, assistant_id, conversation_id, llm } = req.body;
 
         const user = req.user;
         let systemPrompt = "You are helpful Assistant AI. You are always positive, helpful and insightful. You are a great listener and you always do what user says. You communicate in user language.";
@@ -255,7 +246,7 @@ router.post('/message', requireTokens, async (req, res) => {
             model = llm;
         }
         if (assistant_id) {
-            let fetchedAssistant = await Assistant.findById(assistant_id).populate('documents');
+            let fetchedAssistant = await Assistant.findById(assistant_id).populate('documents').exec();
             if (!fetchedAssistant) {
                 return res.status(404).json({ message: 'Assistant not found' });
             }
@@ -266,46 +257,38 @@ router.post('/message', requireTokens, async (req, res) => {
               assistant = fetchedAssistant;
               systemPrompt = assistant.noEmbedPrompt;
               assistantName = assistant.name;
+
+              let vectorIds = assistant.documents.map(doc => doc.vectorId);
+              try {
+                  const chunks = await axios.post(
+                  "https://whale-app-p64f5.ondigitalocean.app/query",
+                  {
+                      "queries": [
+                      {
+                          "query": query,
+                          "filter": {
+                          "document_id": vectorIds
+                          },
+                          "top_k": 3
+                      }
+                      ]
+                  },
+                  {
+                      headers: {
+                      "Authorization": `Bearer ${process.env.PYTHON_API_KEY}`
+                      }
+                  }
+                  );          
+          
+                  chunks.data.results[0].results.forEach((item) => {
+                      context += item.text + " ";
+                  });
+                  embeddingContext = `Context you might find helpful: ${context}. Task for you to do: `;
+
+              } catch (e) {
+                  return res.status(500).json({ error: e.message });
+              }
         }
-
-            if (knowledge_based) {
-                const vectorIds = await Document.find({ _id: { $in: assistant.documents } }).distinct('vectorId');
-                try {
-                    const chunks = await axios.post(
-                    "https://whale-app-p64f5.ondigitalocean.app/query",
-                    {
-                        "queries": [
-                        {
-                            "query": query,
-                            "filter": {
-                            "document_id": vectorIds.data
-                            },
-                            "top_k": 3
-                        }
-                        ]
-                    },
-                    {
-                        headers: {
-                        "Authorization": `Bearer ${process.env.PYTHON_API_KEY}`
-                        }
-                    }
-                    );          
-            
-                    chunks.data.results[0].results.forEach((item) => {
-                        context += item.text + " ";
-                    });
-                    embeddingContext = `Context you might find helpful: ${context}. Task for you to do: `;
-
-                    const documentIds = chunks.data.results[0].results.map((result) => result.metadata.document_id);
-                    const uniqueDocumentIds = documentIds.filter((id, index) => {
-                        return documentIds.indexOf(id) === index;
-                    });
-                    documents = await Document.find({ vectorId: { $in: uniqueDocumentIds } });
-
-                } catch (e) {
-                    return res.status(500).json({ error: e.message });
-                }
-            }
 
         if (conversation_id) {
         conversation = await Conversation.findById(conversation_id)
@@ -342,8 +325,7 @@ router.post('/message', requireTokens, async (req, res) => {
         const completion = await openai.createChatCompletion({
             model: model,
             messages,
-            temperature: 0.25,
-            frequency_penalty: 0.35,
+            temperature: 0.4,
         });
 
         const userMessage = new Message({
@@ -361,10 +343,12 @@ router.post('/message', requireTokens, async (req, res) => {
         await user.save();
         await userMessage.save();
         await assistantResponse.save();
-        conversation.messages.push(userMessage);
-        conversation.messages.push(assistantResponse);
-        conversation.lastUpdated = Date.now();
-        await conversation.save();
+        if (assistant_id) {
+            conversation.messages.push(userMessage);
+            conversation.messages.push(assistantResponse);
+            conversation.lastUpdated = Date.now();
+            await conversation.save();
+        }
         if (user.workspace) {
             const workspace = await Workspace.findById(user.workspace)
             const company = await User.findById(workspace.company);
@@ -374,7 +358,7 @@ router.post('/message', requireTokens, async (req, res) => {
             user.tokenBalance -= completion.data.usage.total_tokens;
         }
 
-        return res.status(201).json({ response: completion.data.choices[0].message.content, elixir_used: completion.data.usage.total_tokens, based_on: documents.map((document) => document.title), assistant: assistantName, conversation_id: conversation._id });
+        return res.status(201).json({ response: completion.data.choices[0].message.content, elixir_used: completion.data.usage.total_tokens, based_on: assistant_id ? assistant.documents.map(doc => doc.title) : [], assistant: assistantName, conversation_id: conversation._id });
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: error.message });
