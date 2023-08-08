@@ -172,6 +172,18 @@ router.post('/addTemplate', async (req, res) => {
   }
 });
 
+router.get('/template/:title', async (req, res) => {
+  try {
+      const template = await Template.findOne({ title: req.params.title });
+      if (!template) {
+          return res.status(404).send({ message: 'Template not found' });
+      }
+      res.send(template);
+  } catch (err) {
+      res.status(500).send({ message: 'Server error', error: err });
+  }
+});
+
 // Update specific fields of a template
 router.patch('/updateTemplate/:id', async (req, res) => {
   try {
@@ -194,6 +206,9 @@ router.patch('/updateTemplate/:id', async (req, res) => {
       }
       if (req.body.query) {
           template.query = req.body.query;
+      }
+      if (req.body.prompt) {
+          template.prompt = req.body.prompt;
       }
 
       await template.save();

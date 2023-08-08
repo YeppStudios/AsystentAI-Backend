@@ -67,7 +67,6 @@ router.get('/workspace-company/:workspaceId', requireAuth, async (req, res) => {
 
     // Check if the user is an employee
     const employee = workspace.employees.find(emp => emp.user._id.toString() === req.user._id.toString());
-
     if (!employee) {
       return res.status(403).json({ error: 'You are not authorized to access this workspace' });
     }

@@ -17,6 +17,7 @@ require('./src/models/OnboardingSurveyData');
 require('./src/models/CompanyLogin');
 require('./src/models/SeoContent');
 require('./src/models/Template');
+require('./src/models/Campaign');
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser =  require('body-parser');
@@ -39,6 +40,7 @@ const reservationsRoutes =  require('./src/routes/reservationsRoutes');
 const companyRoutes =  require('./src/routes/companyRoutes');
 const apiRoutes =  require('./src/routes/apiRoutes');
 const agentRoutes =  require('./src/routes/agentRoutes');
+const campaignRoutes =  require('./src/routes/campaignRoutes');
 const { emailJob, blockSubscriptionsJob } = require('./src/cron');
 const cors = require('cors');
 require('dotenv').config()
@@ -72,6 +74,7 @@ app.use(documentRoutes);
 app.use(companyRoutes);
 app.use(apiRoutes);
 app.use(agentRoutes);
+app.use(campaignRoutes);
 
 const mongoUri = process.env.MONGO_URI;
 mongoose.connect(mongoUri);

@@ -164,7 +164,7 @@ router.patch('/updateOnboardingData', requireAuth, async (req, res) => {
 
 router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
-    const { contactEmail, profilePicture, fullName, street, apartmentNumber, companyName, nip, city, postalCode, accountType, name, workspace } = req.body;
+    const { contactEmail, profilePicture, fullName, street, apartmentNumber, companyName, nip, city, postalCode, accountType, name, workspace, dashboardAccess } = req.body;
     
     try {
       const user = await User.findById(id);
@@ -175,6 +175,10 @@ router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
 
       if (postalCode) {
         user.postalCode = postalCode;
+      }
+
+      if (dashboardAccess) {
+        user.dashboardAccess = dashboardAccess;
       }
 
       if (accountType) {
