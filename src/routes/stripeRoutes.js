@@ -377,15 +377,13 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
     return response.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === 'invoice.paid' && event.data.object.billing_reason === 'subscription_cycle') {
+  if (event.type === 'invoice.paid' && (event.data.object.billing_reason === 'subscription_cycle' || event.data.object.billing_reason === "subscription_update")) {
     try {
     const userEmail = event.data.object.customer_email;
     User.findOne({ email: userEmail }, async (err, user) => {
       if(user) {
         
         let transaction;
-        let invoiceData;
-        let infaktClientId;
         let planId;
         let priceId = event.data.object.lines.data[0].price.id;
 
