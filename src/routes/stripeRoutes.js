@@ -471,7 +471,7 @@ router.post('/cancel-subscription', requireAuth, async (req, res) => {
       customer: customer.data[0].id,
     });
     const currentSubscriptionID = subscriptions.data[0].id;
-    const deleted = await stripe.subscriptions.del(
+    const deleted = await stripe.subscriptions.cancel(
       currentSubscriptionID
     );
 
