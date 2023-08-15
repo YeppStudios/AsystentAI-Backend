@@ -231,7 +231,7 @@ router.post('/folders/:id/add-documents', requireAuth, async (req, res) => {
 
     folder.documents.push(req.body.documents);
     await folder.save();
-    await Assistant.updateMany({ folders: req.params.id }, { $push: { documents: documentId } });
+    await Assistant.updateMany({ folders: req.params.id }, { $push: { documents: req.body.documents } });
     return res.status(200).json({ message: 'Document added to folder and assistants successfully' });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -297,6 +297,7 @@ router.post('/add-folder', requireAuth, (req, res) => {
             title: title || "Untitled",
             category: category || "other",
             documents: documents || [],
+            workspace: workspace
           });
         }
         folder.save()
@@ -389,9 +390,7 @@ router.get('/folders/owner/:userId', requireAuth, (req, res) => {
         if (!folder) {
           return res.status(404).json({ message: 'Folder not found' });
         }
-        if (folder.owner.toString() !== req.user._id.toString()) {
-          return res.status(403).json({ message: 'You are not authorized to update this folder' });
-        }
+
         folder.workspace = req.body.workspace;
         return folder.save();
       })

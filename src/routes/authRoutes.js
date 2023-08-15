@@ -182,7 +182,7 @@ router.post('/register-free-trial', async (req, res) => {
 
         let transaction = new Transaction({
           value: freeTokens,
-          title: `+${freeTokens} elixiru na start`,
+          title: `+${freeTokens} trial elixir`,
           type: "income",
           timestamp: Date.now()
         });
