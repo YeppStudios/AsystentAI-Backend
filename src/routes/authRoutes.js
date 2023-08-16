@@ -116,10 +116,9 @@ router.post('/register', async (req, res) => {
 
 router.post('/register-free-trial', async (req, res) => {
   try {
-      const { email, password, name, isCompany, referrerId, blockAccess } = req.body;
+      const { email, password, name, referrerId, blockAccess } = req.body;
       const user = await User.findOne({ email });
 
-      let workspace = null;
       let freeTokens = 25000;
 
       if (user) {
@@ -166,7 +165,7 @@ router.post('/register-free-trial', async (req, res) => {
       }
 
         const key = generateApiKey();
-        workspace = new Workspace({
+        let createdWorkspace = new Workspace({
           admins: [newUser._id],
           company: newUser._id,
           employees: [],
@@ -175,22 +174,20 @@ router.post('/register-free-trial', async (req, res) => {
 
       if (blockAccess) {
         newUser.dashboardAccess = false;
-      } else {
-        await workspace.save();
-        newUser.workspace = workspace._id;
-        freeTokens = 25000;
-
-        let transaction = new Transaction({
-          value: freeTokens,
-          title: `+${freeTokens} trial elixir`,
-          type: "income",
-          timestamp: Date.now()
-        });
-        newUser.tokenBalance = freeTokens;
-        newUser.transactions.push(transaction);
-        await transaction.save();
       }
+      await createdWorkspace.save();
+      newUser.workspace = createdWorkspace._id;
+      freeTokens = 25000;
 
+      let transaction = new Transaction({
+        value: freeTokens,
+        title: `+${freeTokens} trial elixir`,
+        type: "income",
+        timestamp: Date.now()
+      });
+      newUser.tokenBalance = freeTokens;
+      newUser.transactions.push(transaction);
+      await transaction.save();
       await newUser.save();
       const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
       return res.status(201).json({ newUser, verificationCode, token });
