@@ -16,6 +16,7 @@ const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
 const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
+const freeTrialEndpointSecret = 'whsec_9D46dqqfjvVUJ5sd4ZfSO5Ikt3sq33xP'
 const infaktConfig = {
   headers: {
     'X-inFakt-ApiKey': `${process.env.INFAKT_KEY}`,
@@ -364,7 +365,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
 });
 
 
-//listening for subscription renewals
+//listening for subscription payments
 router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
   const payload = request.rawBody;
   const sig = request.headers['stripe-signature'];
@@ -377,7 +378,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
     return response.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === 'invoice.paid' && (event.data.object.billing_reason === 'subscription_cycle' || event.data.object.billing_reason === "subscription_update")) {
+  if (event.type === 'invoice.paid' && event.data.object.billing_reason === 'subscription_cycle') {
     try {
     const userEmail = event.data.object.customer_email;
     User.findOne({ email: userEmail }, async (err, user) => {
@@ -457,6 +458,107 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
   } 
 
   response.status(200).send('Webhook received');
+});
+
+
+//listening for free trial end
+router.post('/free-trial-end', bodyParser.raw({type: 'application/json'}), async (request, response) => {
+  const payload = request.rawBody;
+  const sig = request.headers['stripe-signature'];
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(payload, sig, freeTrialEndpointSecret);
+  } catch (err) {
+    return response.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === 'customer.subscription.updated') {
+    const subscription = event.data.object;
+    
+    if (subscription.status === 'active' && subscription.trial_end < Math.floor(Date.now() / 1000)) { 
+      try {
+        const userEmail = subscription.customer_email;
+        
+        User.findOne({ email: userEmail }, async (err, user) => {
+          if(user) {
+            
+            let transaction;
+            let planId;
+            let priceId = event.data.object.lines.data[0].price.id;
+    
+            try {
+              if(priceId === "price_1MdbTMFe80Kn2YGG5QDfmjvS") { //Basic Monthly price
+                planId = "63f0e6968e1b9d507c38a749";
+              } else if (priceId === "price_1MdbUeFe80Kn2YGGRlKvmre4") { //Assistant Monthly price (old)
+                planId = "63f0e7d075de0ef12bb8c484";
+              } else if (priceId === "price_1NFwcqFe80Kn2YGGi4iIulhc") {
+                planId = "647895cf404e31bfe8753398";
+              } else if (priceId === "price_1NFwxWFe80Kn2YGGvpHuUfpi") { //Assistant Pro Monthly
+                planId = "6478970a404e31bfe87533a0"
+              } else if (priceId === "price_1MzNh9Fe80Kn2YGGkv8OaQ0T") { //Assistant Business Monthly
+                planId = "6444d4394ab2cf9819e5b5f4"
+              } else if (priceId === "price_1NFx0EFe80Kn2YGGCWikSSti") { //Assistant Business Monthly Full Price
+                planId = "6444d4394ab2cf9819e5b5f4"
+              } else if (priceId === "price_1NSZghFe80Kn2YGGOiClJUPM") { //Agency Monthly Full Price
+                planId = "64ad0d250e40385f299bceea"
+              } else if (priceId === "price_1NSai5Fe80Kn2YGGHrwmUEqe") { //Agency 3mo
+                planId = "64ad0d250e40385f299bceea"
+              } else if (priceId === "price_1NSaiNFe80Kn2YGGG88egvhI") { //Agency 6mo
+                planId = "64ad0d250e40385f299bceea"
+              } else if (priceId === "price_1NSaieFe80Kn2YGGilwS3SNl") { //Agency 12mo
+                planId = "64ad0d250e40385f299bceea"
+              }  else if (priceId === "price_1NSZjsFe80Kn2YGGYa3pzseT") { //Standard mo
+                planId = "64ad0d740e40385f299bcef9"
+              } else if (priceId === "price_1NaF8EFe80Kn2YGGAuVBGHjh") { //Standard mo
+                planId = "64ad0d740e40385f299bcef9"
+              } else if (priceId === "price_1NaFKUFYGGN8gOfDnT") { //Standard 3mo
+                planId = "64ad0d740e40385f299be80Kn2cef9"
+              }  else if (priceId === "price_1NaFLfFe80Kn2YGGFtgjV1CI") { //Standard 6mo
+                planId = "64ad0d740e40385f299bcef9"
+              }  else if (priceId === "price_1NaFMhFe80Kn2YGGsXAeqFPF") { //Standard 12mo
+                planId = "64ad0d740e40385f299bcef9"
+              } else if (priceId === "price_1NVVfpFe80Kn2YGGDCHIg1aX") { ///Assistant Business Monthly discount
+                planId = "6444d4394ab2cf9819e5b5f4";
+              }
+    
+              const plan = await Plan.findById(planId);
+    
+              user.tokenBalance += plan.monthlyTokens;
+              user.plan = planId;
+      
+              // Create a new transaction
+              transaction = new Transaction({
+                  value: plan.monthlyTokens,
+                  title: `+${plan.monthlyTokens} tokens`,
+                  type: 'income',
+                  timestamp: Date.now()
+              });
+              user.transactions.push(transaction);
+    
+            } catch (error) {
+              console.error(`Error saving user: ${error.message}`);
+            }
+    
+            // Create a new balance snapshot and add it to the user's tokenHistory
+            const balanceSnapshot = {
+                timestamp: Date.now(),
+                balance: user.tokenBalance
+            };
+            user.tokenHistory.push(balanceSnapshot);
+    
+            await user.save();
+            await transaction.save();
+          }
+        });
+      } catch (e) {
+        return response.status(400).send(`Webhook Error: ${e.message}`);
+      }
+    }
+  }
+
+  response.status(200).send('Event received');
 });
 
 
