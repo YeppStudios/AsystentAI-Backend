@@ -426,7 +426,6 @@ router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
           if (document) {
               // Add vectorId of the document to the array
               vectorIds.push(document.vectorId);
-
               user.uploadedBytes -= document.documentSize;
               await document.remove();
           }

@@ -18,6 +18,7 @@ const configuration = new Configuration({
     organization: "org-oP1kxBXnJo6VGoYOLxzHnNSV",
     apiKey: process.env.OPENAI_API_KEY
 });
+
 const openai = new OpenAIApi(configuration);
 
 function estimateTokens(text) {
@@ -39,13 +40,13 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         let inputTokens = 0;
         let outputTokens = 0;
         let response = '';
-        let systemPrompt = "Jesteś pomocnym asystentem AI, który specjalizuje się w marketingu.";
+        let systemPrompt = "You are a helpful AI assistant that is an expert in marketing.";
         let embeddingContext = "";
         if (system) {
           systemPrompt = system;
         }
         if (context) {
-          embeddingContext = `Kontekst: ${context}. Odpowiedz na: `;
+          embeddingContext = `Extra context you might find helpful, but you don't have to use: ${context}. Respond to: `;
         }
         const conversation = await Conversation.findById(req.params.conversationId)
             .populate({
@@ -67,12 +68,12 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         const messagesText = latestMessages.map((message) => message.text).join(" ");
         const messages = [  { role: "system", content: systemPrompt },  ...latestMessages.map((message) => {    
             return {role: message.sender,  content: message.text};
-        }), { role: "user", content: `${embeddingContext} ${text}`},];
+        }), { role: "user", content: `${embeddingContext} ${text} Response:`},];
 
         const completion = await openai.createChatCompletion({
             model: "gpt-4",
             messages,
-            temperature: 0,
+            temperature: 0.65,
             stream: true,
         }, { responseType: 'stream' });
         res.set({
