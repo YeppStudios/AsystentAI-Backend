@@ -575,7 +575,7 @@ router.post('/customer-created', bodyParser.raw({type: 'application/json'}), asy
   }
 
   if (event.type === 'customer.created') {
-    const customer = event.data.object;
+    const customer = event.data;
       const msg = {
         to: `${customer.email}`,
         nickname: "Yepp AI",
