@@ -241,10 +241,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           }
 
           //add tokens if trial
-          if (transactionData.metadata.trial) {
-            user.tokenBalance += 25000;
-            user.plan = "647c3294ff40f15b5f6796bf";
-          } else {
+          if (!transactionData.metadata.trial) {
             if (transactionData.metadata.plan_id) { //handle initial subscription purchase
               try {
                 const planId = transactionData.metadata.plan_id;
