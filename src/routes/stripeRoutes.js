@@ -16,7 +16,8 @@ const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
 const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
-const freeTrialEndpointSecret = 'whsec_9D46dqqfjvVUJ5sd4ZfSO5Ikt3sq33xP'
+const freeTrialEndpointSecret = 'whsec_9D46dqqfjvVUJ5sd4ZfSO5Ikt3sq33xP';
+const customerCreationSectret = 'whsec_287PqXJ4mj2RXDjKenIv1ORJpghta50d';
 const infaktConfig = {
   headers: {
     'X-inFakt-ApiKey': `${process.env.INFAKT_KEY}`,
@@ -522,7 +523,7 @@ router.post('/free-trial-end', bodyParser.raw({type: 'application/json'}), async
               } else if (priceId === "price_1NVVfpFe80Kn2YGGDCHIg1aX") { ///Assistant Business Monthly discount
                 planId = "6444d4394ab2cf9819e5b5f4";
               }
-    
+
               const plan = await Plan.findById(planId);
     
               user.tokenBalance += plan.monthlyTokens;
@@ -556,6 +557,46 @@ router.post('/free-trial-end', bodyParser.raw({type: 'application/json'}), async
         return response.status(400).send(`Webhook Error: ${e.message}`);
       }
     }
+  }
+
+  response.status(200).send('Event received');
+});
+
+
+router.post('/customer-created', bodyParser.raw({type: 'application/json'}), async (request, response) => {
+  const payload = request.rawBody;
+  const sig = request.headers['stripe-signature'];
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(payload, sig, customerCreationSectret);
+  } catch (err) {
+    return response.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === 'customer.created') {
+    const customer = event.data.object;
+      const msg = {
+        to: `${customer.email}`,
+        nickname: "Yepp AI",
+        from: {
+          email: "hello@yepp.ai",
+          name: "Yepp AI"
+        },
+        templateId: 'd-e7d32dea78d7448db0e7b9dfb2c5805c',
+        dynamicTemplateData: {
+        name: `${data.name}`,
+        },
+      };
+      sgMail
+        .send(msg)
+        .then(() => {
+            res.status(200).json({ status: 'Email sent' });
+        })
+        .catch((error) => {
+            res.status(500).json({ error: 'Failed to send email' });
+        });
   }
 
   response.status(200).send('Event received');
