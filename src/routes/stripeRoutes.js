@@ -12,6 +12,8 @@ const Workspace = mongoose.model('Workspace');
 const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
 const axios = require('axios');
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_KEY);
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
