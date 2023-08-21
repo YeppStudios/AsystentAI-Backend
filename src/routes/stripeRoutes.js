@@ -575,7 +575,7 @@ router.post('/customer-created', bodyParser.raw({type: 'application/json'}), asy
   }
 
   if (event.type === 'customer.created') {
-    const customer = event.data;
+    const customer = event.data.object;
       const msg = {
         to: `${customer.email}`,
         nickname: "Yepp AI",
@@ -585,7 +585,7 @@ router.post('/customer-created', bodyParser.raw({type: 'application/json'}), asy
         },
         templateId: 'd-e7d32dea78d7448db0e7b9dfb2c5805c',
         dynamicTemplateData: {
-        name: `${data.name}`,
+        name: `${customer.name.split(' ')[0]}`,
         },
       };
       sgMail
