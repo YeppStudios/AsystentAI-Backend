@@ -289,7 +289,7 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
         
                     const referralTransaction = new Transaction({
                         value: 30000,
-                        title: "30 000 elixir for referral",
+                        title: "+30 000 elixir for referral",
                         type: "income",
                         timestamp: Date.now()
                     });
