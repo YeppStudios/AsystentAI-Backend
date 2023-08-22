@@ -20,6 +20,7 @@ const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
 const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
 const freeTrialEndpointSecret = 'whsec_9D46dqqfjvVUJ5sd4ZfSO5Ikt3sq33xP';
 const customerCreationSectret = 'whsec_287PqXJ4mj2RXDjKenIv1ORJpghta50d';
+const deleteSubscriptionSectret = 'whsec_8dLh8DmbcKpzUabSelX9j46qAFTxxSFZ';
 const infaktConfig = {
   headers: {
     'X-inFakt-ApiKey': `${process.env.INFAKT_KEY}`,
@@ -463,8 +464,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
 });
 
 
-//listening for free trial end
-router.post('/free-trial-end', bodyParser.raw({type: 'application/json'}), async (request, response) => {
+router.post('/delete-subscription-webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
   const payload = request.rawBody;
   const sig = request.headers['stripe-signature'];
 
@@ -476,109 +476,28 @@ router.post('/free-trial-end', bodyParser.raw({type: 'application/json'}), async
     return response.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === 'customer.subscription.updated') {
+  if (event.type === 'customer.subscription.deleted') {
     const subscription = event.data.object;
-    
-    if (subscription.status === 'active' && subscription.trial_end < Math.floor(Date.now() / 1000)) { 
-      try {
-        const userEmail = subscription.customer_email;
-        
-        User.findOne({ email: userEmail }, async (err, user) => {
-          if(user) {
-            
-            let transaction;
-            let planId;
-            let priceId = event.data.object.lines.data[0].price.id;
-    
-            try {
-              if(priceId === "price_1MdbTMFe80Kn2YGG5QDfmjvS") { //Basic Monthly price
-                planId = "63f0e6968e1b9d507c38a749";
-              } else if (priceId === "price_1MdbUeFe80Kn2YGGRlKvmre4") { //Assistant Monthly price (old)
-                planId = "63f0e7d075de0ef12bb8c484";
-              } else if (priceId === "price_1NFwcqFe80Kn2YGGi4iIulhc") {
-                planId = "647895cf404e31bfe8753398";
-              } else if (priceId === "price_1NFwxWFe80Kn2YGGvpHuUfpi") { //Assistant Pro Monthly
-                planId = "6478970a404e31bfe87533a0"
-              } else if (priceId === "price_1MzNh9Fe80Kn2YGGkv8OaQ0T") { //Assistant Business Monthly
-                planId = "6444d4394ab2cf9819e5b5f4"
-              } else if (priceId === "price_1NFx0EFe80Kn2YGGCWikSSti") { //Assistant Business Monthly Full Price
-                planId = "6444d4394ab2cf9819e5b5f4"
-              } else if (priceId === "price_1NSZghFe80Kn2YGGOiClJUPM") { //Agency Monthly Full Price
-                planId = "64ad0d250e40385f299bceea"
-              } else if (priceId === "price_1NSai5Fe80Kn2YGGHrwmUEqe") { //Agency 3mo
-                planId = "64ad0d250e40385f299bceea"
-              } else if (priceId === "price_1NSaiNFe80Kn2YGGG88egvhI") { //Agency 6mo
-                planId = "64ad0d250e40385f299bceea"
-              } else if (priceId === "price_1NSaieFe80Kn2YGGilwS3SNl") { //Agency 12mo
-                planId = "64ad0d250e40385f299bceea"
-              }  else if (priceId === "price_1NSZjsFe80Kn2YGGYa3pzseT") { //Standard mo
-                planId = "64ad0d740e40385f299bcef9"
-              } else if (priceId === "price_1NaF8EFe80Kn2YGGAuVBGHjh") { //Standard mo
-                planId = "64ad0d740e40385f299bcef9"
-              } else if (priceId === "price_1NaFKUFYGGN8gOfDnT") { //Standard 3mo
-                planId = "64ad0d740e40385f299be80Kn2cef9"
-              }  else if (priceId === "price_1NaFLfFe80Kn2YGGFtgjV1CI") { //Standard 6mo
-                planId = "64ad0d740e40385f299bcef9"
-              }  else if (priceId === "price_1NaFMhFe80Kn2YGGsXAeqFPF") { //Standard 12mo
-                planId = "64ad0d740e40385f299bcef9"
-              } else if (priceId === "price_1NVVfpFe80Kn2YGGDCHIg1aX") { ///Assistant Business Monthly discount
-                planId = "6444d4394ab2cf9819e5b5f4";
-              }
-
-              const plan = await Plan.findById(planId);
-    
-              user.tokenBalance += plan.monthlyTokens;
-              user.plan = planId;
-      
-              // Create a new transaction
-              transaction = new Transaction({
-                  value: plan.monthlyTokens,
-                  title: `+${plan.monthlyTokens} tokens`,
-                  type: 'income',
-                  timestamp: Date.now()
-              });
-              user.transactions.push(transaction);
-    
-            } catch (error) {
-              console.error(`Error saving user: ${error.message}`);
-            }
-    
-            // Create a new balance snapshot and add it to the user's tokenHistory
-            const balanceSnapshot = {
-                timestamp: Date.now(),
-                balance: user.tokenBalance
-            };
-            user.tokenHistory.push(balanceSnapshot);
-    
-            await user.save();
-            await transaction.save();
-          }
-        });
-      } catch (e) {
-        return response.status(400).send(`Webhook Error: ${e.message}`);
-      }
-    } else if (event.data.object.cancellation_details.reason === 'cancellation_requested') {
-      const msg = {
-        to: `${subscription.customer_email}`,
-        nickname: "Wiktor from Yepp",
-        from: {
-          email: "hello@yepp.ai",
-          name: "Wiktor from Yepp"
-        },
-        templateId: 'd-e7d32dea78d7448db0e7b9dfb2c5805c',
-        dynamicTemplateData: {
-        name: `${subscription.name.split(' ')[0]}`,
-        },
-      };
-      sgMail
-        .send(msg)
-        .then(() => {
-            res.status(200).json({ status: 'Email sent' });
-        })
-        .catch((error) => {
-            res.status(500).json({ error: 'Failed to send email' });
-        });
-    }
+    const msg = {
+      to: `${subscription.customer_email}`,
+      nickname: "Wiktor from Yepp",
+      from: {
+        email: "hello@yepp.ai",
+        name: "Wiktor from Yepp"
+      },
+      templateId: 'd-e7d32dea78d7448db0e7b9dfb2c5805c',
+      dynamicTemplateData: {
+      name: `${subscription.name.split(' ')[0]}`,
+      },
+    };
+    sgMail
+      .send(msg)
+      .then(() => {
+          res.status(200).json({ status: 'Email sent' });
+      })
+      .catch((error) => {
+          res.status(500).json({ error: 'Failed to send email' });
+      });
   }
 
   response.status(200).send('Event received');
