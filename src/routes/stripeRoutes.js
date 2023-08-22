@@ -555,7 +555,7 @@ router.post('/free-trial-end', bodyParser.raw({type: 'application/json'}), async
       } catch (e) {
         return response.status(400).send(`Webhook Error: ${e.message}`);
       }
-    } else if (subscription.status === 'canceled') {
+    } else if (event.data.cancellation_details.reason === 'cancellation_requested') {
       const msg = {
         to: `${customer.email}`,
         nickname: "Wiktor from Yepp",
