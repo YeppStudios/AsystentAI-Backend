@@ -463,7 +463,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
 });
 
 
-router.post('/delete-subscription-webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
+router.post('/pause-subscription-webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
   const payload = request.rawBody;
   const sig = request.headers['stripe-signature'];
 
@@ -475,7 +475,7 @@ router.post('/delete-subscription-webhook', bodyParser.raw({type: 'application/j
     return response.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === 'customer.subscription.deleted') {
+  if (event.type === 'customer.subscription.paused') {
     const subscription = event.data.object;
     const msg = {
       to: `${subscription.customer_email}`,
