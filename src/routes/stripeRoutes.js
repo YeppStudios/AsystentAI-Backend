@@ -18,9 +18,8 @@ sgMail.setApiKey(process.env.SENDGRID_KEY);
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
 const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
-const freeTrialEndpointSecret = 'whsec_9D46dqqfjvVUJ5sd4ZfSO5Ikt3sq33xP';
+const deleteSubscriptionSecret = 'whsec_nQO2C0epZL4dhQE4QHvdfSncNTqo6PoO';
 const customerCreationSectret = 'whsec_287PqXJ4mj2RXDjKenIv1ORJpghta50d';
-const deleteSubscriptionSectret = 'whsec_8dLh8DmbcKpzUabSelX9j46qAFTxxSFZ';
 const infaktConfig = {
   headers: {
     'X-inFakt-ApiKey': `${process.env.INFAKT_KEY}`,
@@ -471,7 +470,7 @@ router.post('/delete-subscription-webhook', bodyParser.raw({type: 'application/j
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(payload, sig, freeTrialEndpointSecret);
+    event = stripe.webhooks.constructEvent(payload, sig, deleteSubscriptionSecret);
   } catch (err) {
     return response.status(400).send(`Webhook Error: ${err.message}`);
   }
