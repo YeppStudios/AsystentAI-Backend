@@ -578,7 +578,7 @@ router.post('/customer-created', bodyParser.raw({type: 'application/json'}), asy
     const customer = event.data.object;
       const msg = {
         to: `${customer.email}`,
-        nickname: "Yepp AI",
+        nickname: "Wiktor from Yepp",
         from: {
           email: "hello@yepp.ai",
           name: "Yepp AI"
@@ -614,7 +614,19 @@ router.post('/cancel-subscription', requireAuth, async (req, res) => {
     const deleted = await stripe.subscriptions.cancel(
       currentSubscriptionID
     );
-
+      const msg = {
+        to: `${user.email}`,
+        nickname: "Yepp AI",
+        from: {
+          email: "hello@yepp.ai",
+          name: "Wiktor from Yepp"
+        },
+        templateId: 'd-4e1e8c4e73384788b926d331b3e39bd3',
+        dynamicTemplateData: {
+        name: `${user.name.split(' ')[0]}`,
+        },
+      };
+      sgMail.send(msg);
     res.status(200).json({ message: "Subscription cancelled", deletedSubscription: deleted });
   } catch (e) {
   res.status(500).json({message: "Error cancelling subscripiton", error: e})

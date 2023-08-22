@@ -114,6 +114,37 @@ router.post('/register', async (req, res) => {
   }
 });
 
+router.put('/update-employee-details', async (req, res) => {
+  try {
+      // Fetch the workspace by its ID
+      const workspace = await Workspace.findById(req.body.workspaceId);
+      
+      if (!workspace) {
+          return res.status(404).send({ message: "Workspace not found" });
+      }
+
+      // Update the name and email of each employee based on their associated user document
+      const updatePromises = workspace.employees.map(async employee => {
+          const user = await User.findById(employee.user);
+          if (user) {
+              employee.name = user.name;
+              employee.email = user.email;
+          }
+      });
+
+      // Wait for all updates to complete
+      await Promise.all(updatePromises);
+
+      // Save the updated workspace
+      await workspace.save();
+
+      res.send({ message: "Employee details updated successfully", workspace });
+  } catch (error) {
+      res.status(500).send({ message: "An error occurred", error });
+  }
+});
+
+
 router.post('/register-free-trial', async (req, res) => {
   try {
       const { email, password, name, referrerId, blockAccess } = req.body;
