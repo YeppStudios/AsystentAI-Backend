@@ -386,7 +386,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
         
         let transaction;
         let planId;
-        let priceId = event.data.object.lines.data[0].price.id;
+        let priceId = event.data.object.lines.data[0].plan.id;
 
         try {
           if(priceId === "price_1MdbTMFe80Kn2YGG5QDfmjvS") { //Basic Monthly price
@@ -402,6 +402,8 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
           } else if (priceId === "price_1NFx0EFe80Kn2YGGCWikSSti") { //Assistant Business Monthly Full Price
             planId = "6444d4394ab2cf9819e5b5f4"
           } else if (priceId === "price_1NSZghFe80Kn2YGGOiClJUPM") { //Agency Monthly Full Price
+            planId = "64ad0d250e40385f299bceea"
+          } else if (priceId === "price_1NUPofFe80Kn2YGG6dYxHNk9") {//agency monthly full price
             planId = "64ad0d250e40385f299bceea"
           } else if (priceId === "price_1NSai5Fe80Kn2YGGHrwmUEqe") { //Agency 3mo
             planId = "64ad0d250e40385f299bceea"
@@ -555,9 +557,9 @@ router.post('/free-trial-end', bodyParser.raw({type: 'application/json'}), async
       } catch (e) {
         return response.status(400).send(`Webhook Error: ${e.message}`);
       }
-    } else if (event.data.cancellation_details.reason === 'cancellation_requested') {
+    } else if (event.data.object.cancellation_details.reason === 'cancellation_requested') {
       const msg = {
-        to: `${customer.email}`,
+        to: `${subscription.customer_email}`,
         nickname: "Wiktor from Yepp",
         from: {
           email: "hello@yepp.ai",
@@ -565,7 +567,7 @@ router.post('/free-trial-end', bodyParser.raw({type: 'application/json'}), async
         },
         templateId: 'd-e7d32dea78d7448db0e7b9dfb2c5805c',
         dynamicTemplateData: {
-        name: `${customer.name.split(' ')[0]}`,
+        name: `${subscription.name.split(' ')[0]}`,
         },
       };
       sgMail
