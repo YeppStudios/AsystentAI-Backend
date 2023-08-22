@@ -380,14 +380,35 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
 
   if (event.type === 'invoice.paid' && event.data.object.billing_reason === 'subscription_cycle') {
     try {
+
     const userEmail = event.data.object.customer_email;
     User.findOne({ email: userEmail }, async (err, user) => {
       if(user) {
-        
+        const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+
         let transaction;
         let planId;
         let priceId = event.data.object.lines.data[0].plan.id;
-
+        if (user.createdAt > tenDaysAgo) { //if user is new, send welcome email
+          try {
+            const msg = {
+              to: `${user.email}`,
+              nickname: "Wiktor from Yepp",
+              from: {
+                email: "hello@yepp.ai",
+                name: "Wiktor from Yepp"
+              },
+              templateId: 'd-6100357c35f642d39329f644f3d97caa',
+              dynamicTemplateData: {
+              name: `${user.name}`,
+              },
+            };
+            sgMail
+              .send(msg)
+          } catch (e) {
+            console.log(e)
+          }
+        }
         try {
           if(priceId === "price_1MdbTMFe80Kn2YGG5QDfmjvS") { //Basic Monthly price
             planId = "63f0e6968e1b9d507c38a749";
