@@ -499,28 +499,33 @@ router.post('/customer-created', bodyParser.raw({type: 'application/json'}), asy
 
   if (event.type === 'customer.created') {
     const customer = event.data.object;
-      const msg = {
-        to: `${customer.email}`,
-        nickname: "Wiktor from Yepp",
-        from: {
-          email: "hello@yepp.ai",
-          name: "Wiktor from Yepp"
-        },
-        templateId: 'd-e7d32dea78d7448db0e7b9dfb2c5805c',
-        dynamicTemplateData: {
-        name: `${customer.name.split(' ')[0]}`,
-        },
-      };
-      sgMail
-        .send(msg)
-        .then(() => {
-            res.status(200).json({ status: 'Email sent' });
-        })
-        .catch((error) => {
-            res.status(500).json({ error: 'Failed to send email' });
-        });
+    try {
+      User.findOne({ email: customer.email }, async (err, user) => {
+        const msg = {
+          to: `${customer.email}`,
+          nickname: "Wiktor from Yepp",
+          from: {
+            email: "hello@yepp.ai",
+            name: "Wiktor from Yepp"
+          },
+          templateId: 'd-e7d32dea78d7448db0e7b9dfb2c5805c',
+          dynamicTemplateData: {
+          name: ``,
+          },
+        };
+        sgMail
+          .send(msg)
+          .then(() => {
+              res.status(200).json({ status: 'Email sent' });
+          })
+          .catch((error) => {
+              res.status(500).json({ error: 'Failed to send email' });
+          });
+      });
+    } catch (e) {
+      return response.status(400).send(`Webhook Error: ${e.message}`);
+    }
   }
-  response.status(200).send('Event received');
 });
 
 
