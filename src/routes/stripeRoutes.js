@@ -202,32 +202,6 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
           user.dashboardAccess = true;
 
           //set or delete workspace for subscription activation
-          if (transactionData.metadata.plan_id !== "64ad0d250e40385f299bceea" && transactionData.metadata.plan_id !== "6444d4394ab2cf9819e5b5f4" && user.workspace && transactionData.metadata.plan_id) {
-            const workspace = await Workspace.findById(user.workspace);
-            if (workspace && workspace.metadata.plan_id !== "64ad0d740e40385f299bcef9") {
-              const isCompany = workspace.company.includes(user._id);
-            
-              if (isCompany) {
-                const workspaceUsers = [
-                    ...workspace.admins,
-                    ...workspace.company,
-                    ...workspace.employees.map(employee => employee.user)
-                ];
-                for (const userId of workspaceUsers) {
-                    const workspaceUser = await User.findById(userId);
-                    if (userId !== user._id) {
-                      workspaceUser.plan = "647c3294ff40f15b5f6796bf";
-                    }
-                    workspaceUser.workspace = null;
-                    await workspaceUser.save();
-                }
-                await Workspace.deleteOne({ _id: workspace._id });
-              }
-              user.workspace = null;
-            }
-            await Folder.deleteMany({ owner: user._id });
-            await Document.deleteMany({ owner: user._id });
-          } else if (!user.workspace && (transactionData.metadata.plan_id === "64ad0d250e40385f299bceea" || transactionData.metadata.plan_id === "647c3294ff40f15b5f6796bf")) {
             const key = generateApiKey();
             let workspace = new Workspace({
               admins: [user._id],
@@ -237,7 +211,6 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
             });
             await workspace.save();
             user.workspace = workspace._id;
-          }
 
           //add tokens if trial
           if (!transactionData.metadata.trial) {
