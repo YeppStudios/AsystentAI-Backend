@@ -510,7 +510,7 @@ router.post('/customer-created', bodyParser.raw({type: 'application/json'}), asy
           },
           templateId: 'd-e7d32dea78d7448db0e7b9dfb2c5805c',
           dynamicTemplateData: {
-          name: ``,
+          name: user.name,
           },
         };
         sgMail
