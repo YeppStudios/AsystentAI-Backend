@@ -464,7 +464,7 @@ router.post('/customer-created', bodyParser.raw({type: 'application/json'}), asy
     try {
       User.findOne({ email: customer.email }, async (err, user) => {
         const msg = {
-          to: `${customer.email}`,
+          to: `${user.email}`,
           nickname: "Wiktor from Yepp",
           from: {
             email: "hello@yepp.ai",
@@ -478,10 +478,10 @@ router.post('/customer-created', bodyParser.raw({type: 'application/json'}), asy
         sgMail
           .send(msg)
           .then(() => {
-              res.status(200).json({ status: 'Email sent' });
+              response.status(200).json({ status: 'Email sent' });
           })
           .catch((error) => {
-              res.status(500).json({ error: 'Failed to send email' });
+              response.status(500).json({ error: 'Failed to send email' });
           });
       });
     } catch (e) {
