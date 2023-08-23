@@ -51,7 +51,7 @@ router.patch('/campaign/:campaignId/template/:templateId', async (req, res) => {
         const template = campaign.templates.find(t => t.data.toString() === templateId);
 
         if (!template) {
-            return res.status(404).json({ error: 'Template not found in the campaign' });
+            return res.status(404).json({ error: 'Template not found in the campaig' });
         }
 
         template.text = text;
