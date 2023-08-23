@@ -18,7 +18,6 @@ sgMail.setApiKey(process.env.SENDGRID_KEY);
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
 const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
-const pauseSubscriptionSecret = 'whsec_GJXE70d3DtNpt4ZSAbAfsj7bSyxdsojq';
 const customerCreationSectret = 'whsec_287PqXJ4mj2RXDjKenIv1ORJpghta50d';
 const infaktConfig = {
   headers: {
@@ -484,44 +483,6 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
 });
 
 
-router.post('/pause-subscription-webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
-  const payload = request.rawBody;
-  const sig = request.headers['stripe-signature'];
-
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(payload, sig, pauseSubscriptionSecret);
-  } catch (err) {
-    return response.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  if (event.type === 'customer.subscription.paused') {
-    const subscription = event.data.object;
-    const msg = {
-      to: `${subscription.customer_email}`,
-      nickname: "Wiktor from Yepp",
-      from: {
-        email: "hello@yepp.ai",
-        name: "Wiktor from Yepp"
-      },
-      templateId: 'd-e7d32dea78d7448db0e7b9dfb2c5805c',
-      dynamicTemplateData: {
-      name: `${subscription.name.split(' ')[0]}`,
-      },
-    };
-    sgMail
-      .send(msg)
-      .then(() => {
-          res.status(200).json({ status: 'Email sent' });
-      })
-      .catch((error) => {
-          res.status(500).json({ error: 'Failed to send email' });
-      });
-  }
-
-  response.status(200).send('Event received');
-});
 
 
 router.post('/customer-created', bodyParser.raw({type: 'application/json'}), async (request, response) => {
@@ -559,7 +520,6 @@ router.post('/customer-created', bodyParser.raw({type: 'application/json'}), asy
             res.status(500).json({ error: 'Failed to send email' });
         });
   }
-
   response.status(200).send('Event received');
 });
 
