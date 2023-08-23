@@ -201,17 +201,6 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
 
           user.dashboardAccess = true;
 
-          //set or delete workspace for subscription activation
-            const key = generateApiKey();
-            let workspace = new Workspace({
-              admins: [user._id],
-              company: user._id,
-              employees: [],
-              apiKey: key
-            });
-            await workspace.save();
-            user.workspace = workspace._id;
-
           //add tokens if trial
           if (!transactionData.metadata.trial) {
             if (transactionData.metadata.plan_id) { //handle initial subscription purchase
