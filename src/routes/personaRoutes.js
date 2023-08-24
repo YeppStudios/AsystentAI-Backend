@@ -7,7 +7,7 @@ const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_KEY);
 
 
-router.post('/persona', requireAuth, async (req, res) => {
+router.post('/addPersona', requireAuth, async (req, res) => {
     try {
         const persona = new Persona(req.body);
         await persona.save();
