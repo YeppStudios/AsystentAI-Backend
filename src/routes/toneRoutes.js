@@ -3,8 +3,42 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const requireAuth = require('../middlewares/requireAuth');
 const Tone = mongoose.model('Tone');
+const Workspace = mongoose.model('Workspace');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_KEY);
+
+router.post('/save-tone', requireAuth, async (req, res) => {
+    const { title, icon, prompt, workspace } = req.body;
+
+    if (!title || !icon || !prompt || !owner || !workspace) {
+        return res.status(400).send({ error: 'All fields are required' });
+    }
+
+    try {
+        const ownerExists = await User.findById(owner);
+        const workspaceExists = await Workspace.findById(workspace);
+
+        if (!ownerExists || !workspaceExists) {
+            return res.status(400).send({ error: 'Invalid owner or workspace' });
+        }
+
+        const newTone = new Tone({
+            title,
+            icon,
+            prompt,
+            owner: req.user._id,
+            workspace
+        });
+
+        await newTone.save();
+
+        res.status(201).send(newTone);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: 'Internal Server Error' });
+    }
+});
 
 
 router.get('/tones', requireAuth, async (req, res) => {

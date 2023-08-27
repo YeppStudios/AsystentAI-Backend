@@ -273,6 +273,193 @@ router.post('/user/:userId/addPosts', requireAuth, (req, res) => {
     }
   });
   
+  //GET /avg-transactions?year=2023&month=8
+  //Avg. number of transactions per month for user who have a plan and were created before the specified month
+  router.get('/avg-transactions', async (req, res) => {
+    try {
+        const trackingMonth = new Date(req.query.year, req.query.month - 1);
+        const nextMonth = new Date(trackingMonth.getFullYear(), trackingMonth.getMonth() + 1, 1);
+
+        const pipeline = [
+            {
+                $match: {
+                    createdAt: { $lt: trackingMonth },
+                    plan: { $ne: null, $ne: mongoose.Types.ObjectId('647c3294ff40f15b5f6796bf') }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'transactions',
+                    localField: '_id',
+                    foreignField: 'user',
+                    as: 'transactionData'
+                }
+            },
+            {
+                $unwind: "$transactionData"
+            },
+            {
+                $match: {
+                    "transactionData.timestamp": { $gte: trackingMonth, $lt: nextMonth }
+                }
+            },
+            {
+                $group: {
+                    _id: "$_id",
+                    monthlyTransactions: { $sum: 1 }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    avgTransactions: { $avg: "$monthlyTransactions" }
+                }
+            }
+        ];
+
+        const result = await User.aggregate(pipeline);
+        const avgTransactions = result[0]?.avgTransactions || 0;
+
+        res.json({ avgTransactions });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
+// GET /active-paid-weekly?year=2023&month=8&week=2
+router.get('/active-paid-weekly', async (req, res) => {
+  try {
+      const year = parseInt(req.query.year);
+      const month = parseInt(req.query.month) - 1; // 0-based month
+      const week = parseInt(req.query.week);
+
+      // Calculate start date of the week
+      const trackingWeekStart = new Date(year, month, 1 + (week - 1) * 7);
+      while (trackingWeekStart.getDay() !== 1) { // Ensure it's Monday
+          trackingWeekStart.setDate(trackingWeekStart.getDate() + 1);
+      }
+
+      // Calculate end date of the week (one week later)
+      const trackingWeekEnd = new Date(trackingWeekStart);
+      trackingWeekEnd.setDate(trackingWeekEnd.getDate() + 7);
+
+      // Aggregation pipeline
+      const pipeline = [
+          {
+              $match: {
+                  timestamp: { $gte: trackingWeekStart, $lt: trackingWeekEnd }
+              }
+          },
+          {
+              $lookup: {
+                  from: 'users',
+                  localField: 'user',
+                  foreignField: '_id',
+                  as: 'userData'
+              }
+          },
+          {
+              $unwind: "$userData"
+          },
+          {
+              $match: {
+                  "userData.createdAt": { $lt: trackingWeekStart },
+                  "userData.plan": { $ne: null, $ne: mongoose.Types.ObjectId('647c3294ff40f15b5f6796bf') }
+              }
+          },
+          {
+              $group: {
+                  _id: "$userData._id"
+              }
+          },
+          {
+              $count: "seenUsersCount"
+          }
+      ];
+
+      const result = await Transaction.aggregate(pipeline); // Start from the Transaction model
+      const seenUsersCount = result[0]?.seenUsersCount || 0;
+
+      res.json({ seenUsersCount });
+
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+// GET /avg-tokens-weekly?year=2023&month=8&week=2
+router.get('/avg-tokens-weekly', async (req, res) => {
+  try {
+      const year = parseInt(req.query.year);
+      const month = parseInt(req.query.month) - 1; // 0-based month
+      const week = parseInt(req.query.week);
+
+      // Calculate start date of the week
+      const trackingWeekStart = new Date(year, month, 1 + (week - 1) * 7);
+      while (trackingWeekStart.getDay() !== 1) { // Ensure it's Monday
+          trackingWeekStart.setDate(trackingWeekStart.getDate() + 1);
+      }
+
+      // Calculate end date of the week (one week later)
+      const trackingWeekEnd = new Date(trackingWeekStart);
+      trackingWeekEnd.setDate(trackingWeekEnd.getDate() + 7);
+
+      // Aggregation pipeline
+      const pipeline = [
+          {
+              $match: {
+                  timestamp: { $gte: trackingWeekStart, $lt: trackingWeekEnd }
+              }
+          },
+          {
+              $lookup: {
+                  from: 'users',
+                  localField: 'user',
+                  foreignField: '_id',
+                  as: 'userData'
+              }
+          },
+          {
+              $unwind: "$userData"
+          },
+          {
+              $match: {
+                  "userData.createdAt": { $lt: trackingWeekStart },
+                  "userData.plan": { $ne: null, $ne: mongoose.Types.ObjectId('647c3294ff40f15b5f6796bf') }
+              }
+          },
+          {
+              $group: {
+                  _id: "$userData._id",
+                  totalTokens: { $sum: "$value" }
+              }
+          },
+          {
+              $group: {
+                  _id: null,
+                  avgTokens: { $avg: "$totalTokens" }
+              }
+          }
+      ];
+
+      const result = await Transaction.aggregate(pipeline); // Start from the Transaction model
+      const avgTokens = result[0]?.avgTokens || 0;
+
+      res.json({ avgTokens });
+
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
 
   router.get('/getOnboardingSurveyData', requireAdmin, async (req, res) => {
     try {
