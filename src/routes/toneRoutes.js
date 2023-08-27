@@ -15,11 +15,10 @@ router.post('/save-tone', requireAuth, async (req, res) => {
     }
 
     try {
-        const ownerExists = await User.findById(owner);
         const workspaceExists = await Workspace.findById(workspace);
 
-        if (!ownerExists || !workspaceExists) {
-            return res.status(400).send({ error: 'Invalid owner or workspace' });
+        if ( !workspaceExists) {
+            return res.status(400).send({ error: 'Invalid workspace' });
         }
 
         const newTone = new Tone({
