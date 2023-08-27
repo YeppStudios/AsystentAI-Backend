@@ -10,7 +10,7 @@ sgMail.setApiKey(process.env.SENDGRID_KEY);
 router.post('/save-tone', requireAuth, async (req, res) => {
     const { title, icon, prompt, workspace } = req.body;
 
-    if (!title || !icon || !prompt || !owner || !workspace) {
+    if (!title || !icon || !prompt || !workspace) {
         return res.status(400).send({ error: 'All fields are required' });
     }
 
