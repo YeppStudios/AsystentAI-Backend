@@ -50,6 +50,48 @@ router.post('/completion', requireTokens, async (req, res) => {
         const workspace = await Workspace.findById(user.workspace)
         const company = await User.findById(workspace.company[0].toString());
         company.tokenBalance -= completion.data.usage.total_tokens;
+        await company.save();
+      } else {
+        user.tokenBalance -= completion.data.usage.total_tokens;
+      }
+
+
+      await user.save();
+      return res.status(201).json({ completion: completion.data.choices[0].message.content, usage: completion.data.usage.total_tokens });
+      } catch (error) {
+        console.log(error);
+        return res.status(500).send({ error: error.message });
+      }
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({ error: error.message });
+  }
+});
+
+router.post('/completion-function', requireTokens, async (req, res) => {
+  try {
+      const { prompt, model, systemPrompt,function_definition, temperature } = req.body;
+      const user = await User.findById(req.user._id);
+
+      const messages = [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt }
+      ]
+      try {
+        const completion = await openai.createChatCompletion({
+          model: model | "gpt-4-0613",
+          messages,
+          temperature,
+          functions: [
+            function_definition
+          ]
+      });
+      if (user.workspace) {
+        const workspace = await Workspace.findById(user.workspace)
+        const company = await User.findById(workspace.company[0].toString());
+        company.tokenBalance -= completion.data.usage.total_tokens;
+        await company.save();
       } else {
         user.tokenBalance -= completion.data.usage.total_tokens;
       }

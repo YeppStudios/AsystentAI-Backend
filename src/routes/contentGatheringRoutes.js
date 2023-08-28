@@ -74,6 +74,47 @@ router.get('/getSavedContent', requireAdmin, async (req, res) => {
       res.status(400).json({ message: error.message });
     }
   });
+  
+
+  router.get('/prepare-data', requireAdmin, async (req, res) => {
+    try {
+      const contents = await Content.find({ 
+        category: { 
+          $in: [
+            'Facebook-post', 'Facebook',
+            'Instagram-post', 'Instagram',
+            'Twitter', 'Twitter-post',
+            'Linkedin-post', 'LinkedIn'
+          ] 
+        } 
+      });
+  
+      // Transform data to the desired output format
+      const transformedContents = contents.map(content => {
+        return {
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a professional marketer with many years of experience. You write professional marketing content for the user based on best practices, marketing principles and information user gives you. You do not overuse emojis in the text and adjust the tone and context to perfectly match the keywords and target audience.'
+            },
+            {
+              role: 'user',
+              content: content.prompt
+            },
+            {
+              role: 'assistant',
+              content: content.text
+            }
+          ]
+        };
+      });
+  
+      res.status(200).json(transformedContents);
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
 
   router.get('/getContentPiece/:id', requireAuth, async (req, res) => {
     try {

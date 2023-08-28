@@ -4,18 +4,47 @@ const router = express.Router();
 const requireAuth = require('../middlewares/requireAuth');
 const Persona = mongoose.model('Persona');
 const sgMail = require('@sendgrid/mail');
+const Workspace = mongoose.model('Workspace');
 sgMail.setApiKey(process.env.SENDGRID_KEY);
 
 
-router.post('/addPersona', requireAuth, async (req, res) => {
+router.post('/save-persona', requireAuth, async (req, res) => {
+    const { title, icon, prompt, workspace } = req.body;
+
+    // Validate input (you may want to add more robust validation here)
+    if (!title || !icon || !prompt || !workspace) {
+        return res.status(400).send({ error: 'All fields are required' });
+    }
+
     try {
-        const persona = new Persona(req.body);
-        await persona.save();
-        res.status(201).send(persona);
-    } catch (error) {
-        res.status(400).send(error);
+        // Validate that the workspace ID is valid
+        const workspaceExists = await Workspace.findById(workspace);
+
+        if (!workspaceExists) {
+            return res.status(400).send({ error: 'Invalid workspace' });
+        }
+
+        // Create a new Persona
+        const newPersona = new Persona({
+            title,
+            icon,
+            prompt,
+            owner: req.user._id,  // Assuming `req.user._id` contains the authenticated user's ID
+            workspace
+        });
+
+        // Save to database
+        await newPersona.save();
+
+        // Respond with the newly created persona
+        res.status(201).send(newPersona);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: 'Internal Server Error' });
     }
 });
+
 
 router.get('/personas', requireAuth, async (req, res) => {
     try {

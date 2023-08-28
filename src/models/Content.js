@@ -23,7 +23,7 @@ const ContentSchema = new mongoose.Schema({
     },
     title: {
         type: String,
-        default: "Nowa treść"
+        default: "New Content"
     },
     icon: {
         type: String,
