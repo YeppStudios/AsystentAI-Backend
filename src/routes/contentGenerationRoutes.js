@@ -71,7 +71,7 @@ router.post('/completion', requireTokens, async (req, res) => {
 
 router.post('/completion-function', requireTokens, async (req, res) => {
   try {
-      const { prompt, model, systemPrompt,function_definition, temperature } = req.body;
+      const { prompt, model, systemPrompt, function_definition, temperature } = req.body;
       const user = await User.findById(req.user._id);
 
       const messages = [
@@ -80,13 +80,16 @@ router.post('/completion-function', requireTokens, async (req, res) => {
       ]
       try {
         const completion = await openai.createChatCompletion({
-          model: model | "gpt-4-0613",
+          model,
           messages,
           temperature,
           functions: [
             function_definition
-          ]
+          ],
+          function_call: {"name": function_definition.name}
       });
+
+      console.log(JSON.parse(completion.data.choices[0].message.function_call.arguments));
       if (user.workspace) {
         const workspace = await Workspace.findById(user.workspace)
         const company = await User.findById(workspace.company[0].toString());
@@ -98,7 +101,7 @@ router.post('/completion-function', requireTokens, async (req, res) => {
 
 
       await user.save();
-      return res.status(201).json({ completion: completion.data.choices[0].message.content, usage: completion.data.usage.total_tokens });
+      return res.status(201).json({ function: completion.data.choices[0].message.function_call, usage: completion.data.usage.total_tokens });
       } catch (error) {
         console.log(error);
         return res.status(500).send({ error: error.message });
