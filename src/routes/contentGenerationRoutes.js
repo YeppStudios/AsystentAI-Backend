@@ -89,7 +89,6 @@ router.post('/completion-function', requireTokens, async (req, res) => {
           function_call: {"name": function_definition.name}
       });
 
-      console.log(JSON.parse(completion.data.choices[0].message.function_call.arguments));
       if (user.workspace) {
         const workspace = await Workspace.findById(user.workspace)
         const company = await User.findById(workspace.company[0].toString());
