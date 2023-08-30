@@ -8,7 +8,7 @@ const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_KEY);
 
 router.post('/save-tone', requireAuth, async (req, res) => {
-    const { title, icon, prompt, workspace } = req.body;
+    const { title, icon, prompt, workspace, base_text } = req.body;
 
     if (!title || !icon || !prompt || !workspace) {
         return res.status(400).send({ error: 'All fields are required' });
@@ -26,7 +26,8 @@ router.post('/save-tone', requireAuth, async (req, res) => {
             icon,
             prompt,
             owner: req.user._id,
-            workspace
+            workspace,
+            base_text
         });
 
         await newTone.save();
@@ -55,9 +56,9 @@ router.get('/tones/owner', requireAuth, async (req, res) => {
         const ownerId = req.user._id.toString();
         
         const tones = await Tone.find({ owner: ownerId });
-        res.status(200).send(tones);
+        return res.status(200).send(tones);
     } catch (error) {
-        res.status(500).send(error);
+        return res.status(500).send(error);
     }
 });
 

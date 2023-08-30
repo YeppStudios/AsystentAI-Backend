@@ -9,6 +9,10 @@ const ToneSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    base_text: {
+        type: String,
+        default: ""
+    },
     prompt: {
         type: String,
         required: true
@@ -20,6 +24,10 @@ const ToneSchema = new mongoose.Schema({
     workspace: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Workspace'
+    },
+    timestamp: {
+        type: Date,
+        default: Date.now
     }
 });
 

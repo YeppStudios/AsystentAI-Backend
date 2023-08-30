@@ -9,39 +9,34 @@ sgMail.setApiKey(process.env.SENDGRID_KEY);
 
 
 router.post('/save-persona', requireAuth, async (req, res) => {
-    const { title, icon, prompt, workspace } = req.body;
+    const { title, icon, prompt, workspace, base_text } = req.body;
 
-    // Validate input (you may want to add more robust validation here)
     if (!title || !icon || !prompt || !workspace) {
         return res.status(400).send({ error: 'All fields are required' });
     }
 
     try {
-        // Validate that the workspace ID is valid
         const workspaceExists = await Workspace.findById(workspace);
 
         if (!workspaceExists) {
             return res.status(400).send({ error: 'Invalid workspace' });
         }
 
-        // Create a new Persona
         const newPersona = new Persona({
             title,
             icon,
             prompt,
-            owner: req.user._id,  // Assuming `req.user._id` contains the authenticated user's ID
-            workspace
+            owner: req.user._id,
+            workspace,
+            base_text: base_text
         });
 
-        // Save to database
         await newPersona.save();
-
-        // Respond with the newly created persona
-        res.status(201).send(newPersona);
+        return res.status(201).send(newPersona);
 
     } catch (err) {
         console.error(err);
-        res.status(500).send({ error: 'Internal Server Error' });
+        return res.status(500).send({ error: 'Internal Server Error' });
     }
 });
 
@@ -60,9 +55,9 @@ router.get('/personas/owner', requireAuth, async (req, res) => {
     try {
         const ownerId = req.user._id.toString();
         const personas = await Persona.find({ owner: ownerId });
-        res.status(200).send(personas);
+        return res.status(200).send(personas);
     } catch (error) {
-        res.status(500).send(error);
+        return res.status(500).send(error);
     }
 });
 
