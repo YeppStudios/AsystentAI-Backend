@@ -50,10 +50,10 @@ router.get('/getConversations/:assistantId', requireAuth, async (req, res) => {
   
         // Format timestamp based on daysAgo
         const customTimestamp = daysAgo === 0
-          ? 'Ostatne 24h'
+          ? 'Last 24h'
           : daysAgo === 1
-            ? '1 dzień temu'
-            : `${daysAgo} dni temu`;
+            ? '1 day ago'
+            : `${daysAgo} days ago`;
   
         // Update the lastUpdated field with custom timestamp
         conversation.lastUpdated = customTimestamp;
