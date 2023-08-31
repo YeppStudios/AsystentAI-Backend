@@ -23,7 +23,7 @@ router.post('/save-tone', requireAuth, async (req, res) => {
 
         const newTone = new Tone({
             title,
-            icon: "https://storage.googleapis.com/socialmedia-images-yepp/tone_default.png",
+            icon: icon || "https://storage.googleapis.com/socialmedia-images-yepp/tone_default.png",
             prompt,
             owner: req.user._id,
             workspace,
