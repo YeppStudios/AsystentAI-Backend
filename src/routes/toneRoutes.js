@@ -10,7 +10,7 @@ sgMail.setApiKey(process.env.SENDGRID_KEY);
 router.post('/save-tone', requireAuth, async (req, res) => {
     const { title, icon, prompt, workspace, base_text } = req.body;
 
-    if (!title || !icon || !prompt || !workspace) {
+    if (!title || !prompt || !workspace) {
         return res.status(400).send({ error: 'All fields are required' });
     }
 
@@ -23,7 +23,7 @@ router.post('/save-tone', requireAuth, async (req, res) => {
 
         const newTone = new Tone({
             title,
-            icon,
+            icon: icon | "https://storage.googleapis.com/socialmedia-images-yepp/tone_default.png",
             prompt,
             owner: req.user._id,
             workspace,
