@@ -238,7 +238,7 @@ router.post('/fetch-links', requireTokens, async (req, res) => {
   ]
 
   const completion = await openai.createChatCompletion({
-      model: "gpt-4",
+      model: "gpt-4-32k",
       messages,
       temperature: 0,
   });
@@ -479,7 +479,7 @@ router.post('/testMessageAI', requireTestTokens, async (req, res) => {
             inputTokens += estimateTokens(message.content);
         });
         const completion = await openai.createChatCompletion({
-            model: "gpt-4",
+            model: "gpt-4-32k",
             messages: conversationContext,
             temperature: 0.7,
             frequency_penalty: 0.35,

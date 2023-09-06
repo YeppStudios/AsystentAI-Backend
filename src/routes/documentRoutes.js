@@ -154,7 +154,6 @@ router.delete('/user/:userId/delete-document/:vectorId', requireAuth, async (req
     if (document.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Unauthorized' });
     }
-    
     // Find all folders that contain the document
     const folders = await Folder.find({ documents: document._id });
     
