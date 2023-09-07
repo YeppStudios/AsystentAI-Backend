@@ -233,6 +233,7 @@ router.post('/folders/:id/add-documents', requireAuth, async (req, res) => {
     await Assistant.updateMany({ folders: req.params.id }, { $push: { documents: req.body.documents } });
     return res.status(200).json({ message: 'Document added to folder and assistants successfully' });
   } catch (err) {
+    console.log(err)
     return res.status(500).json({ error: err.message });
   }
 });

@@ -64,7 +64,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         if (conversation.user._id.toString() !== user._id.toString()) {
             return res.status(401).json({ message: 'Not authorized' });
         }
-        const latestMessages = conversation.messages.slice(-4);
+        const latestMessages = conversation.messages.slice(-6);
         const messagesText = latestMessages.map((message) => message.text).join(" ");
         const messages = [  { role: "system", content: systemPrompt },  ...latestMessages.map((message) => {    
             return {role: message.sender,  content: message.text};
@@ -73,7 +73,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         const completion = await openai.createChatCompletion({
             model: "gpt-4-32k",
             messages,
-            temperature: 0.25,
+            temperature: 0.5,
             stream: true,
         }, { responseType: 'stream' });
         res.set({
