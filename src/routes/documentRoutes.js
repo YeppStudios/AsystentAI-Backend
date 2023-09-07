@@ -270,7 +270,7 @@ router.delete('/folders/:id/delete-document', requireAuth, (req, res) => {
 
 // CREATE FOLDER
 router.post('/add-folder', requireAuth, (req, res) => {
-  const { title, category, workspace, documents } = req.body;
+  const { title, category, workspace, documents, owner } = req.body;
   Folder.findOne({ owner: req.user._id, title: title })
     .populate('documents')
     .then(async existingFolder => {
@@ -280,26 +280,13 @@ router.post('/add-folder', requireAuth, (req, res) => {
         return res.json({ folder: existingFolder });
       }
       try {
-        let folder;
-        if (workspace && workspace !== 'undefined' && workspace !== 'null') {
-          const workspace = await Workspace.findById(req.body.workspace);
-          const company = await User.findById(workspace.company[0].toString());
-          folder = new Folder({
-            owner: company._id,
-            title: title || "Untitled",
-            category: category || "other",
-            documents: documents || [],
-            workspace: workspace
-          });
-        } else {
-          folder = new Folder({
-            owner: req.user._id,
-            title: title || "Untitled",
-            category: category || "other",
-            documents: documents || [],
-            workspace: workspace
-          });
-        }
+        let folder = new Folder({
+          owner,
+          title: title || "Untitled",
+          category: category || "other",
+          documents: documents || [],
+          workspace: workspace
+        });
         folder.save()
         return res.status(201).json({ folder });
       } catch (e) {
@@ -411,7 +398,9 @@ router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
       if (!folder) {
           return res.status(404).json({ message: 'Folder not found' });
       }
-      if (folder.owner.toString() !== req.user._id.toString()) {
+
+      const workspace = await Workspace.findById(folder.workspace);
+      if ((folder.owner.toString() !== req.user._id.toString() && req.user._id.toString() !== workspace.company[0].toString())) {
           return res.status(401).json({ message: 'Unauthorized' });
       }
 
