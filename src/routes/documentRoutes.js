@@ -399,10 +399,10 @@ router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
           return res.status(404).json({ message: 'Folder not found' });
       }
 
-      const workspace = await Workspace.findById(folder.workspace);
-      if ((folder.owner.toString() !== req.user._id.toString() && req.user._id.toString() !== workspace.company[0].toString())) {
-          return res.status(401).json({ message: 'Unauthorized' });
-      }
+      // const workspace = await Workspace.findById(folder.workspace);
+      // if ((folder.owner.toString() !== req.user._id.toString() && req.user._id.toString() !== workspace.company[0].toString())) {
+      //     return res.status(401).json({ message: 'Unauthorized' });
+      // }
 
       const user = await User.findById(req.params.userId);
 
