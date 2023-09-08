@@ -320,39 +320,51 @@ router.post('/add-folder', requireAuth, (req, res) => {
   });
 
   // READ
-router.get('/folders/:workspaceId', (req, res) => {
-  let { page = 0, limit = 50 } = req.query;
-  page = parseInt(page);
-  limit = parseInt(limit);
+  router.get('/folders/:workspaceId', (req, res) => {
+    let { page = 0, limit = 50 } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+  
+    Folder.find({ workspace: req.params.workspaceId })
+      .sort({ updatedAt: -1 }) // Sort folders by updatedAt in descending order
+      .skip(page * limit)
+      .limit(limit)
+      .populate('owner', 'email') // Populate the owner field and select only the name
+      .then(folders => {
+        // Transform folders to include ownerName and exclude the owner object
+        const transformedFolders = folders.map(folder => {
+          return { ...folder.toObject(), ownerEmail: folder.owner.email, owner: undefined };
+        });
+        return res.json(transformedFolders);
+      })
+      .catch(err => {
+        return res.status(500).json({ error: err.message });
+      });
+  });
+  
 
-  Folder.find({ workspace: req.params.workspaceId })
-    .sort({ updatedAt: -1 }) // Sort folders by updatedAt in descending order
-    .skip(page * limit)
-    .limit(limit)
-    .then(folders => {
-      return res.json(folders);
-    })
-    .catch(err => {
-      return res.status(500).json({ error: err.message });
-    });
-});
-
-router.get('/folders/owner/:userId', requireAuth, (req, res) => {
-  let { page = 0, limit = 50 } = req.query;
-  page = parseInt(page);
-  limit = parseInt(limit);
-
-  Folder.find({ owner: req.params.userId })
-    .sort({ updatedAt: -1 }) // Sort folders by updatedAt in descending order
-    .skip(page * limit)
-    .limit(limit)
-    .then(folders => {
-      return res.json(folders);
-    })
-    .catch(err => {
-      return res.status(500).json({ error: err.message });
-    });
-});
+  router.get('/folders/owner/:userId', requireAuth, (req, res) => {
+    let { page = 0, limit = 50 } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+  
+    Folder.find({ owner: req.params.userId })
+      .sort({ updatedAt: -1 }) // Sort folders by updatedAt in descending order
+      .skip(page * limit)
+      .limit(limit)
+      .populate('owner', 'email') // Populate the owner field and select only the name
+      .then(folders => {
+        // Transform folders to include ownerEmail and exclude the owner object
+        const transformedFolders = folders.map(folder => {
+          return { ...folder.toObject(), ownerEmail: folder.owner.email, owner: undefined };
+        });
+        return res.json(transformedFolders);
+      })
+      .catch(err => {
+        return res.status(500).json({ error: err.message });
+      });
+  });
+  
 
 
   
