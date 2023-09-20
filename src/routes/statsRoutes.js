@@ -329,28 +329,23 @@ router.post('/user/:userId/addPosts', requireAuth, (req, res) => {
 });
 
 
-// GET /active-paid-weekly?year=2023&month=8&week=2
-router.get('/active-paid-weekly', async (req, res) => {
+// GET /active-paid-monthly?year=2023&month=8
+router.get('/active-paid-monthly', async (req, res) => {
   try {
       const year = parseInt(req.query.year);
       const month = parseInt(req.query.month) - 1; // 0-based month
-      const week = parseInt(req.query.week);
 
-      // Calculate start date of the week
-      const trackingWeekStart = new Date(year, month, 1 + (week - 1) * 7);
-      while (trackingWeekStart.getDay() !== 1) { // Ensure it's Monday
-          trackingWeekStart.setDate(trackingWeekStart.getDate() + 1);
-      }
+      // Calculate start date of the month
+      const trackingMonthStart = new Date(year, month, 1);
 
-      // Calculate end date of the week (one week later)
-      const trackingWeekEnd = new Date(trackingWeekStart);
-      trackingWeekEnd.setDate(trackingWeekEnd.getDate() + 7);
+      // Calculate end date of the month (first day of the next month)
+      const trackingMonthEnd = new Date(year, month + 1, 1);
 
       // Aggregation pipeline
       const pipeline = [
           {
               $match: {
-                  timestamp: { $gte: trackingWeekStart, $lt: trackingWeekEnd }
+                  timestamp: { $gte: trackingMonthStart, $lt: trackingMonthEnd }
               }
           },
           {
@@ -366,7 +361,7 @@ router.get('/active-paid-weekly', async (req, res) => {
           },
           {
               $match: {
-                  "userData.createdAt": { $lt: trackingWeekStart },
+                  "userData.createdAt": { $lt: trackingMonthStart },
                   "userData.plan": { $ne: null, $ne: mongoose.Types.ObjectId('647c3294ff40f15b5f6796bf') }
               }
           },
@@ -392,28 +387,23 @@ router.get('/active-paid-weekly', async (req, res) => {
 });
 
 
-// GET /avg-tokens-weekly?year=2023&month=8&week=2
-router.get('/avg-tokens-weekly', async (req, res) => {
+// GET /avg-tokens-monthly?year=2023&month=8
+router.get('/avg-tokens-monthly', async (req, res) => {
   try {
       const year = parseInt(req.query.year);
       const month = parseInt(req.query.month) - 1; // 0-based month
-      const week = parseInt(req.query.week);
 
-      // Calculate start date of the week
-      const trackingWeekStart = new Date(year, month, 1 + (week - 1) * 7);
-      while (trackingWeekStart.getDay() !== 1) { // Ensure it's Monday
-          trackingWeekStart.setDate(trackingWeekStart.getDate() + 1);
-      }
+      // Calculate start date of the month
+      const trackingMonthStart = new Date(year, month, 1);
 
-      // Calculate end date of the week (one week later)
-      const trackingWeekEnd = new Date(trackingWeekStart);
-      trackingWeekEnd.setDate(trackingWeekEnd.getDate() + 7);
+      // Calculate end date of the month (first day of the next month)
+      const trackingMonthEnd = new Date(year, month + 1, 1);
 
       // Aggregation pipeline
       const pipeline = [
           {
               $match: {
-                  timestamp: { $gte: trackingWeekStart, $lt: trackingWeekEnd }
+                  timestamp: { $gte: trackingMonthStart, $lt: trackingMonthEnd }
               }
           },
           {
@@ -429,7 +419,7 @@ router.get('/avg-tokens-weekly', async (req, res) => {
           },
           {
               $match: {
-                  "userData.createdAt": { $lt: trackingWeekStart },
+                  "userData.createdAt": { $lt: trackingMonthStart },
                   "userData.plan": { $ne: null, $ne: mongoose.Types.ObjectId('647c3294ff40f15b5f6796bf') }
               }
           },
@@ -472,35 +462,43 @@ router.get('/avg-tokens-weekly', async (req, res) => {
   
   router.get('/unique-company-logins', async (req, res) => {
     try {
-      // Get the date one week ago
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - req.body.days);
-  
-      // Use MongoDB's aggregation framework to get unique workspaceIds
-      const uniqueLogins = await CompanyLogin.aggregate([
-        {
-          $match: {
-            timestamp: {
-              $gte: oneWeekAgo
+        const year = new Date().getFullYear(); // assuming current year; adjust as needed
+        const month = parseInt(req.query.month) - 1; // 0-based month
+
+        // Calculate start date of the month
+        const monthStart = new Date(year, month, 1);
+
+        // Calculate end date of the month (first day of the next month)
+        const monthEnd = new Date(year, month + 1, 1);
+
+        // Use MongoDB's aggregation framework to get unique workspaceIds
+        const uniqueLogins = await CompanyLogin.aggregate([
+            {
+                $match: {
+                    timestamp: {
+                        $gte: monthStart,
+                        $lt: monthEnd
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: '$workspaceId',
+                }
             }
-          }
-        },
-        {
-          $group: {
-            _id: '$workspaceId',
-          }
-        }
-      ]);
-  
-      // Extract workspaceIds from the response
-      const workspaceIds = uniqueLogins.map(login => login._id);
-  
-      // Send the list of unique workspaceIds
-      res.json({ workspaceIds: workspaceIds });
+        ]);
+
+        // Calculate the number of unique logins
+        const uniqueLoginCount = uniqueLogins.length;
+
+        // Send the number of unique logins
+        res.json({ uniqueLoginCount: uniqueLoginCount });
     } catch (error) {
-      res.status(500).json({ error: error.toString() });
+        res.status(500).json({ error: error.toString() });
     }
-  });
+});
+
+
   
 
 module.exports = router;
