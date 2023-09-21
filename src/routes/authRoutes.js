@@ -159,7 +159,7 @@ router.post('/register-free-trial', async (req, res) => {
         return res.status(200).json({ token, user });
       }
 
-      if(referrerId){
+      if (referrerId){
         try {
           const referringUser = await User.findById(referrerId);
           if(referringUser) {

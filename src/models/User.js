@@ -126,9 +126,9 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
-    referralCount: {
-        type: Number,
-        default: 0
+    referrals: {
+        type: Array,
+        default: []
     },
     registeredByReferral: {
         type: Number,

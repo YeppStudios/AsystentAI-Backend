@@ -411,6 +411,26 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
 
           user.tokenBalance += plan.monthlyTokens;
           user.plan = planId;
+
+          try {
+          // add to referrer
+          if (user.referredBy) {
+            try {
+              const referringUser = await User.findById(user.referredBy);
+              if (referringUser) {
+                if (priceId === "price_1NaF8EFe80Kn2YGGAuVBGHjh" || priceId === "price_1NaFLfFe80Kn2YGGFtgjV1CI" || priceId === "price_1NaFLfFe80Kn2YGGFtgjV1CI" || priceId === "price_1NaFMhFe80Kn2YGGsXAeqFPF") {
+                  referringUser.referrals.push("standard");
+                } else if (priceId === "price_1NSZghFe80Kn2YGGOiClJUPM" || priceId === "price_1NUPofFe80Kn2YGG6dYxHNk9" || priceId === "price_1NSai5Fe80Kn2YGGHrwmUEqe" || priceId === "price_1NSaiNFe80Kn2YGGG88egvhI" || priceId === "price_1NSaieFe80Kn2YGGilwS3SNl") {
+                  referringUser.referrals.push("agency");
+                }
+                await referringUser.save();
+              }
+            } catch (e) {
+            }
+          }
+          } catch (e) {
+          }
+
   
           // Create a new transaction
           transaction = new Transaction({
