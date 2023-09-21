@@ -419,9 +419,9 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
               const referringUser = await User.findById(user.referredBy);
               if (referringUser) {
                 if (priceId === "price_1NaF8EFe80Kn2YGGAuVBGHjh" || priceId === "price_1NaFLfFe80Kn2YGGFtgjV1CI" || priceId === "price_1NaFLfFe80Kn2YGGFtgjV1CI" || priceId === "price_1NaFMhFe80Kn2YGGsXAeqFPF") {
-                  referringUser.referrals.push("standard");
+                  referringUser.referrals.push({type: "standard", timestamp: Date.now()});
                 } else if (priceId === "price_1NSZghFe80Kn2YGGOiClJUPM" || priceId === "price_1NUPofFe80Kn2YGG6dYxHNk9" || priceId === "price_1NSai5Fe80Kn2YGGHrwmUEqe" || priceId === "price_1NSaiNFe80Kn2YGGG88egvhI" || priceId === "price_1NSaieFe80Kn2YGGilwS3SNl") {
-                  referringUser.referrals.push("agency");
+                  referringUser.referrals.push({type: "agency", timestamp: Date.now()});
                 }
                 await referringUser.save();
               }

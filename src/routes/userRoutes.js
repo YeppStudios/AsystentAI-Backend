@@ -264,6 +264,19 @@ router.get('/get-refferal-link', requireAuth, async (req, res) => {
 });
 
 
+router.get('/referrals/:userId', async (req, res) => {
+  try {
+      const user = await User.findById(req.params.userId);
+      if (!user) {
+          return res.status(404).send({ error: 'User not found' });
+      }
+      return res.send(user.referrals);
+  } catch (err) {
+      return res.status(500).send({ error: 'Server error' });
+  }
+});
+
+
 router.put('/clear-referred-by', requireAuth, async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
