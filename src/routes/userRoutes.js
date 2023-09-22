@@ -265,12 +265,12 @@ router.get('/get-refferal-link', requireAuth, async (req, res) => {
 
 router.get('/referrals/:userId', async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId).populate({
-      path: 'referrals',
-      options: { sort: { 'timestamp': -1 } } 
-    });
+    const user = await User.findById(req.params.userId);
     if (!user) {
       return res.status(404).send({ error: 'User not found' });
+    }
+    if(user.referrals && Array.isArray(user.referrals)) {
+      user.referrals.sort((a, b) => b.timestamp - a.timestamp);
     }
     return res.send(user.referrals);
   } catch (err) {
