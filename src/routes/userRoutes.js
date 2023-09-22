@@ -267,7 +267,7 @@ router.get('/referrals/:userId', async (req, res) => {
   try {
     const user = await User.findById(req.params.userId).populate({
       path: 'referrals',
-      options: { sort: { 'timestamp': 1 } } 
+      options: { sort: { 'timestamp': -1 } } 
     });
     if (!user) {
       return res.status(404).send({ error: 'User not found' });
