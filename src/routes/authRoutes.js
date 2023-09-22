@@ -165,7 +165,7 @@ router.post('/register-free-trial', async (req, res) => {
           if (referringUser) {
             referringUser.registeredByReferral += 1;
             referringUser.referrals.push({type: "registered", timestamp: Date.now(), email: email});
-            await referringUser.save();
+            await referringUser.save()
           }
         } catch (e) {
         }
