@@ -341,7 +341,6 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
 
   if (event.type === 'invoice.paid' && event.data.object.billing_reason === 'subscription_cycle') {
     try {
-
     const userEmail = event.data.object.customer_email;
     User.findOne({ email: userEmail }, async (err, user) => {
       if(user) {
@@ -419,9 +418,9 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
               const referringUser = await User.findById(user.referredBy);
               if (referringUser) {
                 if (priceId === "price_1NaF8EFe80Kn2YGGAuVBGHjh" || priceId === "price_1NaFLfFe80Kn2YGGFtgjV1CI" || priceId === "price_1NaFLfFe80Kn2YGGFtgjV1CI" || priceId === "price_1NaFMhFe80Kn2YGGsXAeqFPF") {
-                  referringUser.referrals.push({type: "standard", timestamp: Date.now(), email: user.email});
+                  referringUser.referrals.push({type: "purchased standard", timestamp: Date.now(), email: user.email});
                 } else if (priceId === "price_1NSZghFe80Kn2YGGOiClJUPM" || priceId === "price_1NUPofFe80Kn2YGG6dYxHNk9" || priceId === "price_1NSai5Fe80Kn2YGGHrwmUEqe" || priceId === "price_1NSaiNFe80Kn2YGGG88egvhI" || priceId === "price_1NSaieFe80Kn2YGGilwS3SNl") {
-                  referringUser.referrals.push({type: "agency", timestamp: Date.now(), email: user.email});
+                  referringUser.referrals.push({type: "purchased agency", timestamp: Date.now(), email: user.email});
                 }
                 await referringUser.save();
               }
@@ -430,7 +429,6 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
           }
           } catch (e) {
           }
-
   
           // Create a new transaction
           transaction = new Transaction({

@@ -35,7 +35,6 @@ router.get('/users/emails/from/:date', requireAdmin, async (req, res) => {
   }
 });
 
-
 // Get a single user
 router.get('/users/:id', requireAuth, async (req, res) => {
     try {

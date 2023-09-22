@@ -220,5 +220,12 @@ router.post('/send-email', async (req, res) => {
         });
 });
 
+router.post('/send-referral/:email', requireAuth, async (req, res) => {
+    const referringUser = await User.findById(req.user._id);
+    referringUser.referrals.push({type: "invited", timestamp: Date.now(), email: req.params.email});
+    await referringUser.save();
+    return res.json({ message: 'Referral sent' });
+});
+
 
 module.exports = router;
