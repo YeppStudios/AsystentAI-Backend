@@ -13,6 +13,11 @@ const Folder = mongoose.model('Folder');
 const axios = require('axios');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_KEY);
+const mailchimp = require('@mailchimp/mailchimp_marketing');
+mailchimp.setConfig({
+  apiKey: process.env.MAILCHIMP_API_KEY,
+  server: process.env.MAILCHIMP_SERVER_PREFIX,
+});
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
@@ -646,5 +651,65 @@ router.post('/create-customer-portal-session', requireAuth, async (req, res) => 
   }
 
 });
+
+
+router.post('/updateMailchimpTags', async (req, res) => {
+  try {
+      // 1. Fetch active subscriptions from Stripe
+      let activeSubscriptions = await stripe.subscriptions.list({
+          status: 'active',
+          limit: 100 // Adjust limit as needed
+      });
+      
+      // Extract customer IDs from active subscriptions
+      let customerIds = activeSubscriptions.data.map(subscription => subscription.customer);
+
+      // Fetch customer details for each active subscription
+      let customerDetailsPromises = customerIds.map(customerId => stripe.customers.retrieve(customerId));
+      let paidCustomers = await Promise.all(customerDetailsPromises);
+      
+      // Extract email addresses
+      let paidEmails = paidCustomers.map(customer => customer.email);
+
+      // 2. Extract domains
+      let domains = [...new Set(paidEmails.map(email => email.split('@')[1]))];
+
+      // Exclude specific domains
+      const excludedDomains = ["gmail.com", "onet.eu", "op.pl"];
+      domains = domains.filter(domain => !excludedDomains.includes(domain));
+
+      // 3. & 4. Search for these domains in Mailchimp and tag them
+      for (const domain of domains) {
+          let members = await getMailchimpMembersWithDomain(domain);
+          console.log(members)
+          for (const member of members) {
+              await tagMailchimpMember(member.id);
+          }
+      }
+
+      return res.send({ success: true, domains });
+
+  } catch (error) {
+      console.error("Error updating tags:", error);
+      res.status(500).send({ success: false, message: "Internal server error." });
+  }
+});
+
+// Function to search Mailchimp members with the provided domain
+async function getMailchimpMembersWithDomain(domain) {
+  const response = await mailchimp.searchMembers.search(`@${domain}`);
+  console.log(response.full_search.members.filter(member => member.email_address.endsWith(`@${domain}`)));
+  return response.full_search.members.filter(member => member.email_address.endsWith(`@${domain}`)) || [];
+}
+
+// Function to tag a Mailchimp member
+async function tagMailchimpMember(memberId) {
+  await mailchimp.lists.updateListMemberTags(
+    process.env.MAILCHIMP_AUDIENCE_ID,
+    memberId,
+    { tags: [{ name: "PAID", status: "active" }] }
+  );
+  return;
+}
 
 module.exports = router;   
