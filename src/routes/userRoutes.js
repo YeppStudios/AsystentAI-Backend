@@ -363,4 +363,26 @@ router.post('/blockUser/:userId', requireAdmin, async (req, res) => {
   }
 });
 
+
+router.post('/requestWithdrawal', requireAuth, async (req, res) => {
+  try {
+      const newRequest = new WithdrawalRequest(req.body);
+      const savedRequest = await newRequest.save();
+      return res.json(savedRequest);
+  } catch (error) {
+      return res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE endpoint for deleting a withdrawal request
+router.delete('/deleteWithdrawal/:id', async (req, res) => {
+  try {
+      const removedRequest = await WithdrawalRequest.remove({ _id: req.params.id });
+
+      return res.json(removedRequest);
+  } catch (error) {
+      return res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

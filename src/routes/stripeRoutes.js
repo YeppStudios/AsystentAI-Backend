@@ -7,7 +7,6 @@ const User = mongoose.model('User');
 const Plan = mongoose.model('Plan');
 const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
-const Whitelist = mongoose.model('Whitelist');
 const Workspace = mongoose.model('Workspace');
 const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
@@ -15,8 +14,8 @@ const axios = require('axios');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_KEY);
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
+const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_KEY);
+const purchaseEndpointSecret = 'whsec_fe0e42230aa34c7144b0e88040ddf05780490aba5b7cfc9d1e5e0df0213fbdd8';
 const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
 const customerCreationSectret = 'whsec_287PqXJ4mj2RXDjKenIv1ORJpghta50d';
 const infaktConfig = {
@@ -198,8 +197,18 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
         if(user) {
           let transaction;
           let purchase;
-
           user.dashboardAccess = true;
+          if (user.referredBy) {
+            try {
+              const referringUser = await User.findById(user.referredBy);
+              if (referringUser) {
+                referringUser.registeredByReferral += 1;
+                referringUser.referrals.push({type: "registered", timestamp: Date.now(), email: email});
+                await referringUser.save()
+              }
+            } catch (e) {
+            }
+          }
 
           //add tokens if trial
           if (!transactionData.metadata.trial) {
@@ -209,10 +218,6 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                 const plan = await Plan.findById(planId);
                 user.plan = plan;
                 user.tokenBalance += plan.monthlyTokens*Number(transactionData.metadata.months);
-  
-                if(transactionData.metadata.trial) {
-                  await Whitelist.deleteOne({ email });
-                }
   
                 // Create a new purchase
                 purchase = new Payment({
@@ -240,45 +245,6 @@ router.post('/one-time-checkout-webhook', bodyParser.raw({type: 'application/jso
                 await transaction.save();
                 await purchase.save();
   
-                //checking if transaction was referred
-                if (transactionData.metadata.referrer_id && transactionData.metadata.plan_id === "64ad0d250e40385f299bceea") {
-                try {
-                  const referrer = await User.findOne({ _id: transactionData.metadata.referrer_id });
-                  if(referrer){
-                    user.tokenBalance += 30000;
-                    referrer.tokenBalance += 30000;
-        
-                    const referralTransaction = new Transaction({
-                        value: 30000,
-                        title: "+30 000 elixir for referral",
-                        type: "income",
-                        timestamp: Date.now()
-                    });
-  
-                    user.transactions.push(referralTransaction);
-                    referrer.transactions.push(referralTransaction);
-        
-                    const referrerBalanceSnapshot = {
-                      timestamp: new Date(),
-                      balance: referrer.tokenBalance
-                    };
-                    referrer.tokenHistory.push(referrerBalanceSnapshot);
-        
-                    User.findOneAndUpdate(
-                      { _id: transactionData.metadata.referrer_id },
-                      { $inc: { "referralCount": 1 } },
-                      { upsert: true },
-                      function(err, user) {
-                        if (err) throw err;
-                      }
-                    );
-                    await referrer.save();
-                    await referralTransaction.save();
-                  }
-                } catch (e) {
-                  console.log(e)
-                }
-              }
               } catch (err) {
                 console.log(err)
               }

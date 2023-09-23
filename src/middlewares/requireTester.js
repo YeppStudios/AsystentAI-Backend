@@ -1,7 +1,6 @@
 const jsonwebtoken = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
-const Whitelist = mongoose.model('Whitelist');
 require('dotenv').config();
 
 module.exports = async (req, res, next) => {
@@ -31,13 +30,5 @@ module.exports = async (req, res, next) => {
 
         req.user = user;
         await user.save();
-
-        Whitelist.findOne({ email: user.email }, async (err, email) => {
-            if(!email){
-                return res.status(401).send(`No such email in whitelist`);
-            } else {
-                next();
-            }
-        });
     });
 };

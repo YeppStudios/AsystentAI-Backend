@@ -158,18 +158,6 @@ router.post('/register-free-trial', async (req, res) => {
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
         return res.status(200).json({ token, user });
       }
-
-      if (referrerId) {
-        try {
-          const referringUser = await User.findById(referrerId);
-          if (referringUser) {
-            referringUser.registeredByReferral += 1;
-            referringUser.referrals.push({type: "registered", timestamp: Date.now(), email: email});
-            await referringUser.save()
-          }
-        } catch (e) {
-        }
-      }
       
       const verificationCode = generateVerificationCode(6);
 
@@ -420,39 +408,6 @@ router.post('/save-contact', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
-
-//login only for whitelisted and with stripe plans
-// router.post('/login', async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-//     const user = await User.findOne({ email });
-//     if (!user) return res.status(400).json({ message: 'User not found' });
-
-//     // Check if user's email is on the whitelist
-//     const isWhitelisted = await Whitelist.exists({ email: email });
-    
-//     if (!isWhitelisted) {
-//       // Check if user's email is associated with a customer in Stripe
-//       const customers = await stripe.customers.list({ email: email });
-//       const isSubscribed = customers.data.length > 0;
-//       if (!isSubscribed) return res.status(400).json({ message: 'User is not a subscriber' });
-      
-//     } else {
-//       //if user is a subscriber but did not finish registration
-//       if(!(user.street)){
-//         return res.status(400).json({ message: 'User did not complete registration' });
-//       }
-//     }
-
-//     await user.comparePassword(password);
-
-//     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-//     return res.json({ token, user });
-//   } catch (error) {
-//     return res.status(500).json({ message: error.message });
-//   }
-// });
 
 
 
