@@ -17,6 +17,7 @@ mailchimp.setConfig({
   server: process.env.MAILCHIMP_SERVER_PREFIX,
 });
 
+
 function generateVerificationCode(length) {
   const characters = '0123456789';
   let result = '';
@@ -43,6 +44,7 @@ function generateApiKey() {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'User not found' });
     await user.comparePassword(password);
@@ -51,6 +53,7 @@ router.post('/login', async (req, res) => {
       const login = new CompanyLogin({ workspaceId: user.workspace });
       await login.save();
     }
+    user.ip = ip;
     user.lastSeen = Date.now();
     await user.save();
     return res.json({ token, user });
@@ -62,7 +65,7 @@ router.post('/login', async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { email, password, name, isCompany } = req.body;
-
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     // Check if user already exists
     let user = await User.findOne({ email });
     if (user) {
@@ -94,6 +97,7 @@ router.post('/register', async (req, res) => {
       isCopmany: true,
       verificationCode,
       isBlocked: false,
+      ip
     });
 
       const key = generateApiKey();

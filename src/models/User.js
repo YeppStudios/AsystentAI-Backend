@@ -72,6 +72,9 @@ const UserSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    ip: {
+        type: String,
+    },
     subscriptionEndDate: {
         type: Date,
         default: null
