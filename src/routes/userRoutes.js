@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
+const WithdrawalRequest = mongoose.model("WithdrawalRequest")
 const OnboardingSurveyData = mongoose.model('OnboardingSurveyData');
 const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');

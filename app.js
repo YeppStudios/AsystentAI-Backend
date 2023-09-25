@@ -19,6 +19,7 @@ require('./src/models/Template');
 require('./src/models/Campaign');
 require('./src/models/Persona');
 require('./src/models/Tone');
+require('./src/models/WithdrawalRequest')
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser =  require('body-parser');
