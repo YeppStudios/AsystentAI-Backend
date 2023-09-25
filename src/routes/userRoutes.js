@@ -375,8 +375,17 @@ router.post('/requestWithdrawal', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/withdrawal-requests', requireAdmin, async (req, res) => {
+  try {
+      const withdrawalRequests = await WithdrawalRequest.find({});
+      res.status(200).json(withdrawalRequests);
+  } catch (error) {
+      res.status(500).json({ message: 'Error fetching withdrawal requests', error });
+  }
+});
+
 // DELETE endpoint for deleting a withdrawal request
-router.delete('/deleteWithdrawal/:id', async (req, res) => {
+router.delete('/delete-withdrawal/:id', requireAdmin, async (req, res) => {
   try {
       const removedRequest = await WithdrawalRequest.remove({ _id: req.params.id });
 
