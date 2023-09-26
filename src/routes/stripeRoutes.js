@@ -23,6 +23,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const purchaseEndpointSecret = 'whsec_VIcwCMNdNcXotMOrZCrIwrbptD0Vffdj';
 const subscriptionEndpointSecret = 'whsec_NInmuuTZVfBMnfTzNFZJTl0I67u62GCz';
 const customerCreationSectret = 'whsec_287PqXJ4mj2RXDjKenIv1ORJpghta50d';
+const failedPaymentSecret = "whsec_xQz0mVtW4SNJZU7hkM8gjpSnGo7b4r4J";
 const infaktConfig = {
   headers: {
     'X-inFakt-ApiKey': `${process.env.INFAKT_KEY}`,
@@ -442,7 +443,7 @@ router.post('/failed-payment-webhook', bodyParser.raw({type: 'application/json'}
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(payload, sig, subscriptionEndpointSecret);
+    event = stripe.webhooks.constructEvent(payload, sig, failedPaymentSecret);
   } catch (err) {
     return response.status(400).send(`Webhook Error: ${err.message}`);
   }
