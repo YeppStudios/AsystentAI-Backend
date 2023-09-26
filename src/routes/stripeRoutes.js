@@ -324,10 +324,10 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
           try {
             const msg = {
               to: `${user.email}`,
-              nickname: "Wiktor from Yepp",
+              nickname: "Wiktor from Yepp AI",
               from: {
                 email: "hello@yepp.ai",
-                name: "Wiktor from Yepp"
+                name: "Wiktor from Yepp AI"
               },
               templateId: 'd-6100357c35f642d39329f644f3d97caa',
               dynamicTemplateData: {
@@ -433,6 +433,54 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
   response.status(200).send('Webhook received');
 });
 
+
+//listening for failed payments
+router.post('/failed-payment-webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
+  const payload = request.rawBody;
+  const sig = request.headers['stripe-signature'];
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(payload, sig, subscriptionEndpointSecret);
+  } catch (err) {
+    return response.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === 'invoice.payment_failed' ) {
+    try {
+    const userEmail = event.data.object.customer_email;
+    User.findOne({ email: userEmail }, async (err, user) => {
+      if(user) {
+        user.dashboardAccess = false;
+        try {
+          const msg = {
+            to: `${user.email}`,
+            nickname: "Wiktor from Yepp",
+            from: {
+              email: "hello@yepp.ai",
+              name: "Wiktor from Yepp"
+            },
+            templateId: ' d-555679e4d7c248d6ac8bf1da521a17c8',
+            dynamicTemplateData: {
+            name: `${user.name}`,
+            },
+          };
+          sgMail
+            .send(msg)
+        } catch (e) {
+          console.log(e)
+        }
+
+        await user.save();
+      }
+    });
+    } catch (e) {
+      return response.status(400).send(`Webhook Error: ${e.message}`);
+    }
+  } 
+  response.status(200).send('Webhook received');
+});
 
 
 
