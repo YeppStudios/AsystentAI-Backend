@@ -153,7 +153,7 @@ router.post('/register-free-trial', async (req, res) => {
   try {
       const { email, password, name, referrerId, blockAccess } = req.body;
       const user = await User.findOne({ email });
-
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
       let freeTokens = 25000;
 
       if (user) {
@@ -173,7 +173,8 @@ router.post('/register-free-trial', async (req, res) => {
           isCompany: true,
           referredBy: referrerId,
           verificationCode,
-          plan: "647c3294ff40f15b5f6796bf"
+          plan: "647c3294ff40f15b5f6796bf",
+          ip
       });
 
       try {
