@@ -45,8 +45,13 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    console.log(ip);
+    let ban = false;
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'User not found' });
+    if (ip === "5.173.138.116") {
+      ban = true;
+    }
     await user.comparePassword(password);
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
     if (user.workspace) {
@@ -56,7 +61,7 @@ router.post('/login', async (req, res) => {
     user.ip = ip;
     user.lastSeen = Date.now();
     await user.save();
-    return res.json({ token, user });
+    return res.json({ token, user, ban });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -153,14 +158,20 @@ router.post('/register-free-trial', async (req, res) => {
   try {
       const { email, password, name, referrerId, blockAccess } = req.body;
       const user = await User.findOne({ email });
-      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
       let freeTokens = 25000;
+      let ban = false;
 
       if (user) {
         // User already exists, log them in
         await user.comparePassword(password);
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
         return res.status(200).json({ token, user });
+      }
+
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      if (ip === "5.173.138.116") {
+        ban = true;
+        freeTokens = 0;
       }
       
       const verificationCode = generateVerificationCode(6);
@@ -215,7 +226,7 @@ router.post('/register-free-trial', async (req, res) => {
       await transaction.save();
       await newUser.save();
       const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
-      return res.status(201).json({ newUser, verificationCode, token });
+      return res.status(201).json({ newUser, verificationCode, token, ban });
   } catch (error) {
       return res.status(500).json({ message: error.message });
   }

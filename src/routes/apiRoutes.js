@@ -70,7 +70,7 @@ router.post('/message-stream', requireTokens, async (req, res) => {
               let vectorIds = assistant.documents.map(doc => doc.vectorId);
               try {
                   const chunks = await axios.post(
-                  "https://whale-app-p64f5.ondigitalocean.app/query",
+                  "https://www.asistant.ai/query",
                   {
                       "queries": [
                       {
@@ -261,7 +261,7 @@ router.post('/message', requireTokens, async (req, res) => {
               let vectorIds = assistant.documents.map(doc => doc.vectorId);
               try {
                   const chunks = await axios.post(
-                  "https://whale-app-p64f5.ondigitalocean.app/query",
+                  "https://www.asistant.ai/query",
                   {
                       "queries": [
                       {

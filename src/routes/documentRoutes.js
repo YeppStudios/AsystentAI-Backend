@@ -435,7 +435,7 @@ router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
       // After all documents are deleted from MongoDB, delete them from Whale App
       if (folder.documents.length > 0) {
         await axios.delete(
-            "https://whale-app-p64f5.ondigitalocean.app/delete",
+            "https://www.asistant.ai/delete",
             {
                 data: {
                     ids: vectorIds, // send all vectorIds at once

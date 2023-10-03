@@ -177,9 +177,7 @@ router.patch('/updateUserData/:id', requireAuth, async (req, res) => {
         user.postalCode = postalCode;
       }
 
-      if (dashboardAccess) {
-        user.dashboardAccess = dashboardAccess;
-      }
+      user.dashboardAccess = dashboardAccess;
 
       if (accountType) {
         user.accountType = accountType;
