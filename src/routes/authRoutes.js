@@ -45,7 +45,6 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    console.log(ip);
     let ban = false;
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'User not found' });
