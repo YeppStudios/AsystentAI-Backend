@@ -727,7 +727,6 @@ router.post('/updateMailchimpTags', async (req, res) => {
       // 3. & 4. Search for these domains in Mailchimp and tag them
       for (const domain of domains) {
           let members = await getMailchimpMembersWithDomain(domain);
-          console.log(members)
           for (const member of members) {
               await tagMailchimpMember(member.id);
           }
@@ -744,7 +743,6 @@ router.post('/updateMailchimpTags', async (req, res) => {
 // Function to search Mailchimp members with the provided domain
 async function getMailchimpMembersWithDomain(domain) {
   const response = await mailchimp.searchMembers.search(`@${domain}`);
-  console.log(response.full_search.members.filter(member => member.email_address.endsWith(`@${domain}`)));
   return response.full_search.members.filter(member => member.email_address.endsWith(`@${domain}`)) || [];
 }
 
@@ -756,6 +754,48 @@ async function tagMailchimpMember(memberId) {
     { tags: [{ name: "PAID", status: "active" }] }
   );
   return;
+}
+
+
+router.post('/tag-unpaid', async (req, res) => {
+  try {
+      const { emails } = req.body;
+
+      // Check if emails are provided and it's an array
+      if (!emails || !Array.isArray(emails)) {
+          return res.status(400).json({ error: "The 'emails' field is missing or is not an array." });
+      }
+
+      await tagUnpaidMembersByEmails(emails);
+      return res.status(200).json({ message: 'Members tagged successfully!' });
+  } catch (error) {
+      return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+async function tagUnpaidMembersByEmails(emails) {
+  for (let email of emails) {
+    // Extract domain from email
+    const domain = email.split('@')[1];
+    
+    // Search Mailchimp members with the domain
+    const members = await getMailchimpMembersWithDomain(domain);
+
+    // Filter out members that match the email and tag them as UNPAID
+    const targetMembers = members.filter(member => member.email_address === email);
+    for (let member of targetMembers) {
+      await tagMailchimpMemberAsUnpaid(member.id);
+    }
+  }
+}
+
+// Function to tag a Mailchimp member as UNPAID
+async function tagMailchimpMemberAsUnpaid(memberId) {
+  await mailchimp.lists.updateListMemberTags(
+    process.env.MAILCHIMP_AUDIENCE_ID,
+    memberId,
+    { tags: [{ name: "UNPAID", status: "active" }] }
+  );
 }
 
 module.exports = router;   

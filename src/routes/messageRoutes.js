@@ -64,14 +64,14 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         if (conversation.user._id.toString() !== user._id.toString()) {
             return res.status(401).json({ message: 'Not authorized' });
         }
-        const latestMessages = conversation.messages.slice(-6);
+        const latestMessages = conversation.messages.slice(-4);
         const messagesText = latestMessages.map((message) => message.text).join(" ");
         const messages = [  { role: "system", content: systemPrompt },  ...latestMessages.map((message) => {    
             return {role: message.sender,  content: message.text};
         }), { role: "user", content: `${embeddingContext} ${text} Response:`},];
 
         const completion = await openai.createChatCompletion({
-            model: "gpt-4-32k",
+            model: "gpt-4",
             messages,
             temperature: 0.5,
             stream: true,

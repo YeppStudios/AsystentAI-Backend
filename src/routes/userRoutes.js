@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const User = mongoose.model('User');
+const Transaction = mongoose.model('Transaction');
 const WithdrawalRequest = mongoose.model("WithdrawalRequest")
 const OnboardingSurveyData = mongoose.model('OnboardingSurveyData');
 const requireAuth = require('../middlewares/requireAuth');
@@ -392,5 +393,43 @@ router.delete('/delete-withdrawal/:id', requireAdmin, async (req, res) => {
       return res.status(500).json({ message: error.message });
   }
 });
+
+
+router.get('/get-income-transactions', async (req, res) => {
+  try {
+      const userId = req.body.userId;
+
+      if (!userId) {
+          return res.status(400).send({ message: 'User ID is required.' });
+      }
+
+      const startDate = new Date(2023, 8, 20);  // 8 is for September (0-indexed)
+
+      const transactions = await Transaction.find({
+          user: userId,
+          type: 'expense',
+          timestamp: { $gte: startDate }
+      }).lean();
+
+      const totalValueFromSep20 = transactions.reduce((total, transaction) => {
+          return total + transaction.value;
+      }, 0);
+
+      console.log(`Total value from 20th September 2023: ${totalValueFromSep20}`);
+
+      const formattedTransactions = transactions.map(transaction => {
+          return {
+              ...transaction,
+              timestamp: `${transaction.timestamp.getFullYear()}:${transaction.timestamp.getMonth() + 1}:${transaction.timestamp.getDate()}`
+          };
+      });
+
+      return res.status(200).send(formattedTransactions);
+  } catch (err) {
+      console.error(err);
+      return res.status(500).send({ message: 'Internal Server Error' });
+  }
+});
+
 
 module.exports = router;

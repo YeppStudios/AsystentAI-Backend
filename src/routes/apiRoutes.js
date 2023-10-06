@@ -48,7 +48,7 @@ router.post('/message-stream', requireTokens, async (req, res) => {
         let embeddingContext = "";
         let assistant = null;
         let assistantName = "Default Assistant";
-        let model = "gpt-4-32k"
+        let model = "gpt-4"
 
         if (llm) {
             model = llm;
@@ -240,7 +240,7 @@ router.post('/message', requireTokens, async (req, res) => {
         let context = "";
         let assistant = null;
         let assistantName = "Default Assistant"
-        let model = "gpt-4-32k"
+        let model = "gpt-4"
 
         if (llm) {
             model = llm;
