@@ -539,4 +539,145 @@ router.post('/testMessageAI', requireTestTokens, async (req, res) => {
 });
 
 
+
+router.post('/get-single-embedding', requireTokens, async (req, res) => {
+  try {
+      const { prompt, document_ids } = req.body;
+
+      let context = '';
+      try {
+        const chunks = await axios.post(
+          "https://www.asistant.ai/query",
+          {
+            "queries": [
+              {
+                "query": prompt,
+                "filter": {
+                  "document_id": document_ids
+                },
+                "top_k": 2
+              }
+            ]
+          },
+          {
+            headers: {
+              "Authorization": `Bearer ${process.env.PYTHON_API_KEY}`
+            }
+          }
+        );
+  
+      chunks.data.results[0].results.forEach((item, index) => {
+          context += ` ------ Context part ${index + 1} ------>` + item.text;
+      });
+
+    return res.status(201).json({ context: context });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).send({ error: error.message });
+    }
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({ error: error.message });
+  }
+});
+
+
+router.post('/completion-MSQT', requireTokens, async (req, res) => { // Multi-Step Query Transformation
+  try {
+      const { initial_prompt, embedding_result, document_ids } = req.body;
+      const user = await User.findById(req.user._id);
+
+      const messages = [
+          { role: 'system', content: `Your role is to analyze the retrieved context and based on the query determine what info you lack to answer this query. You come up with 2 different follow up questions that might help you clarify inconsistencies or learn about aspects not mentioned in context. You never ask about things you already understand from the context. You always come up with questions in given context's language. Along with the questions, you come up with a brief summary of most important informations that will help you respond to the initial query: "${initial_prompt}".` },
+          { role: 'user', content: `Retrieved context: ${embedding_result}. Initial query: ${initial_prompt}.` }
+      ]
+      try {
+        const completion = await openai.createChatCompletion({
+          model: "gpt-3.5-turbo-0613",
+          messages,
+          temperature: 1,
+          functions: [
+            {
+              "name": "ask_and_summarize",
+              "description": "Analyze given context and ask 2 unique questions and a brief summary in up to 300 characters that will help you get more informations necessary to fully answer the initial query.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  questions: {
+                    type: 'array',
+                    items: {
+                      type: "object",
+                      properties: {
+                        question: { type: "string", description: "array of questions that will help you find context to get the right answer" },
+                      }
+                  }
+                  },
+                  brief_summary: {
+                    type: 'string',
+                    description: "brief summary in up to 300 characters of most important things you learned from the context that will help you answer the initial query"
+                  },
+                },
+                "required": ["questions", "brief_summary"]
+              }
+            }
+          ],
+          function_call: {"name": "ask_and_summarize"}
+        });
+
+        console.log(completion.data.choices[0].message.function_call.arguments)
+        if (user.workspace) {
+          const workspace = await Workspace.findById(user.workspace)
+          const company = await User.findById(workspace.company[0].toString());
+          company.tokenBalance -= completion.data.usage.total_tokens;
+          await company.save();
+        } else {
+          user.tokenBalance -= completion.data.usage.total_tokens;
+        }
+
+      const function_response = JSON.parse(completion.data.choices[0].message.function_call.arguments)
+      const questions = function_response.questions;
+      const brief_summary = function_response.brief_summary;
+
+      let context = `----- Context part 0 -----> ${brief_summary}`;
+      let fetched_doc_ids = [];
+
+      for (let i = 0; i < questions.length; i++) {
+          const chunks = await axios.post(
+            "https://www.asistant.ai/query",
+            {
+              "queries": [
+                {
+                  "query": questions[i].question,
+                  "filter": {
+                    "document_id": document_ids
+                  },
+                  "top_k": 1
+                }
+              ]
+            },
+            {
+              headers: {
+                "Authorization": `Bearer ${process.env.PYTHON_API_KEY}`
+              }
+            }
+          );
+          context += ` ------ Context part ${i + 1} ------>` + questions[i].question + ": " + chunks.data.results[0].results[0].text;
+          fetched_doc_ids.push(chunks.data.results[0].results[0].metadata.document_id);
+      }
+      console.log(fetched_doc_ids)
+      await user.save();
+      return res.status(201).json({ questions: questions, context: context, fetched_doc_ids, usage: completion.data.usage.total_tokens });
+      } catch (error) {
+        console.log(error);
+        return res.status(500).send({ error: error.message });
+      }
+
+    } catch (error) {
+      console.log(error);
+      return res.status(500).send({ error: error.message });
+    }
+});
+
+
 module.exports = router;
