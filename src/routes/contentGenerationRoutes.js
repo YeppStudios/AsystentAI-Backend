@@ -625,7 +625,6 @@ router.post('/completion-MSQT', requireTokens, async (req, res) => { // Multi-St
           function_call: {"name": "ask_and_summarize"}
         });
 
-        console.log(completion.data.choices[0].message.function_call.arguments)
         if (user.workspace) {
           const workspace = await Workspace.findById(user.workspace)
           const company = await User.findById(workspace.company[0].toString());
@@ -665,7 +664,6 @@ router.post('/completion-MSQT', requireTokens, async (req, res) => { // Multi-St
           context += ` ------ Context part ${i + 1} ------>` + questions[i].question + ": " + chunks.data.results[0].results[0].text;
           fetched_doc_ids.push(chunks.data.results[0].results[0].metadata.document_id);
       }
-      console.log(fetched_doc_ids)
       await user.save();
       return res.status(201).json({ questions: questions, context: context, fetched_doc_ids, usage: completion.data.usage.total_tokens });
       } catch (error) {

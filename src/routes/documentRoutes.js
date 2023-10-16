@@ -3,7 +3,6 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');
-const e = require('express');
 const Document = mongoose.model('Document');
 const Folder = mongoose.model('Folder');
 const Workspace = mongoose.model('Workspace');
@@ -219,6 +218,22 @@ router.post('/folders/:id/add-document', requireAuth, async (req, res) => {
 });
 
 
+router.get('/folders/:folderId/subfolders', async (req, res) => {
+  try {
+      const folderId = req.params.folderId;
+
+      const folder = await Folder.findById(folderId).populate('subfolders');
+      if (!folder) {
+          return res.status(404).send({ message: 'Folder not found' });
+      }
+
+      // Return the populated subfolders
+      res.status(200).send(folder.subfolders);
+  } catch (error) {
+      res.status(500).send({ message: 'Server error', error: error.message });
+  }
+});
+
 // ADD DOCUMENTS TO FOLDER
 router.post('/folders/:id/add-documents', requireAuth, async (req, res) => {
   try {
@@ -268,34 +283,52 @@ router.delete('/folders/:id/delete-document', requireAuth, (req, res) => {
 });
 
 
-// CREATE FOLDER
-router.post('/add-folder', requireAuth, (req, res) => {
-  const { title, category, workspace, documents, owner } = req.body;
-  Folder.findOne({ owner: req.user._id, title: title })
-    .populate('documents')
-    .then(async existingFolder => {
+router.post('/add-folder', requireAuth, async (req, res) => {
+  const { title, category, workspace, documents, owner, parentFolder, ownerEmail } = req.body;
+  try {
+      const existingFolder = await Folder.findOne({ owner: req.user._id, title: title }).populate('documents');
       if (existingFolder) {
-        existingFolder.documents.push(...documents);
-        existingFolder.save();
-        return res.json({ folder: existingFolder });
+          existingFolder.documents.push(...documents);
+          await existingFolder.save();
+          return res.json({ folder: existingFolder });
       }
-      try {
-        let folder = new Folder({
+
+      let folderData = {
           owner,
           title: title || "Untitled",
           category: category || "other",
           documents: documents || [],
-          workspace: workspace
-        });
-        folder.save()
-        return res.status(201).json({ folder });
-      } catch (e) {
-        console.log(e)
-        return res.status(500).json({ error: err.message });
+          workspace: workspace,
+          parentFolder: parentFolder || null,
+          ownerEmail: ownerEmail
+      };
+
+      if (parentFolder) {
+          folderData.parentFolder = parentFolder;
+      } else {
+          folderData.parentFolder = null;
       }
-      
-    });
-  });
+
+      let folder = new Folder(folderData);
+      await folder.save();
+
+      // If a parentFolder was provided, update its subfolders array
+      if (parentFolder) {
+          const parent = await Folder.findById(parentFolder);
+          if (parent) {
+              parent.subfolders.push(folder._id);
+              await parent.save();
+          }
+      }
+
+      return res.status(201).json({ folder });
+
+  } catch (e) {
+      console.log(e);
+      return res.status(500).json({ error: e.message });
+  }
+});
+
 
   router.post('/folders/documents', requireAuth, async (req, res) => {
     const folderIds = req.body.folderIds;
@@ -319,68 +352,101 @@ router.post('/add-folder', requireAuth, (req, res) => {
     }
   });
 
-  // READ
-  router.get('/folders/:workspaceId', (req, res) => {
-    let { page = 0, limit = 50 } = req.query;
-    page = parseInt(page);
-    limit = parseInt(limit);
-  
-    Folder.find({ workspace: req.params.workspaceId })
-      .sort({ updatedAt: -1 }) // Sort folders by updatedAt in descending order
+
+const deepPopulateSubfolders = async (folder) => {
+  if (folder.subfolders && folder.subfolders.length > 0) {
+    for (let i = 0; i < folder.subfolders.length; i++) {
+      let subfolder = await Folder.findById(folder.subfolders[i])
+                                   .populate()
+                                   .lean();
+      folder.subfolders[i] = await deepPopulateSubfolders(subfolder);
+    }
+  }
+  return folder;
+}
+
+router.get('/folders/:workspaceId', async (req, res) => {
+  let { page = 0, limit = 100 } = req.query;
+  page = parseInt(page);
+  limit = parseInt(limit);
+
+  try {
+    let mainFolders = await Folder.find({ 
+        workspace: req.params.workspaceId,
+        parentFolder: null
+      })
+      .sort({ updatedAt: -1 })
       .skip(page * limit)
       .limit(limit)
-      .populate('owner', 'email') // Populate the owner field and select only the name
-      .then(folders => {
-        // Transform folders to include ownerName and exclude the owner object
-        const transformedFolders = folders.map(folder => {
-          return { ...folder.toObject(), ownerEmail: folder.owner.email, owner: undefined };
-        });
-        return res.json(transformedFolders);
-      })
-      .catch(err => {
-        return res.status(500).json({ error: err.message });
-      });
-  });
-  
+      .populate()
+      .lean(); // Using lean() to return plain JavaScript objects
 
-  router.get('/folders/owner/:userId', requireAuth, (req, res) => {
-    let { page = 0, limit = 50 } = req.query;
-    page = parseInt(page);
-    limit = parseInt(limit);
-  
-    Folder.find({ owner: req.params.userId })
-      .sort({ updatedAt: -1 }) // Sort folders by updatedAt in descending order
+    mainFolders = await Promise.all(mainFolders.map(async folder => {
+      return await deepPopulateSubfolders(folder);
+    }));
+
+    return res.json(mainFolders);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/folders/owner/:userId', async (req, res) => {
+  let { page = 0, limit = 100 } = req.query;
+  page = parseInt(page);
+  limit = parseInt(limit);
+
+  try {
+    let mainFolders = await Folder.find({ 
+        owner: req.params.userId,
+        parentFolder: null 
+      })
+      .sort({ updatedAt: -1 })
       .skip(page * limit)
       .limit(limit)
-      .populate('owner', 'email') // Populate the owner field and select only the name
-      .then(folders => {
-        // Transform folders to include ownerEmail and exclude the owner object
-        const transformedFolders = folders.map(folder => {
-          return { ...folder.toObject(), ownerEmail: folder.owner.email, owner: undefined };
-        });
-        return res.json(transformedFolders);
-      })
-      .catch(err => {
-        return res.status(500).json({ error: err.message });
-      });
-  });
-  
+      .populate()
+      .lean()
+
+    mainFolders = await Promise.all(mainFolders.map(async folder => {
+      return await deepPopulateSubfolders(folder);
+    }));
+
+    return res.json(mainFolders);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 
-  
-  router.get('/getFolder/:id', requireAuth, (req, res) => {
-    Folder.findById(req.params.id)
-    .populate('documents')
-    .then(folder => {
-      if (!folder) {
-        return res.status(404).json({ message: 'Folder not found' });
-      }
-      return res.json(folder);
-    })
-    .catch(err => {
-      return res.status(500).json({ error: err.message });
+router.get('/getFolder/:id', requireAuth, async (req, res) => {
+  try {
+    let folder = await Folder.findById(req.params.id)
+      .populate('documents')
+      .populate('subfolders')
+      .populate('parentFolder');
+      
+    if (!folder) {
+      return res.status(404).json({ message: 'Folder not found' });
+    }
+    
+    let lineage = [];
+    let currentFolder = folder;
+    while (currentFolder.parentFolder) {
+      currentFolder = await Folder.findById(currentFolder.parentFolder);
+      lineage.push(currentFolder);
+    }
+
+    return res.json({
+      folder: folder,
+      lineage: lineage
     });
-  });
+
+  } catch(err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+
   
   // UPDATE
   router.patch('/folders/:id', requireAuth, (req, res) => {
@@ -403,56 +469,56 @@ router.post('/add-folder', requireAuth, (req, res) => {
 
 
 
-// DELETE FOLDER
 router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
   try {
-      const folder = await Folder.findById(req.params.id);
-      if (!folder) {
-          return res.status(404).json({ message: 'Folder not found' });
-      }
-
-      // const workspace = await Workspace.findById(folder.workspace);
-      // if ((folder.owner.toString() !== req.user._id.toString() && req.user._id.toString() !== workspace.company[0].toString())) {
-      //     return res.status(401).json({ message: 'Unauthorized' });
-      // }
-
       const user = await User.findById(req.params.userId);
+      const vectorIds = [];
 
-      // Create an array to hold vectorIds of all documents
-      let vectorIds = [];
+      // Recursive function to delete folder, its documents and subfolders
+      const deleteFolderRecursively = async (folderId) => {
+          const folder = await Folder.findById(folderId);
+          if (!folder) return;
 
-      // Delete all documents in the folder
-      for (let documentId of folder.documents) {
-          const document = await Document.findById(documentId.toString());
-          if (document) {
-              // Add vectorId of the document to the array
-              vectorIds.push(document.vectorId);
-              user.uploadedBytes -= document.documentSize;
-              await document.remove();
+          // Delete documents in the folder
+          for (let documentId of folder.documents) {
+              const document = await Document.findById(documentId.toString());
+              if (document) {
+                  vectorIds.push(document.vectorId);
+                  user.uploadedBytes -= document.documentSize;
+                  await document.remove();
+              }
           }
-      }
+
+          // Delete subfolders and their content
+          for (let subfolderId of folder.subfolders) {
+              await deleteFolderRecursively(subfolderId.toString());
+          }
+
+          // Delete the folder itself
+          await folder.remove();
+      };
+
+      await deleteFolderRecursively(req.params.id);
 
       // After all documents are deleted from MongoDB, delete them from Whale App
-      if (folder.documents.length > 0) {
-        await axios.delete(
-            "https://www.asistant.ai/delete",
-            {
-                data: {
-                    ids: vectorIds, // send all vectorIds at once
-                },
-                headers: {
-                    Authorization: `Bearer ${process.env.PYTHON_API_KEY}`,
-                },
-            }
-        );
+      if (vectorIds.length > 0) {
+          await axios.delete(
+              "https://www.asistant.ai/delete",
+              {
+                  data: { ids: vectorIds },
+                  headers: {
+                      Authorization: `Bearer ${process.env.PYTHON_API_KEY}`,
+                  },
+              }
+          );
       }
-      // After all documents deleted, remove the folder itself
-      await folder.remove();
+
       await user.save();
 
-      return res.json({ message: 'Folder and its documents deleted successfully' });
+      return res.json({ message: 'Folder, its subfolders, and their documents deleted successfully' });
   } catch (err) {
       return res.status(500).json({ error: err.message });
   }
 });
+
 module.exports = router;

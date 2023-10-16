@@ -5,6 +5,10 @@ const FolderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'User' 
     },
+    ownerEmail: {
+        type: String,
+        default: ""
+    },
     workspace: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Workspace',
@@ -22,6 +26,15 @@ const FolderSchema = new mongoose.Schema({
     documents: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Document',
+    }],
+    parentFolder: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Folder',
+        default: null
+    },
+    subfolders: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Folder',
     }],
     updatedAt: { 
         type: Date, 
