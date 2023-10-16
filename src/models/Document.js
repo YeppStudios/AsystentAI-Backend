@@ -33,7 +33,11 @@ const DocumentSchema = new mongoose.Schema({
     documentSize: {
       type: Number,
       default: 0
-    }
+    },
+    websiteUrl: {
+      type: String,
+      default: ""
+    },
 });
 
 mongoose.model('Document', DocumentSchema);

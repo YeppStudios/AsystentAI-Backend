@@ -46,7 +46,7 @@ const personaRoutes =  require('./src/routes/personaRoutes');
 const toneRoutes =  require('./src/routes/toneRoutes');
 const { emailJob, blockSubscriptionsJob } = require('./src/cron');
 const cors = require('cors');
-require('dotenv').config()
+require('dotenv').config();
 
 const app = express();
 app.set('port', (process.env.PORT || 3004));

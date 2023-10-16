@@ -26,6 +26,7 @@ router.post('/add-document', requireAuth, async (req, res) => {
       workspace: req.body.workspace,
       vectorId: req.body.vectorId,
       documentSize: req.body.size,
+      websiteUrl: req.body.websiteUrl,
     });
     await company.save();
   } else {
@@ -39,6 +40,7 @@ router.post('/add-document', requireAuth, async (req, res) => {
       timestamp: req.body.timestamp,
       vectorId: req.body.vectorId,
       documentSize: req.body.size,
+      websiteUrl: req.body.websiteUrl,
     });
     user.save();
   }
