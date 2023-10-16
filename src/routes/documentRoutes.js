@@ -355,18 +355,22 @@ router.post('/add-folder', requireAuth, async (req, res) => {
   });
 
 
-const deepPopulateSubfolders = async (folder) => {
-  if (folder.subfolders && folder.subfolders.length > 0) {
-    for (let i = 0; i < folder.subfolders.length; i++) {
-      let subfolder = await Folder.findById(folder.subfolders[i])
-                                   .populate()
-                                   .lean();
-      folder.subfolders[i] = await deepPopulateSubfolders(subfolder);
+  const deepPopulateSubfolders = async (folder) => {
+    if (folder && folder.subfolders && folder.subfolders.length > 0) {
+      for (let i = 0; i < folder.subfolders.length; i++) {
+        let subfolder = await Folder.findById(folder.subfolders[i])
+                                     .populate()
+                                     .lean();
+        if (subfolder) {
+          folder.subfolders[i] = await deepPopulateSubfolders(subfolder);
+        } else {
+          throw new Error(`Subfolder with id ${folder.subfolders[i]} not found.`);
+        }
+      }
     }
+    return folder;
   }
-  return folder;
-}
-
+  
 router.get('/folders/:workspaceId', async (req, res) => {
   let { page = 0, limit = 100 } = req.query;
   page = parseInt(page);
@@ -381,7 +385,7 @@ router.get('/folders/:workspaceId', async (req, res) => {
       .skip(page * limit)
       .limit(limit)
       .populate()
-      .lean(); // Using lean() to return plain JavaScript objects
+      .lean();
 
     mainFolders = await Promise.all(mainFolders.map(async folder => {
       return await deepPopulateSubfolders(folder);
@@ -476,12 +480,10 @@ router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
       const user = await User.findById(req.params.userId);
       const vectorIds = [];
 
-      // Recursive function to delete folder, its documents and subfolders
       const deleteFolderRecursively = async (folderId) => {
           const folder = await Folder.findById(folderId);
           if (!folder) return;
 
-          // Delete documents in the folder
           for (let documentId of folder.documents) {
               const document = await Document.findById(documentId.toString());
               if (document) {
@@ -491,18 +493,21 @@ router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
               }
           }
 
-          // Delete subfolders and their content
           for (let subfolderId of folder.subfolders) {
               await deleteFolderRecursively(subfolderId.toString());
           }
 
-          // Delete the folder itself
+          if (folder.parentFolder) {
+              await Folder.findByIdAndUpdate(folder.parentFolder, {
+                  $pull: { subfolders: folder._id }
+              });
+          }
+
           await folder.remove();
       };
 
       await deleteFolderRecursively(req.params.id);
 
-      // After all documents are deleted from MongoDB, delete them from Whale App
       if (vectorIds.length > 0) {
           await axios.delete(
               "https://www.asistant.ai/delete",
@@ -522,5 +527,6 @@ router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
       return res.status(500).json({ error: err.message });
   }
 });
+
 
 module.exports = router;
