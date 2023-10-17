@@ -485,12 +485,14 @@ router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
           if (!folder) return;
 
           for (let documentId of folder.documents) {
+            if (documentId) {
               const document = await Document.findById(documentId.toString());
               if (document) {
                   vectorIds.push(document.vectorId);
                   user.uploadedBytes -= document.documentSize;
                   await document.remove();
               }
+            }
           }
 
           for (let subfolderId of folder.subfolders) {
@@ -528,5 +530,36 @@ router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
   }
 });
 
+router.patch('/transferOwnership', async (req, res) => {
+  const { current_owner_id, new_owner_id, new_owner_email, new_workspace_id } = req.body;
+
+  if (!current_owner_id || !new_owner_id || !new_owner_email || !new_workspace_id) {
+      return res.status(400).json({ error: 'Owner information is incomplete' });
+  }
+
+  try {
+      await Document.updateMany(
+          { owner: current_owner_id },
+          {
+              owner: new_owner_id,
+              ownerEmail: new_owner_email,
+              workspace: new_workspace_id
+          }
+      );
+
+      await Folder.updateMany(
+          { owner: current_owner_id },
+          {
+              owner: new_owner_id,
+              workspace: new_workspace_id,
+              ownerEmail: new_owner_email
+          }
+      );
+
+      return res.json({ success: true, message: 'Ownership transferred successfully.' });
+  } catch (err) {
+      return res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;
