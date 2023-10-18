@@ -36,10 +36,23 @@ const FolderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Folder',
     }],
+    totalDocsCount: {
+        type: Number,
+        default: 0
+    },
     updatedAt: { 
         type: Date, 
         default: Date.now 
     },
+});
+
+FolderSchema.virtual('docsCount').get(function() {
+    return this.documents.length;
+});
+
+FolderSchema.pre('save', function(next) {
+    this.totalDocsCount = this.documents.length;
+    next();
 });
 
 mongoose.model('Folder', FolderSchema);

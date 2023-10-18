@@ -387,6 +387,11 @@ router.get('/folders/:workspaceId', async (req, res) => {
       .populate()
       .lean();
 
+    mainFolders = mainFolders.map(folder => {
+      folder.directDocumentCount = folder.documents.length;
+      return folder;
+    });
+
     mainFolders = await Promise.all(mainFolders.map(async folder => {
       return await deepPopulateSubfolders(folder);
     }));
@@ -411,7 +416,12 @@ router.get('/folders/owner/:userId', async (req, res) => {
       .skip(page * limit)
       .limit(limit)
       .populate()
-      .lean()
+      .lean();
+
+    mainFolders = mainFolders.map(folder => {
+      folder.directDocumentCount = folder.documents.length;
+      return folder;
+    });
 
     mainFolders = await Promise.all(mainFolders.map(async folder => {
       return await deepPopulateSubfolders(folder);
@@ -472,7 +482,6 @@ router.get('/getFolder/:id', requireAuth, async (req, res) => {
         return res.status(500).json({ error: err.message });
       });
 });
-
 
 
 router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
