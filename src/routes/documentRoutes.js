@@ -472,7 +472,12 @@ router.get('/getFolder/:id', requireAuth, async (req, res) => {
           return res.status(404).json({ message: 'Folder not found' });
         }
 
-        folder.workspace = req.body.workspace;
+        if ( req.body.title ) {
+          folder.title = req.body.title;
+        }
+        if ( req.body.workspace ) {
+          folder.workspace = req.body.workspace;
+        }
         return folder.save();
       })
       .then(() => {
@@ -539,7 +544,7 @@ router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
   }
 });
 
-router.patch('/transferOwnership', async (req, res) => {
+router.patch('/transferOwnership', requireAdmin, async (req, res) => {
   const { current_owner_id, new_owner_id, new_owner_email, new_workspace_id } = req.body;
 
   if (!current_owner_id || !new_owner_id || !new_owner_email || !new_workspace_id) {
