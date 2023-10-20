@@ -153,6 +153,10 @@ const UserSchema = new mongoose.Schema({
     lastSeen: {
         type: Date,
     },
+    hubAccess: {
+        type: Boolean,
+        default: false
+    },
     isBlocked: {
         type: Boolean,
         default: false
