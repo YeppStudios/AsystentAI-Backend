@@ -44,6 +44,14 @@ const FolderSchema = new mongoose.Schema({
         type: Date, 
         default: Date.now 
     },
+    imageUrl: {
+        type: String, 
+        default: ""
+    }, 
+    description: {
+        type: String,
+        default: ""
+    }
 });
 
 FolderSchema.virtual('docsCount').get(function() {

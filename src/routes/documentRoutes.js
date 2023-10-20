@@ -286,7 +286,7 @@ router.delete('/folders/:id/delete-document', requireAuth, (req, res) => {
 
 
 router.post('/add-folder', requireAuth, async (req, res) => {
-  const { title, category, workspace, documents, owner, parentFolder, ownerEmail } = req.body;
+  const { title, category, workspace, documents, owner, parentFolder, ownerEmail, imageUrl, description } = req.body;
   try {
       const existingFolder = await Folder.findOne({ owner: req.user._id, title: title }).populate('documents');
       if (existingFolder) {
@@ -302,7 +302,9 @@ router.post('/add-folder', requireAuth, async (req, res) => {
           documents: documents || [],
           workspace: workspace,
           parentFolder: parentFolder || null,
-          ownerEmail: ownerEmail
+          ownerEmail: ownerEmail,
+          imageUrl: imageUrl,
+          description: description
       };
 
       if (parentFolder) {
@@ -474,9 +476,19 @@ router.get('/getFolder/:id', requireAuth, async (req, res) => {
         if ( req.body.title ) {
           folder.title = req.body.title;
         }
+        
         if ( req.body.workspace ) {
           folder.workspace = req.body.workspace;
         }
+
+        if (req.body.imageUrl) {
+          folder.imageUrl = req.body.imageUrl;
+        }
+
+        if (req.body.description) {
+          folder.description = req.body.description;
+        }
+
         return folder.save();
       })
       .then(() => {
