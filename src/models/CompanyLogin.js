@@ -11,6 +11,9 @@ const CompanyLoginSchema = new mongoose.Schema({
     default: Date.now,
     required: true,
   },
+  ip: {
+    type: String,
+  },
 });
 
 mongoose.model('CompanyLogin', CompanyLoginSchema);

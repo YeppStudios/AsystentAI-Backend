@@ -462,16 +462,13 @@ router.get('/avg-tokens-monthly', async (req, res) => {
   
   router.get('/unique-company-logins', async (req, res) => {
     try {
-        const year = new Date().getFullYear(); // assuming current year; adjust as needed
-        const month = parseInt(req.query.month) - 1; // 0-based month
+        const year = new Date().getFullYear();
+        const month = parseInt(req.query.month) - 1;
 
-        // Calculate start date of the month
         const monthStart = new Date(year, month, 1);
 
-        // Calculate end date of the month (first day of the next month)
         const monthEnd = new Date(year, month + 1, 1);
 
-        // Use MongoDB's aggregation framework to get unique workspaceIds
         const uniqueLogins = await CompanyLogin.aggregate([
             {
                 $match: {

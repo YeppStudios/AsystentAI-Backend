@@ -463,7 +463,6 @@ router.get('/getFolder/:id', requireAuth, async (req, res) => {
 });
 
 
-  
   // UPDATE
   router.patch('/folders/:id', requireAuth, (req, res) => {
     Folder.findById(req.params.id)
