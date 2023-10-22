@@ -440,7 +440,14 @@ router.get('/getFolder/:id', requireAuth, async (req, res) => {
   try {
     let folder = await Folder.findById(req.params.id)
       .populate('documents')
-      .populate('subfolders')
+      .populate({
+        path: 'subfolders',
+        model: 'Folder',
+        populate: {
+          path: 'owner',
+          model: 'User'
+        }
+      })
       .populate('parentFolder');
       
     if (!folder) {
@@ -465,6 +472,7 @@ router.get('/getFolder/:id', requireAuth, async (req, res) => {
 });
 
 
+
   // UPDATE
   router.patch('/folders/:id', requireAuth, (req, res) => {
     Folder.findById(req.params.id)
@@ -476,7 +484,7 @@ router.get('/getFolder/:id', requireAuth, async (req, res) => {
         if ( req.body.title ) {
           folder.title = req.body.title;
         }
-        
+
         if ( req.body.workspace ) {
           folder.workspace = req.body.workspace;
         }

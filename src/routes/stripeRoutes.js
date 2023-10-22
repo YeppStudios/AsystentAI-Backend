@@ -688,7 +688,7 @@ router.post('/create-customer-portal-session', requireAuth, async (req, res) => 
     }
     const session = await stripe.billingPortal.sessions.create({
       customer: `${customer.id}`,
-      return_url: 'https://yepp.ai/profile',
+      return_url: 'https://yepp.ai/me',
     });
   
     res.status(200).json({ url: session.url });
