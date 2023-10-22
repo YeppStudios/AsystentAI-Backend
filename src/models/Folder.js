@@ -51,6 +51,10 @@ const FolderSchema = new mongoose.Schema({
     description: {
         type: String,
         default: ""
+    },
+    profile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Profile',
     }
 });
 

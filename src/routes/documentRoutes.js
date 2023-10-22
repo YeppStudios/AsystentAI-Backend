@@ -8,6 +8,7 @@ const Folder = mongoose.model('Folder');
 const Workspace = mongoose.model('Workspace');
 const Assistant = mongoose.model('Assistant');
 const User = mongoose.model('User');
+const Profile = mongoose.model('Profile');
 const axios = require('axios');
 
 // CREATE
@@ -286,7 +287,7 @@ router.delete('/folders/:id/delete-document', requireAuth, (req, res) => {
 
 
 router.post('/add-folder', requireAuth, async (req, res) => {
-  const { title, category, workspace, documents, owner, parentFolder, ownerEmail, imageUrl, description } = req.body;
+  const { title, category, workspace, documents, owner, parentFolder, ownerEmail, imageUrl, description, profileId } = req.body;
   try {
       const existingFolder = await Folder.findOne({ owner: req.user._id, title: title }).populate('documents');
       if (existingFolder) {
@@ -304,7 +305,8 @@ router.post('/add-folder', requireAuth, async (req, res) => {
           parentFolder: parentFolder || null,
           ownerEmail: ownerEmail,
           imageUrl: imageUrl,
-          description: description
+          description: description,
+          profile: profileId || null
       };
 
       if (parentFolder) {
@@ -316,13 +318,20 @@ router.post('/add-folder', requireAuth, async (req, res) => {
       let folder = new Folder(folderData);
       await folder.save();
 
-      // If a parentFolder was provided, update its subfolders array
       if (parentFolder) {
           const parent = await Folder.findById(parentFolder);
           if (parent) {
               parent.subfolders.push(folder._id);
               await parent.save();
           }
+      }
+
+      if (profileId) {
+        const profile = await Profile.findById(profileId);
+        if (profile) {
+            profile.subfolders.push(folder._id);
+            await profile.save();
+        }
       }
 
       return res.status(201).json({ folder });
@@ -537,6 +546,12 @@ router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
                   $pull: { subfolders: folder._id }
               });
           }
+
+          if (folder.profile) {
+            await Profile.findByIdAndUpdate(folder.profile, {
+                $pull: { subfolders: folder._id }
+            });
+        }
 
           await folder.remove();
       };

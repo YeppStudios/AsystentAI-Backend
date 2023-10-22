@@ -14,10 +14,6 @@ const mongoose = require('mongoose');
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Folder',
     }],
-    totalDocsCount: {
-        type: Number,
-        default: 0
-    },
     updatedAt: { 
         type: Date, 
         default: Date.now 
