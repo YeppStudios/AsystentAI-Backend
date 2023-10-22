@@ -1,40 +1,35 @@
 const mongoose = require('mongoose');
   
   const ProfileSchema = new mongoose.Schema({
-    targetAudience: {
-      type: String,
-      required: true,
-      default: ""
+    workspace: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Workspace',
     },
-    background: {
-      type: String,
-      required: true,
-      default: ""
+    title: {
+        type: String,
+        required: true,
+        default: "Untitled"
     },
-    goals: {
-      type: String,
-      required: true,
-      default: ""
+    subfolders: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Folder',
+    }],
+    totalDocsCount: {
+        type: Number,
+        default: 0
     },
-    values: {
-      type: String,
-      required: true,
-      default: ""
+    updatedAt: { 
+        type: Date, 
+        default: Date.now 
     },
-    advantages: {
-      type: String,
-      required: true,
-      default: ""
-    },
-    image: { 
+    imageUrl: {
         type: String, 
-        default: "" 
-    },
-    name:{
-        type:String,
-        required:true,
-        default:""
-     }
+        default: ""
+    }, 
+    description: {
+        type: String,
+        default: ""
+    }
   });
   
 mongoose.model('Profile', ProfileSchema);

@@ -145,7 +145,6 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
-    profiles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Profile'}],
     purchases: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Payment'}],
     transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction'}],
     tokenHistory: [{BalanceSnapshotSchema}],
