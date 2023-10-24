@@ -58,7 +58,11 @@ const AssistantSchema = new mongoose.Schema({
     profile: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Profile',
-    }
+    },
+    workspace: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Workspace',
+    },
 });
 
 mongoose.model('Assistant', AssistantSchema);

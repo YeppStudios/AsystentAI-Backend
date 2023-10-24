@@ -30,7 +30,7 @@ router.get('/campaign/:id', requireAuth, async (req, res) => {
 
 router.get('/campaignsByOwner', requireAuth, async (req, res) => {
     try {
-        const campaigns = await Campaign.find({ owner: req.user._id });
+        const campaigns = await Campaign.find({ owner: req.user._id }).populate('owner');
         return res.send(campaigns);
     } catch (err) {
         return res.status(500).send(err);
@@ -39,7 +39,7 @@ router.get('/campaignsByOwner', requireAuth, async (req, res) => {
 
 router.get('/get_profile_campaigns/:profileId', requireAuth, async (req, res) => {
     try {
-        const campaigns = await Campaign.find({ profile: req.params.profileId });
+        const campaigns = await Campaign.find({ profile: req.params.profileId }).populate('owner');
         return res.send(campaigns);
     } catch (err) {
         return res.status(500).send(err);
