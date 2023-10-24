@@ -2,13 +2,14 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 const requireAuth = require('../middlewares/requireAuth');
+const requireAdmin = require('../middlewares/requireAdmin')
 const Tone = mongoose.model('Tone');
 const Workspace = mongoose.model('Workspace');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_KEY);
 
 router.post('/save-tone', requireAuth, async (req, res) => {
-    const { title, icon, prompt, workspace, base_text } = req.body;
+    const { title, icon, prompt, workspace, base_text, profile } = req.body;
 
     if (!title || !prompt || !workspace) {
         return res.status(400).send({ error: 'All fields are required' });
@@ -27,7 +28,8 @@ router.post('/save-tone', requireAuth, async (req, res) => {
             prompt,
             owner: req.user._id,
             workspace,
-            base_text
+            base_text,
+            profile
         });
 
         await newTone.save();
@@ -41,7 +43,7 @@ router.post('/save-tone', requireAuth, async (req, res) => {
 });
 
 
-router.get('/tones', requireAuth, async (req, res) => {
+router.get('/tones', requireAdmin, async (req, res) => {
     try {
         const tones = await Tone.find();
         res.status(200).send(tones);
@@ -56,6 +58,15 @@ router.get('/tones/owner', requireAuth, async (req, res) => {
         const ownerId = req.user._id.toString();
         
         const tones = await Tone.find({ owner: ownerId });
+        return res.status(200).send(tones);
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+});
+
+router.get('/profile_tones/:profileId', requireAuth, async (req, res) => {
+    try {
+        const tones = await Tone.find({ profile: req.params.profileId });
         return res.status(200).send(tones);
     } catch (error) {
         return res.status(500).send(error);

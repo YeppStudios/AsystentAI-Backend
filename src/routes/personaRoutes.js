@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 const requireAuth = require('../middlewares/requireAuth');
+const requireAdmin = require('../middlewares/requireAdmin')
 const Persona = mongoose.model('Persona');
 const sgMail = require('@sendgrid/mail');
 const Workspace = mongoose.model('Workspace');
@@ -9,7 +10,7 @@ sgMail.setApiKey(process.env.SENDGRID_KEY);
 
 
 router.post('/save-persona', requireAuth, async (req, res) => {
-    const { title, icon, prompt, workspace, base_text } = req.body;
+    const { title, icon, prompt, workspace, base_text, profile } = req.body;
 
     if (!title || !icon || !prompt || !workspace) {
         return res.status(400).send({ error: 'All fields are required' });
@@ -28,7 +29,8 @@ router.post('/save-persona', requireAuth, async (req, res) => {
             prompt,
             owner: req.user._id,
             workspace,
-            base_text: base_text
+            base_text: base_text,
+            profile
         });
 
         await newPersona.save();
@@ -41,7 +43,7 @@ router.post('/save-persona', requireAuth, async (req, res) => {
 });
 
 
-router.get('/personas', requireAuth, async (req, res) => {
+router.get('/personas', requireAdmin, async (req, res) => {
     try {
         const personas = await Persona.find();
         res.status(200).send(personas);
@@ -61,6 +63,14 @@ router.get('/personas/owner', requireAuth, async (req, res) => {
     }
 });
 
+router.get('/profile_personas/:profileId', requireAuth, async (req, res) => {
+    try {
+        const personas = await Persona.find({ profile: req.params.profileId });
+        return res.status(200).send(personas);
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+});
 
 router.get('/persona/:id', requireAuth, async (req, res) => {
     try {

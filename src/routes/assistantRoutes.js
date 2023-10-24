@@ -56,6 +56,18 @@ router.get('/getUserAssistants/:userId', requireAuth, (req, res) => {
     });
 });
 
+router.get('/getProfileAssistants/:profileId', requireAuth, (req, res) => {
+  Assistant.find({ profile: req.params.profileId })
+    .populate('documents') 
+    .populate('folders') 
+    .then(assistants => {
+      return res.json({assistants: assistants});
+    })
+    .catch(err => {
+      return res.status(500).json({ error: err.message });
+    });
+});
+
 router.get('/countAssistants/:userId', requireAuth, async (req, res) => {
   try {
       const userId = req.params.userId;

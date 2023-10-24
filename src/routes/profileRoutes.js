@@ -18,22 +18,29 @@ router.get('/getProfiles', requireAuth, async (req, res) => {
   });
   
 
-router.get('/getProfile/:profileId', requireAuth, async (req, res) => {
+  router.get('/getProfile/:profileId', requireAuth, async (req, res) => {
     try {
-      const profileId = req.params.profileId;
-      const profile = await Profile.findById(profileId);
+        const profileId = req.params.profileId;
+        const profile = await Profile.findById(profileId)
+            .populate({
+                path: 'subfolders',
+                populate: {
+                    path: 'owner',
+                    model: 'User'
+                }
+            });
 
-      if (!profile) {
-        return res.status(404).json({ message: 'Profile not found' });
-      }
+        if (!profile) {
+            return res.status(404).json({ message: 'Profile not found' });
+        }
 
-      return res.json(profile);
+        return res.json(profile);
     } catch (err) {
-      console.error(err);
-      return res.status(500).json({ message: 'Server Error' });
+        console.error(err);
+        return res.status(500).json({ message: 'Server Error' });
     }
-  });
-  
+});
+
 
 // Add new profile for user
 router.post('/addProfile', requireAuth, async (req, res) => {

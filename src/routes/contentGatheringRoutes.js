@@ -8,8 +8,8 @@ const SeoContent = mongoose.model('SeoContent');
 const moment = require('moment');
 
 router.post('/addContent', requireAuth, async (req, res) => {
-    const { text, prompt, category, savedBy, title, query, icon } = req.body;
-    const newContent = new Content({ text, prompt, category, savedBy, title, query, icon });
+    const { text, prompt, category, savedBy, title, query, icon, profile } = req.body;
+    const newContent = new Content({ text, prompt, category, savedBy, title, query, icon, profile });
 
     try {
         const savedContent = await newContent.save();
@@ -166,6 +166,34 @@ router.get('/getSavedContent', requireAdmin, async (req, res) => {
     }
   });
   
+  router.get('/getProfileSavedContent/:profileId', requireAuth, async (req, res) => {
+    try {
+      const contents = await Content.find({ profile: req.params.profileId })
+        .sort({ timestamp: -1 })
+        .populate('savedBy', 'email')
+        .lean();
+  
+      const contentsWithCustomTimestamp = contents.map((content) => {
+        const daysAgo = moment().diff(moment(content.timestamp), 'days');
+  
+        const customTimestamp = daysAgo === 0
+          ? 'Today'
+          : daysAgo === 1
+            ? '1 day ago'
+            : `${daysAgo} days ago`;
+  
+        return {
+          ...content,
+          timestamp: customTimestamp,
+          savedBy: content.savedBy.email, // Replace savedBy with the email
+        };
+      });
+  
+      return res.status(200).json(contentsWithCustomTimestamp);
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
 
   // Endpoint to fetch all SeoContent documents
 router.get('/seocontents', requireAdmin, async (req, res) => {
@@ -207,6 +235,34 @@ router.get('/getUserSeoContent', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/getProfileSeoContent/:profileId', requireAuth, async (req, res) => {
+  try {
+    const seocontents = await SeoContent.find({ profile: req.params.profileId }).sort({ timestamp: -1 });
+    const contentsWithCustomTimestamp = seocontents.map((content) => {
+      const daysAgo = moment().diff(moment(content.timestamp), 'days');
+
+      // Format timestamp based on daysAgo
+      const customTimestamp = daysAgo === 0
+        ? 'Today'
+        : daysAgo === 1
+          ? '1 Day ago'
+          : `${daysAgo} days ago`;
+
+      return {
+        ...content,
+        timestamp: customTimestamp,
+        title: content.title,
+        owner: content.owner,
+        content: content.content,
+        savedBy: content.savedBy,
+        _id: content._id,
+      };
+    });
+    return res.json(contentsWithCustomTimestamp);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
 
 // Endpoint to fetch a single SeoContent document by id
 router.get('/seoContent/:id', requireAuth, async (req, res) => {
@@ -228,7 +284,8 @@ router.post('/addSeoContent', requireAuth, async (req, res) => {
     title: req.body.title,
     content: req.body.content,
     owner: req.body.owner,
-    savedBy: req.body.savedBy
+    savedBy: req.body.savedBy,
+    profile: req.body.profile
   });
 
   try {

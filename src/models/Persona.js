@@ -28,6 +28,10 @@ const PersonaSchema = new mongoose.Schema({
     timestamp: {
         type: Date,
         default: Date.now
+    },
+    profile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Profile',
     }
 });
 

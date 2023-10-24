@@ -37,6 +37,15 @@ router.get('/campaignsByOwner', requireAuth, async (req, res) => {
     }
 });
 
+router.get('/get_profile_campaigns/:profileId', requireAuth, async (req, res) => {
+    try {
+        const campaigns = await Campaign.find({ profile: req.params.profileId });
+        return res.send(campaigns);
+    } catch (err) {
+        return res.status(500).send(err);
+    }
+});
+
 router.patch('/campaign/:campaignId/template/:templateId', async (req, res) => {
     const { campaignId, templateId } = req.params;
     const { text } = req.body; // Assuming the updated text is sent in the request body

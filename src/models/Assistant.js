@@ -55,6 +55,10 @@ const AssistantSchema = new mongoose.Schema({
         type: Date, 
         default: Date.now 
     },
+    profile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Profile',
+    }
 });
 
 mongoose.model('Assistant', AssistantSchema);

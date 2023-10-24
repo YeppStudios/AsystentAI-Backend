@@ -51,6 +51,10 @@ const ContentSchema = new mongoose.Schema({
             "document"
         ],
         default: "document" // Set a default value if needed
+    },
+    profile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Profile',
     }
 });
 

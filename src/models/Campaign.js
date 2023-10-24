@@ -60,6 +60,14 @@ const CampaignSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Workspace',
     },
+    profile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Profile',
+    },
+    personaPrompt: {
+        type: String,
+        default: ""
+    }
 });
 
 mongoose.model('Campaign', CampaignSchema);
