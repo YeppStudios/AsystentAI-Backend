@@ -11,48 +11,52 @@ const User = mongoose.model('User');
 const Profile = mongoose.model('Profile');
 const axios = require('axios');
 
-// CREATE
 router.post('/add-document', requireAuth, async (req, res) => {
   let document;
-  if (req.body.workspace && req.body.workspace !== 'undefined') {
-    const workspace = await Workspace.findById(req.body.workspace);
-    const company = await User.findById(workspace.company[0].toString());
-    company.uploadedBytes += Math.round(req.body.size * 100) / 100;
-    document = new Document({
-      owner: req.body.owner,
-      ownerEmail: req.body.ownerEmail,
-      title: req.body.title,
-      category: req.body.category,
-      timestamp: req.body.timestamp,
-      workspace: req.body.workspace,
-      vectorId: req.body.vectorId,
-      documentSize: req.body.size,
-      websiteUrl: req.body.websiteUrl,
-    });
-    await company.save();
-  } else {
-    const user = await User.findById(req.user._id);
-    user.uploadedBytes += Math.round(req.body.size * 100) / 100;
-    document = new Document({
-      owner: req.body.owner,
-      ownerEmail: req.body.ownerEmail,
-      title: req.body.title,
-      category: req.body.category,
-      timestamp: req.body.timestamp,
-      vectorId: req.body.vectorId,
-      documentSize: req.body.size,
-      websiteUrl: req.body.websiteUrl,
-    });
-    user.save();
-  }
+  try {
+    if (req.body.workspace && req.body.workspace !== 'undefined') {
+      const workspace = await Workspace.findById(req.body.workspace);
+      const company = await User.findById(workspace.company[0].toString());
+      company.uploadedBytes += Math.round(req.body.size * 100) / 100;
 
-  document.save()
-    .then(() => {
-      return res.status(201).json({ document });
-    })
-    .catch(err => {
-      return res.status(400).json({ error: err.message });
-    });
+      document = new Document({
+        owner: req.body.owner,
+        ownerEmail: req.body.ownerEmail,
+        title: req.body.title,
+        category: req.body.category,
+        timestamp: req.body.timestamp,
+        workspace: req.body.workspace,
+        vectorId: req.body.vectorId,
+        documentSize: req.body.size,
+        websiteUrl: req.body.websiteUrl,
+      });
+      await company.save();
+    } else {
+      const user = await User.findById(req.user._id);
+      user.uploadedBytes += Math.round(req.body.size * 100) / 100;
+
+      document = new Document({
+        owner: req.body.owner,
+        ownerEmail: req.body.ownerEmail,
+        title: req.body.title,
+        category: req.body.category,
+        timestamp: req.body.timestamp,
+        vectorId: req.body.vectorId,
+        documentSize: req.body.size,
+        websiteUrl: req.body.websiteUrl,
+      });
+      await user.save();
+    }
+
+    await document.save();
+    document = await Document.findById(document._id).populate('owner');
+
+    return res.status(201).json({ document });
+
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({ error: err.message });
+  }
 });
 
 // READ
@@ -318,6 +322,9 @@ router.post('/add-folder', requireAuth, async (req, res) => {
       let folder = new Folder(folderData);
       await folder.save();
 
+      // Populate owner after saving the folder
+      folder = await Folder.findById(folder._id).populate('owner');
+
       if (parentFolder) {
           const parent = await Folder.findById(parentFolder);
           if (parent) {
@@ -382,104 +389,120 @@ router.post('/add-folder', requireAuth, async (req, res) => {
     return folder;
   }
   
-router.get('/folders/:workspaceId', async (req, res) => {
-  let { page = 0, limit = 100 } = req.query;
-  page = parseInt(page);
-  limit = parseInt(limit);
-
-  try {
-    let mainFolders = await Folder.find({ 
-        workspace: req.params.workspaceId,
-        parentFolder: null
-      })
-      .sort({ updatedAt: -1 })
-      .skip(page * limit)
-      .limit(limit)
-      .populate()
-      .lean();
-
-    mainFolders = mainFolders.map(folder => {
-      folder.directDocumentCount = folder.documents.length;
-      return folder;
-    });
-
-    mainFolders = await Promise.all(mainFolders.map(async folder => {
-      return await deepPopulateSubfolders(folder);
-    }));
-
-    return res.json(mainFolders);
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-router.get('/folders/owner/:userId', async (req, res) => {
-  let { page = 0, limit = 100 } = req.query;
-  page = parseInt(page);
-  limit = parseInt(limit);
-
-  try {
-    let mainFolders = await Folder.find({ 
-        owner: req.params.userId,
-        parentFolder: null 
-      })
-      .sort({ updatedAt: -1 })
-      .skip(page * limit)
-      .limit(limit)
-      .populate()
-      .lean();
-
-    mainFolders = mainFolders.map(folder => {
-      folder.directDocumentCount = folder.documents.length;
-      return folder;
-    });
-
-    mainFolders = await Promise.all(mainFolders.map(async folder => {
-      return await deepPopulateSubfolders(folder);
-    }));
-
-    return res.json(mainFolders);
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-
-router.get('/getFolder/:id', requireAuth, async (req, res) => {
-  try {
-    let folder = await Folder.findById(req.params.id)
-      .populate('documents')
-      .populate({
-        path: 'subfolders',
-        model: 'Folder',
-        populate: {
+  router.get('/folders/:workspaceId', async (req, res) => {
+    let { page = 0, limit = 100 } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+  
+    try {
+      let mainFolders = await Folder.find({ 
+          workspace: req.params.workspaceId,
+          parentFolder: null
+        })
+        .sort({ updatedAt: -1 })
+        .skip(page * limit)
+        .limit(limit)
+        .populate({
           path: 'owner',
-          model: 'User'
-        }
+          model: 'User',
+          select: 'email name'
       })
-      .populate('parentFolder');
+        .lean();
+  
+      mainFolders = mainFolders.map(folder => {
+        folder.directDocumentCount = folder.documents.length;
+        return folder;
+      });
+  
+      mainFolders = await Promise.all(mainFolders.map(async folder => {
+        return await deepPopulateSubfolders(folder);
+      }));
+  
+      return res.json(mainFolders);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+  
+
+  router.get('/folders/owner/:userId', async (req, res) => {
+    let { page = 0, limit = 100 } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+  
+    try {
+      let mainFolders = await Folder.find({ 
+          owner: req.params.userId,
+          parentFolder: null 
+        })
+        .sort({ updatedAt: -1 })
+        .skip(page * limit)
+        .limit(limit)
+        .populate({
+          path: 'owner',
+          model: 'User',
+          select: 'email name' 
+        })
+        .lean();
+  
+      mainFolders = mainFolders.map(folder => {
+        folder.directDocumentCount = folder.documents.length;
+        return folder;
+      });
+  
+      mainFolders = await Promise.all(mainFolders.map(async folder => {
+        return await deepPopulateSubfolders(folder);
+      }));
+  
+      return res.json(mainFolders);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+  
+  router.get('/getFolder/:id', requireAuth, async (req, res) => {
+    try {
+      let folder = await Folder.findById(req.params.id)
+        .populate({
+          path: 'documents',
+          populate: {
+            path: 'owner',
+            model: 'User',
+            select: 'email name'
+          }
+        })
+        .populate({
+          path: 'subfolders',
+          model: 'Folder',
+          populate: {
+            path: 'owner',
+            model: 'User',
+            select: 'email name'
+          }
+        })
+        .populate('parentFolder');
+        
+      if (!folder) {
+        return res.status(404).json({ message: 'Folder not found' });
+      }
       
-    if (!folder) {
-      return res.status(404).json({ message: 'Folder not found' });
+      let lineage = [];
+      let currentFolder = folder;
+      while (currentFolder.parentFolder) {
+        currentFolder = await Folder.findById(currentFolder.parentFolder);
+        lineage.push(currentFolder);
+      }
+  
+      return res.json({
+        folder: folder,
+        lineage: lineage
+      });
+  
+    } catch(err) {
+      return res.status(500).json({ error: err.message });
     }
-    
-    let lineage = [];
-    let currentFolder = folder;
-    while (currentFolder.parentFolder) {
-      currentFolder = await Folder.findById(currentFolder.parentFolder);
-      lineage.push(currentFolder);
-    }
-
-    return res.json({
-      folder: folder,
-      lineage: lineage
-    });
-
-  } catch(err) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
+  });
+  
 
 
   // UPDATE
