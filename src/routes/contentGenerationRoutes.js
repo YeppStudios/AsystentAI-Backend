@@ -638,7 +638,9 @@ router.post('/completion-MSQT', requireTokens, async (req, res) => { // Multi-St
       const questions = function_response.questions;
       const brief_summary = function_response.brief_summary;
 
-      let context = `----- Context part 0 -----> ${brief_summary}`;
+      let context = `Context information from multiple sources for you to interpret is below. 
+      ----- Beginning Of The Context ----- 
+      ${brief_summary}`;
       let fetched_doc_ids = [];
 
       for (let i = 0; i < questions.length; i++) {
@@ -661,9 +663,10 @@ router.post('/completion-MSQT', requireTokens, async (req, res) => { // Multi-St
               }
             }
           );
-          context += ` ------ Context part ${i + 1} ------>` + questions[i].question + ": " + chunks.data.results[0].results[0].text;
+          context += "\n " + chunks.data.results[0].results[0].text;
           fetched_doc_ids.push(chunks.data.results[0].results[0].metadata.document_id);
       }
+      context += "\n ----- End Of The Context ----- ";
       await user.save();
       return res.status(201).json({ questions: questions, context: context, fetched_doc_ids, usage: completion.data.usage.total_tokens });
       } catch (error) {

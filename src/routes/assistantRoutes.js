@@ -121,9 +121,6 @@ router.delete('/delete-assistant/:id', requireAuth, async (req, res) => {
     if (!assistant) {
       return res.status(404).json({ message: 'Assistant not found' });
     }
-    if (assistant.owner.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
     await assistant.remove();
     res.json({ message: 'Assistant deleted successfully' });
   } catch (err) {

@@ -46,7 +46,9 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
           systemPrompt = system;
         }
         if (context) {
-          embeddingContext = `Extra context you might find helpful, but you don't have to use: ${context}. Respond to: `;
+          embeddingContext = `${context} 
+          Given the information from multiple sources and not prior knowledge, answer the query.
+          Query: `;
         }
         const conversation = await Conversation.findById(req.params.conversationId)
             .populate({
@@ -68,12 +70,13 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         const messagesText = latestMessages.map((message) => message.text).join(" ");
         const messages = [  { role: "system", content: systemPrompt },  ...latestMessages.map((message) => {    
             return {role: message.sender,  content: message.text};
-        }), { role: "user", content: `${embeddingContext} ${text} Response:`},];
+        }), { role: "user", content: `${embeddingContext} ${text} \nResponse:`},];
+
 
         const completion = await openai.createChatCompletion({
             model: "gpt-4",
             messages,
-            temperature: 0.5,
+            temperature: 0.85,
             stream: true,
         }, { responseType: 'stream' });
         res.set({
