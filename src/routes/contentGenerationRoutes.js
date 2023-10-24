@@ -588,7 +588,6 @@ router.post('/completion-MSQT', requireTokens, async (req, res) => { // Multi-St
   try {
       const { initial_prompt, embedding_result, document_ids } = req.body;
       const user = await User.findById(req.user._id);
-      console.log(embedding_result)
       const messages = [
           { role: 'system', content: `Your role is to analyze the retrieved context and based on the query determine what info you lack to answer query. You come up with 2 different follow up questions that might help you clarify inconsistencies or learn about aspects not mentioned in context. You never ask about things you already understand from the context. You always come up with questions in given context's language. Along with the questions, you come up with a brief summary of most important informations that will help you respond to the initial query: "${initial_prompt}".` },
           { role: 'user', content: `Retrieved context: ${embedding_result}. Initial query you need to summarize and ask follow up questions: ${initial_prompt}.` }
