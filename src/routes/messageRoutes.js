@@ -85,7 +85,6 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
             'Connection': 'keep-alive'
         });
 
-
         completion.data.on('data', async data => {
             const lines = data.toString().split('\n').filter(line => line.trim() !== '');
             for (const line of lines) {
