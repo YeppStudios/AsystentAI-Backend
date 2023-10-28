@@ -3,11 +3,11 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');
-const User = mongoose.model('User');
+const CompetitionResearch = mongoose.model('CompetitionResearch');
 
 router.post('/create', async (req, res) => {
   try {
-    const newRecord = new CompanyLogin(req.body);
+    const newRecord = new CompetitionResearch(req.body);
     await newRecord.save();
     res.status(201).json(newRecord);
   } catch (error) {
@@ -17,7 +17,7 @@ router.post('/create', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const records = await CompanyLogin.find();
+    const records = await CompetitionResearch.find();
     res.status(200).json(records);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const record = await CompanyLogin.findById(req.params.id);
+    const record = await CompetitionResearch.findById(req.params.id);
     if (!record) return res.status(404).json({ message: 'Not Found' });
     res.status(200).json(record);
   } catch (error) {
@@ -37,7 +37,7 @@ router.get('/:id', async (req, res) => {
 
 router.patch('/:id', async (req, res) => {
   try {
-    const updatedRecord = await CompanyLogin.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updatedRecord = await CompetitionResearch.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updatedRecord) return res.status(404).json({ message: 'Not Found' });
     res.status(200).json(updatedRecord);
   } catch (error) {
@@ -48,7 +48,7 @@ router.patch('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const deletedRecord = await CompanyLogin.findByIdAndDelete(req.params.id);
+    const deletedRecord = await CompetitionResearch.findByIdAndDelete(req.params.id);
     if (!deletedRecord) return res.status(404).json({ message: 'Not Found' });
     res.status(200).json({ message: 'Deleted successfully' });
   } catch (error) {

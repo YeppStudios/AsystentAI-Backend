@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const CompanyLoginSchema = new mongoose.Schema({
+const CompetitionResearch = new mongoose.Schema({
   strengths: {
     type: Array
   },
@@ -20,4 +20,4 @@ const CompanyLoginSchema = new mongoose.Schema({
   },
 });
 
-mongoose.model('CompanyLogin', CompanyLoginSchema);
+mongoose.model('CompetitionResearch', CompetitionResearch);
