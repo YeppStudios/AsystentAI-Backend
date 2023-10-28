@@ -19,6 +19,7 @@ require('./src/models/Template');
 require('./src/models/Campaign');
 require('./src/models/Persona');
 require('./src/models/Tone');
+require('./src/models/CompetitionResearch');
 require('./src/models/WithdrawalRequest')
 const express = require('express');
 const mongoose = require('mongoose');
@@ -43,6 +44,7 @@ const apiRoutes =  require('./src/routes/apiRoutes');
 const agentRoutes =  require('./src/routes/agentRoutes');
 const campaignRoutes =  require('./src/routes/campaignRoutes');
 const personaRoutes =  require('./src/routes/personaRoutes');
+const competitionResearchRoutes =  require('./src/routes/competitionResearchRoutes');
 const toneRoutes =  require('./src/routes/toneRoutes');
 const { emailJob, blockSubscriptionsJob } = require('./src/cron');
 const cors = require('cors');
@@ -79,6 +81,7 @@ app.use(agentRoutes);
 app.use(campaignRoutes);
 app.use(personaRoutes);
 app.use(toneRoutes);
+app.use(competitionResearchRoutes);
 
 const mongoUri = process.env.MONGO_URI;
 mongoose.connect(mongoUri);
