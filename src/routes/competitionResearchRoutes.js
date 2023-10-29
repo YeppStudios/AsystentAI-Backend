@@ -1,9 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const requireAuth = require('../middlewares/requireAuth');
+const requireAdmin = require('../middlewares/requireAdmin');
 const router = express.Router();
 const CompetitionResearch = mongoose.model('CompetitionResearch');
 
-router.post('/create-competition-research', async (req, res) => {
+router.post('/create-competition-research', requireAuth, async (req, res) => {
   try {
     const newRecord = new CompetitionResearch(req.body);
     await newRecord.save();
@@ -14,7 +16,7 @@ router.post('/create-competition-research', async (req, res) => {
 });
 
 
-router.get('/competition-list/:profileId', async (req, res) => {
+router.get('/competition-list/:profileId', requireAuth, async (req, res) => {
     try {
       const records = await CompetitionResearch.find({ profile: req.params.profileId });
       res.status(200).json(records);
@@ -24,7 +26,7 @@ router.get('/competition-list/:profileId', async (req, res) => {
   });
   
 
-router.get('/competition-list', async (req, res) => {
+router.get('/competition-list', requireAdmin, async (req, res) => {
   try {
     const records = await CompetitionResearch.find();
     res.status(200).json(records);
@@ -34,7 +36,7 @@ router.get('/competition-list', async (req, res) => {
 });
 
 
-router.get('/competition-research/:id', async (req, res) => {
+router.get('/competition-research/:id', requireAuth, async (req, res) => {
   try {
     const record = await CompetitionResearch.findById(req.params.id);
     if (!record) return res.status(404).json({ message: 'Not Found' });
@@ -44,7 +46,7 @@ router.get('/competition-research/:id', async (req, res) => {
   }
 });
 
-router.patch('/competition-research/:id', async (req, res) => {
+router.patch('/competition-research/:id', requireAuth, async (req, res) => {
   try {
     const updatedRecord = await CompetitionResearch.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updatedRecord) return res.status(404).json({ message: 'Not Found' });
@@ -55,7 +57,7 @@ router.patch('/competition-research/:id', async (req, res) => {
 });
 
 
-router.delete('/competition-research/:id', async (req, res) => {
+router.delete('/competition-research/:id', requireAuth, async (req, res) => {
   try {
     const deletedRecord = await CompetitionResearch.findByIdAndDelete(req.params.id);
     if (!deletedRecord) return res.status(404).json({ message: 'Not Found' });
