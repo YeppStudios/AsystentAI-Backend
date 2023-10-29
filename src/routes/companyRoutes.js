@@ -22,7 +22,7 @@ router.post('/workspaces/add', requireAuth, async (req, res) => {
   if (req.user.accountType === "company") {
     try {
       const { admins, employees } = req.body;
-      const apiKey = generateApiKey(); // generate an API key
+      const apiKey = generateApiKey(); 
       const workspace = new Workspace({ 
         admins: [companyId], // add the company ID as an admin
         company: companyId, // set the company ID

@@ -18,6 +18,10 @@ const CompetitionResearch = new mongoose.Schema({
     default: Date.now,
     required: true,
   },
+  profile: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Profile',
+  }
 });
 
 mongoose.model('CompetitionResearch', CompetitionResearch);

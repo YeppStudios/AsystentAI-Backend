@@ -13,6 +13,17 @@ router.post('/create-competition-research', async (req, res) => {
   }
 });
 
+
+router.get('/competition-list/:profileId', async (req, res) => {
+    try {
+      const records = await CompetitionResearch.find({ profile: req.params.profileId });
+      res.status(200).json(records);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+
 router.get('/competition-list', async (req, res) => {
   try {
     const records = await CompetitionResearch.find();
