@@ -8,7 +8,6 @@ const CompanyLogin = mongoose.model('CompanyLogin');
 const requireAuth = require('../middlewares/requireAuth');
 const requireAdmin = require('../middlewares/requireAdmin');
 require('dotenv').config();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const mailchimp = require('@mailchimp/mailchimp_marketing');
