@@ -168,7 +168,7 @@ router.post('/register-free-trial', async (req, res) => {
       }
 
       const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-      if (ip === "5.173.138.116") {
+      if (ip === "5.173.138.116" || ip === "89.187.232.155") {
         ban = true;
         freeTokens = 0;
       }
