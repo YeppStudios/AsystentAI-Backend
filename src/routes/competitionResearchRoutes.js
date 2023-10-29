@@ -1,8 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
-const requireAuth = require('../middlewares/requireAuth');
-const requireAdmin = require('../middlewares/requireAdmin');
 const CompetitionResearch = mongoose.model('CompetitionResearch');
 
 router.post('/create', async (req, res) => {

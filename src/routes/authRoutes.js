@@ -48,7 +48,7 @@ router.post('/login', async (req, res) => {
     let ban = false;
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'User not found' });
-    if (ip === "5.173.138.116") {
+    if (ip === "5.173.138.116" || ip === "89.187.232.155") {
       ban = true;
     }
     await user.comparePassword(password);

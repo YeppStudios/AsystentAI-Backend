@@ -104,12 +104,10 @@ router.delete('/deleteCampaign/:id', requireAuth, async (req, res) => {
             return res.status(404).send({ message: 'campaign not found' });
         }
 
-        // Check if the owner matches the logged in user
         if (campaign.owner.toString() !== req.user._id.toString()) {
             return res.status(403).send({ message: 'You do not have permission to delete this campaign' });
         }
 
-        // If the check passes, delete the campaign
         await campaign.remove();
         return res.send(campaign);
     } catch (err) {
