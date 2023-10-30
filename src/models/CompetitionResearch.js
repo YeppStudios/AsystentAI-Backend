@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const CompetitionResearch = new mongoose.Schema({
+  companies: {
+    type: Array,
+    required: true,
+  },
   strengths: {
     type: Array
   },
