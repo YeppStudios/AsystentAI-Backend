@@ -105,5 +105,32 @@ router.delete('/tone/:id', requireAuth, async (req, res) => {
     }
 });
 
+router.patch('/assign_profile_to_tone/:toneId', async (req, res) => {
+    const toneId = req.params.toneId;
+    const { profileId } = req.body;
+  
+    if (!profileId) {
+      return res.status(400).json({ error: 'Profile ID is required' });
+    }
+  
+    try {
+      const tone = await Tone.findByIdAndUpdate(
+        toneId,
+        { $set: { profile: profileId } },
+        { new: true }
+      );
+  
+      if (!tone) {
+        return res.status(404).json({ error: 'tone not found' });
+      }
+  
+      return res.json(tone);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+
 
 module.exports = router;

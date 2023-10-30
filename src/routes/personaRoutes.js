@@ -102,4 +102,32 @@ router.delete('/persona/:id', requireAuth, async (req, res) => {
     }
 });
 
+
+router.patch('/assign_profile_to_persona/:personaId', async (req, res) => {
+    const personaId = req.params.personaId;
+    const { profileId } = req.body;
+  
+    if (!profileId) {
+      return res.status(400).json({ error: 'Profile ID is required' });
+    }
+  
+    try {
+      const persona = await Persona.findByIdAndUpdate(
+        personaId,
+        { $set: { profile: profileId } },
+        { new: true }
+      );
+  
+      if (!persona) {
+        return res.status(404).json({ error: 'Persona not found' });
+      }
+  
+      return res.json(persona);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+
 module.exports = router;
