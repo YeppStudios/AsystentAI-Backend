@@ -93,7 +93,7 @@ router.patch('/updateProfile/:profileId', requireAuth, async (req, res) => {
   
 
 // Delete profile for user
-router.delete('/deleteProfile', requireAuth, async (req, res) => {
+router.delete('/deleteProfile/:profileId', requireAuth, async (req, res) => {
   try {
     const user = req.user
     if (!user) {
