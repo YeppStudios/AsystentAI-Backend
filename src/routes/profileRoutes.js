@@ -92,22 +92,25 @@ router.patch('/updateProfile/:profileId', requireAuth, async (req, res) => {
   });
   
 
-// Delete profile for user
-router.delete('/deleteProfile/:profileId', requireAuth, async (req, res) => {
-  try {
-    const user = req.user
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+  router.delete('/delete_profile/:profileId', async (req, res) => {
+    const { profileId } = req.params;
+  
+    if (!profileId) {
+      return res.status(400).json({ error: 'Profile ID is required' });
     }
-
-    user.profiles.id(req.params.profileId).remove();
-    await user.save();
-
-    res.json({ message: 'Profile deleted successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server Error' });
-  }
-});
+  
+    try {
+      const deletedProfile = await Profile.findByIdAndDelete(profileId);
+  
+      if (!deletedProfile) {
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+  
+      return res.json({ message: 'Profile successfully deleted' });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
 
 module.exports = router;
