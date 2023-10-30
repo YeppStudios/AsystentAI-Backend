@@ -424,7 +424,42 @@ router.post('/add-folder', requireAuth, async (req, res) => {
     }
   });
   
-
+  router.get('/folders_by_profile/:profileId', async (req, res) => {
+    let { page = 0, limit = 100 } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+  
+    try {
+      let mainFolders = await Folder.find({ 
+          profile: req.params.profileId,
+          parentFolder: null
+        })
+        .sort({ updatedAt: -1 })
+        .skip(page * limit)
+        .limit(limit)
+        .populate({
+          path: 'owner',
+          model: 'User',
+          select: 'email name'
+      })
+        .lean();
+  
+      mainFolders = mainFolders.map(folder => {
+        folder.directDocumentCount = folder.documents.length;
+        return folder;
+      });
+  
+      mainFolders = await Promise.all(mainFolders.map(async folder => {
+        return await deepPopulateSubfolders(folder);
+      }));
+  
+      return res.json(mainFolders);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+  
+  
   router.get('/folders/owner/:userId', async (req, res) => {
     let { page = 0, limit = 100 } = req.query;
     page = parseInt(page);
