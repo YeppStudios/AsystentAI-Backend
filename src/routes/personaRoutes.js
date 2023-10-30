@@ -103,26 +103,39 @@ router.delete('/persona/:id', requireAuth, async (req, res) => {
 });
 
 
-router.patch('/assign_profile_to_persona/:personaId', async (req, res) => {
-    const personaId = req.params.personaId;
-    const { profileId } = req.body;
+router.patch('/assign_profiles_to_personas', async (req, res) => {
+    const personaArray = req.body.personas;
   
-    if (!profileId) {
-      return res.status(400).json({ error: 'Profile ID is required' });
+    if (!Array.isArray(personaArray) || personaArray.length === 0) {
+      return res.status(400).json({ error: 'An array of persona objects is required' });
     }
   
-    try {
-      const persona = await Persona.findByIdAndUpdate(
-        personaId,
-        { $set: { profile: profileId } },
-        { new: true }
-      );
-  
-      if (!persona) {
-        return res.status(404).json({ error: 'Persona not found' });
+    const updatePromises = personaArray.map(async (persona) => {
+      if (!persona._id || !req.body.profileId) {
+        return { _id: persona._id, status: 'skipped', reason: 'Missing _id or profileId' };
       }
   
-      return res.json(persona);
+      try {
+        const updatedPersona = await Persona.findByIdAndUpdate(
+          persona._id,
+          { $set: { profile: req.body.profileId } },
+          { new: true }
+        );
+  
+        if (!updatedPersona) {
+          return { _id: persona._id, status: 'failed', reason: 'Not found' };
+        }
+  
+        return { _id: persona._id, status: 'updated' };
+      } catch (error) {
+        console.error(error);
+        return { _id: persona._id, status: 'failed', reason: 'Internal Error' };
+      }
+    });
+  
+    try {
+      const updateResults = await Promise.all(updatePromises);
+      return res.json(updateResults);
     } catch (error) {
       console.error(error);
       return res.status(500).json({ error: 'Internal Server Error' });

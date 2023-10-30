@@ -539,6 +539,50 @@ router.post('/add-folder', requireAuth, async (req, res) => {
       });
 });
 
+router.patch('/assign_profile_to_folders', async (req, res) => {
+  const folderArray = req.body.folders;
+  const { profileId } = req.body;
+
+  if (!profileId) {
+    return res.status(400).json({ error: 'Profile ID is required' });
+  }
+
+  if (!Array.isArray(folderArray) || folderArray.length === 0) {
+    return res.status(400).json({ error: 'An array of folder objects is required' });
+  }
+
+  const updatePromises = folderArray.map(async (folder) => {
+    if (!folder._id) {
+      return { _id: folder._id, status: 'skipped', reason: 'Missing _id' };
+    }
+
+    try {
+      const updatedFolder = await Folder.findByIdAndUpdate(
+        folder._id,
+        { $set: { profile: profileId } },
+        { new: true }
+      );
+
+      if (!updatedFolder) {
+        return { _id: folder._id, status: 'failed', reason: 'Not found' };
+      }
+
+      return { _id: folder._id, status: 'updated' };
+    } catch (error) {
+      console.error(error);
+      return { _id: folder._id, status: 'failed', reason: 'Internal Error' };
+    }
+  });
+
+  try {
+    const updateResults = await Promise.all(updatePromises);
+    return res.json(updateResults);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 
 router.delete('/user/:userId/folders/:id', requireAuth, async (req, res) => {
   try {

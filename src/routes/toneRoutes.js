@@ -105,26 +105,39 @@ router.delete('/tone/:id', requireAuth, async (req, res) => {
     }
 });
 
-router.patch('/assign_profile_to_tone/:toneId', async (req, res) => {
-    const toneId = req.params.toneId;
-    const { profileId } = req.body;
+router.patch('/assign_profiles_to_tones', async (req, res) => {
+    const toneArray = req.body.tones;
   
-    if (!profileId) {
-      return res.status(400).json({ error: 'Profile ID is required' });
+    if (!Array.isArray(toneArray) || toneArray.length === 0) {
+      return res.status(400).json({ error: 'An array of tone objects is required' });
     }
   
-    try {
-      const tone = await Tone.findByIdAndUpdate(
-        toneId,
-        { $set: { profile: profileId } },
-        { new: true }
-      );
-  
-      if (!tone) {
-        return res.status(404).json({ error: 'tone not found' });
+    const updatePromises = toneArray.map(async (tone) => {
+      if (!tone._id || !req.body.profileId) {
+        return { _id: tone._id, status: 'skipped', reason: 'Missing _id or profileId' };
       }
   
-      return res.json(tone);
+      try {
+        const updatedTone = await Tone.findByIdAndUpdate(
+          tone._id,
+          { $set: { profile: req.body.profileId } },
+          { new: true }
+        );
+  
+        if (!updatedTone) {
+          return { _id: tone._id, status: 'failed', reason: 'Not found' };
+        }
+  
+        return { _id: tone._id, status: 'updated' };
+      } catch (error) {
+        console.error(error);
+        return { _id: tone._id, status: 'failed', reason: 'Internal Error' };
+      }
+    });
+  
+    try {
+      const updateResults = await Promise.all(updatePromises);
+      return res.json(updateResults);
     } catch (error) {
       console.error(error);
       return res.status(500).json({ error: 'Internal Server Error' });
