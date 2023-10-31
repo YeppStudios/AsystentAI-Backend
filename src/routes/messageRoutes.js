@@ -1,5 +1,3 @@
-const OpenAIImport = require('openai');
-const { Configuration, OpenAIApi } = OpenAIImport;
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
@@ -14,12 +12,9 @@ require('dotenv').config();
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_KEY);
 
-const configuration = new Configuration({
-    organization: "org-oP1kxBXnJo6VGoYOLxzHnNSV",
-    apiKey: process.env.OPENAI_API_KEY
-});
+const OpenAI = require("openai");
 
-const openai = new OpenAIApi(configuration);
+const openai = new OpenAI();
 
 function estimateTokens(text) {
     const tokenRegex = /[\p{L}\p{N}]+|[^ \t\p{L}\p{N}]/ug;
@@ -73,97 +68,77 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         }), { role: "user", content: `${embeddingContext} ${text} \nResponse:`},];
 
 
-        const completion = await openai.createChatCompletion({
+        const completion = await openai.chat.completions.create({
             model: "gpt-4",
             messages,
             temperature: 0.85,
             stream: true,
-        }, { responseType: 'stream' });
-        res.set({
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
         });
 
-        completion.data.on('data', async data => {
-            const lines = data.toString().split('\n').filter(line => line.trim() !== '');
-            for (const line of lines) {
-              const message = line.replace(/^data: /, '');
-              if (message === '[DONE]') {
-                res.write('\n\n');
-                res.end();
-                return;
-              } else {
-                try {
-                  const parsed = JSON.parse(message);
-                  if(parsed.choices[0].finish_reason === "stop"){ //when generating response ends
-                    res.write('\n\n');
-                    outputTokens = estimateTokens(response);
-                    inputTokens += estimateTokens(messagesText);
-                    inputTokens += estimateTokens(systemPrompt);
-                    inputTokens += estimateTokens(embeddingContext);
-                    inputTokens += estimateTokens(text);
-                    let totalTokens = inputTokens + outputTokens;
-                    if (browsing) {
-                      totalTokens = inputTokens + outputTokens + 150;
-                    }
-                    if (user.workspace) {
-                        const workspace = await Workspace.findById(user.workspace)
-                        const company = await User.findById(workspace.company[0].toString());
-                        company.tokenBalance -= totalTokens;
-                        await company.save();
-                      } else {
-                        user.tokenBalance -= (totalTokens);
-                      }
-
-                    if (response !== '[%fetch_info%]' && response !== '[fetch_info]') {
-                        const transaction = new Transaction({
-                            title: "Message in chat",
-                            value: totalTokens,
-                            type: "expense",
-                            timestamp: Date.now(),
-                            category: "chat",
-                            user: user._id
-                        });
-                        user.tokenHistory.push({
-                            timestamp: Date.now(),
-                            balance: user.tokenBalance
-                        });
-
-                        const userMessage = new Message({
-                            text: text,
-                            conversation,
-                            sender: "user"
-                        });
-                        const assistantResponse = new Message({
-                            text: response,
-                            conversation,
-                            sender: "assistant",
-                            contextDocs
-                        });
-                        await user.save();
-                        await userMessage.save();
-                        await assistantResponse.save();
-                        if(user.email != "gerke.contact@gmail.com" && user.email != "piotrg2003@gmail.com"){
-                            await transaction.save();
-                        }
-                        conversation.messages.push(userMessage);
-                        conversation.messages.push(assistantResponse);
-                        conversation.lastUpdated = Date.now();
-                        await conversation.save();
-                    }
-                    res.end();
-                    return;
-                  } else if(parsed.choices[0].delta.content) {
-                    res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}\n\n`);
-                    response += parsed.choices[0].delta.content
-                  }
-                } catch (error) {
-                  console.error('Could not JSON parse stream message', message, error);
-                }
-              }
+        let reply = "";
+        for await (const chunk of completion) {
+            if (chunk.choices && chunk.choices[0].delta && chunk.choices[0].delta.content) {
+                res.write(`data: ${chunk.choices[0].delta.content}`);
+                reply += chunk.choices[0].delta.content;
             }
-          });
+        }
+
+        outputTokens = estimateTokens(reply);
+        inputTokens += estimateTokens(messagesText);
+        inputTokens += estimateTokens(systemPrompt);
+        inputTokens += estimateTokens(embeddingContext);
+        inputTokens += estimateTokens(text);
+        let totalTokens = inputTokens + outputTokens;
+        if (browsing) {
+          totalTokens = inputTokens + outputTokens + 150;
+        }
+        if (user.workspace) {
+            const workspace = await Workspace.findById(user.workspace)
+            const company = await User.findById(workspace.company[0].toString());
+            company.tokenBalance -= totalTokens;
+            await company.save();
+        } else {
+            user.tokenBalance -= (totalTokens);
+        }
+
+        if (response !== '[%fetch_info%]' && response !== '[fetch_info]') {
+            const transaction = new Transaction({
+                title: "Message in chat",
+                value: totalTokens,
+                type: "expense",
+                timestamp: Date.now(),
+                category: "chat",
+                user: user._id
+            });
+            user.tokenHistory.push({
+                timestamp: Date.now(),
+                balance: user.tokenBalance
+            });
+
+            const userMessage = new Message({
+                text: text,
+                conversation,
+                sender: "user"
+            });
+            const assistantResponse = new Message({
+                text: reply,
+                conversation,
+                sender: "assistant",
+                contextDocs
+            });
+            await user.save();
+            await userMessage.save();
+            await assistantResponse.save();
+            if(user.email != "gerke.contact@gmail.com" && user.email != "piotrg2003@gmail.com"){
+                await transaction.save();
+            }
+            conversation.messages.push(userMessage);
+            conversation.messages.push(assistantResponse);
+            conversation.lastUpdated = Date.now();
+            await conversation.save();
+         }
+        
+        res.end();      
 
     } catch (error) {
         console.log(error)

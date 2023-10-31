@@ -49,7 +49,7 @@ router.post('/add-document', requireAuth, async (req, res) => {
     }
 
     await document.save();
-    document = await Document.findById(document._id).populate('owner');
+    document = await Document.findById(document._id);
 
     return res.status(201).json({ document });
 
@@ -293,12 +293,6 @@ router.delete('/folders/:id/delete-document', requireAuth, (req, res) => {
 router.post('/add-folder', requireAuth, async (req, res) => {
   const { title, category, workspace, documents, owner, parentFolder, ownerEmail, imageUrl, description, profileId } = req.body;
   try {
-      const existingFolder = await Folder.findOne({ owner: req.user._id, title: title }).populate('documents');
-      if (existingFolder) {
-          existingFolder.documents.push(...documents);
-          await existingFolder.save();
-          return res.json({ folder: existingFolder });
-      }
 
       let folderData = {
           owner,
@@ -459,7 +453,7 @@ router.post('/add-folder', requireAuth, async (req, res) => {
     }
   });
   
-  
+
   router.get('/folders/owner/:userId', async (req, res) => {
     let { page = 0, limit = 100 } = req.query;
     page = parseInt(page);

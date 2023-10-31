@@ -1,5 +1,3 @@
-const OpenAIImport = require('openai');
-const { Configuration, OpenAIApi } = OpenAIImport;
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
@@ -15,11 +13,9 @@ const Document = mongoose.model('Document');
 const axios = require('axios');
 require('dotenv').config();
 
-const configuration = new Configuration({
-    organization: "org-oP1kxBXnJo6VGoYOLxzHnNSV",
-    apiKey: process.env.OPENAI_API_KEY
-});
-const openai = new OpenAIApi(configuration);
+const OpenAI = require("openai");
+
+const openai = new OpenAI();
 
 function estimateTokens(text) {
     const tokenRegex = /[\p{L}\p{N}]+|[^ \t\p{L}\p{N}]/ug;
@@ -133,7 +129,7 @@ router.post('/message-stream', requireTokens, async (req, res) => {
             return {role: message.sender,  content: message.text};
         }), { role: "user", content: `${embeddingContext} ${query}`},];
 
-        const completion = await openai.createChatCompletion({
+        const completion = await openai.chat.completions.create({
             model: model,
             messages,
             temperature: 0.4,
@@ -322,7 +318,7 @@ router.post('/message', requireTokens, async (req, res) => {
         const messages = [  { role: "system", content: systemPrompt },  ...latestMessages.map((message) => {    
             return {role: message.sender,  content: message.text};
         }), { role: "user", content: `${embeddingContext} ${query}`},];
-        const completion = await openai.createChatCompletion({
+        const completion = await openai.chat.completions.create({
             model: model,
             messages,
             temperature: 0.4,
