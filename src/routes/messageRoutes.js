@@ -61,7 +61,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         if (conversation.user._id.toString() !== user._id.toString()) {
             return res.status(401).json({ message: 'Not authorized' });
         }
-        const latestMessages = conversation.messages.slice(-8);
+        const latestMessages = conversation.messages.slice(-6);
         const messagesText = latestMessages.map((message) => message.text).join(" ");
         const messages = [  { role: "system", content: systemPrompt },  ...latestMessages.map((message) => {    
             return {role: message.sender,  content: message.text};
