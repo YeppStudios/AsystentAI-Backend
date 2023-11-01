@@ -452,8 +452,8 @@ router.post('/completion-MSQT', requireTokens, async (req, res) => { // Multi-St
       const { initial_prompt, embedding_result, document_ids } = req.body;
       const user = await User.findById(req.user._id);
       const messages = [
-          { role: 'system', content: `Your role is to analyze the retrieved context and based on the query determine what info you lack to answer query. You come up with 2 different follow up questions that might help you clarify inconsistencies or learn about aspects not mentioned in context. You never ask about things you already understand from the context. You always come up with questions in given context's language. Along with the questions, you come up with a brief summary of most important informations that will help you respond to the initial query: "${initial_prompt}".` },
-          { role: 'user', content: `Retrieved context: ${embedding_result}. Initial query you need to summarize and ask follow up questions: ${initial_prompt}.` }
+          { role: 'system', content: `Your role is to analyze the retrieved context and based on the query determine what info you lack to answer query. You always come up with 2 different follow up questions that might help you clarify inconsistencies or learn more about aspects not mentioned in context. You never ask about things you already understand from the context. You always come up with questions in given context's language. Along with the questions, you also compose a brief summary of most important informations that will help you respond to the initial query: "${initial_prompt}".` },
+          { role: 'user', content: `Retrieved context: ${embedding_result}. Initial query you need to summarize and ask 2 followup questions: ${initial_prompt}.` }
       ]
       try {
       
@@ -464,16 +464,16 @@ router.post('/completion-MSQT', requireTokens, async (req, res) => { // Multi-St
           functions: [
             {
               "name": "ask_and_summarize",
-              "description": `Analyze given context and ask 2 unique questions and a brief summary of most crucial points relevant to the query: "${initial_prompt}" in up to 300 characters that will help you get more informations necessary to fully answer the initial query.`,
+              "description": `Analyze given context and ask 2 unique followup questions and a brief summary of most crucial points relevant to the query: "${initial_prompt}" in up to 300 characters that will help you get more informations necessary to fully answer the initial query.`,
               "parameters": {
                 "type": "object",
                 "properties": {
-                  questions: {
+                  followup_questions: {
                     type: 'array',
                     items: {
                       type: "object",
                       properties: {
-                        question: { type: "string", description: "array of questions that will help you find context to get the right answer" },
+                        question: { type: "string", description: `2 followup questions that will help you find more context to answer query: ${initial_prompt} ` },
                       }
                   }
                   },
@@ -482,7 +482,7 @@ router.post('/completion-MSQT', requireTokens, async (req, res) => { // Multi-St
                     description: "brief summary in up to 300 characters of most important things you learned from the context that will help you answer the initial query"
                   },
                 },
-                "required": ["questions", "brief_summary"]
+                "required": ["followup_questions", "brief_summary"]
               }
             }
           ],
@@ -500,7 +500,7 @@ router.post('/completion-MSQT', requireTokens, async (req, res) => { // Multi-St
         }
 
       const function_response = JSON.parse(completion.choices[0].message.function_call.arguments)
-      const questions = function_response.questions;
+      const questions = function_response.followup_questions;
       const brief_summary = function_response.brief_summary;
 
       let context = `Context information from multiple sources for you to interpret is below. 
