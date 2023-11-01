@@ -69,7 +69,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
 
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-4",
+            model: "gpt-4-32k",
             messages,
             temperature: 0.85,
             stream: true,
