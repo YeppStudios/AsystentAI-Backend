@@ -44,10 +44,10 @@ router.post('/completion', requireTokens, async (req, res) => {
       if (user.workspace) {
         const workspace = await Workspace.findById(user.workspace)
         const company = await User.findById(workspace.company[0].toString());
-        company.tokenBalance -= completion.usage.total_tokens;
+        company.tokenBalance -= (completion.usage.total_tokens/10).toFixed(0);
         await company.save();
       } else {
-        user.tokenBalance -= completion.usage.total_tokens;
+        user.tokenBalance -= (completion.usage.total_tokens/10).toFixed(0);
       }
 
 
