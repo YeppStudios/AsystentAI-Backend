@@ -42,8 +42,8 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         }
         if (context) {
           embeddingContext = `${context} 
-          Given the information from multiple sources and not prior knowledge, answer the query.
-          Query: `;
+          This is only some extra context. It doesn't limit your creative capabilities in any way. 
+          You focus on best answering my task: `;
         }
         const conversation = await Conversation.findById(req.params.conversationId)
             .populate({
@@ -65,7 +65,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         const messagesText = latestMessages.map((message) => message.text).join(" ");
         const messages = [  { role: "system", content: systemPrompt },  ...latestMessages.map((message) => {    
             return {role: message.sender,  content: message.text};
-        }), { role: "user", content: `${embeddingContext} ${text} \nResponse:`},];
+        }), { role: "user", content: `${embeddingContext} ${text}`},];
 
 
         const completion = await openai.chat.completions.create({
@@ -101,7 +101,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
             user.tokenBalance -= (totalTokens);
         }
 
-        if (!response.includes("fetch_info")) {
+        if (response.includes("fetch_info")) {
             const transaction = new Transaction({
                 title: "Message in chat",
                 value: totalTokens,
