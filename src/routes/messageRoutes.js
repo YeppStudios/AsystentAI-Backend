@@ -43,7 +43,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         if (context) {
           embeddingContext = `${context} 
           This is only some extra context. It doesn't limit your creative capabilities in any way. 
-          You focus on best answering my task: `;
+          Asses wether it is useful and focus on best answering my task/question: `;
         }
         const conversation = await Conversation.findById(req.params.conversationId)
             .populate({
