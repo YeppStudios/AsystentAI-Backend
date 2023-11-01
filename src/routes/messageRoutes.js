@@ -101,7 +101,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
             user.tokenBalance -= (totalTokens);
         }
 
-        if (!response.includes("fetch_info")) {
+        if (!(text.startsWith("[%") || text.startsWith("[f") || text.startsWith(`"[`))) {
             const transaction = new Transaction({
                 title: "Message in chat",
                 value: totalTokens,
