@@ -28,7 +28,10 @@ const CompetitorSchema = new mongoose.Schema({
 
 const CompetitionResearch = new mongoose.Schema({
   companies: [
-    {CompetitorSchema}
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Competitor'
+    }
   ],
   owner: {
     type: mongoose.Schema.Types.ObjectId,
@@ -58,3 +61,4 @@ const CompetitionResearch = new mongoose.Schema({
 });
 
 mongoose.model('CompetitionResearch', CompetitionResearch);
+mongoose.model('Competitor', CompetitorSchema);
