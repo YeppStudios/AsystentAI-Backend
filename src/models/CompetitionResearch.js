@@ -19,6 +19,10 @@ const CompetitorSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  vectorId: {
+    type: String,
+    default: "",
+  }
 });
 
 

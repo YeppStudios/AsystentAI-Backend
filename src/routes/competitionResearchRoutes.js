@@ -18,7 +18,7 @@ router.post('/create-competition-research', requireAuth, async (req, res) => {
 
 router.get('/competition-list/:profileId', requireAuth, async (req, res) => {
     try {
-      const records = await CompetitionResearch.find({ profile: req.params.profileId });
+      const records = await CompetitionResearch.find({ profile: req.params.profileId }).populate('companies');
       res.status(200).json(records);
     } catch (error) {
       res.status(500).json({ message: error.message });
