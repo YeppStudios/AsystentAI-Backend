@@ -49,7 +49,7 @@ router.post('/add-document', requireAuth, async (req, res) => {
     }
 
     await document.save();
-    document = await Document.findById(document._id);
+    document = await Document.findById(document._id).populate('owner');
 
     return res.status(201).json({ document });
 
