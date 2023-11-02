@@ -1,36 +1,31 @@
 const mongoose = require('mongoose');
 
 
-const CompetitorSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    default: "",
-    required: true,
-  },
-  url: {
-    type: String,
-    required: true,
-  },
-  imageUrl: {
-    type: String,
-    required: true,
-  },
-  pageContent: {
-    type: String,
-    default: "",
-  },
-  vectorId: {
-    type: String,
-    default: "",
-  }
-});
-
 
 const CompetitionResearch = new mongoose.Schema({
   companies: [
     {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Competitor'
+      name: {
+        type: String,
+        default: "",
+        required: true,
+      },
+      url: {
+        type: String,
+        required: true,
+      },
+      imageUrl: {
+        type: String,
+        required: true,
+      },
+      pageContent: {
+        type: String,
+        default: "",
+      },
+      vectorId: {
+        type: String,
+        default: "",
+      }
     }
   ],
   owner: {
@@ -61,4 +56,3 @@ const CompetitionResearch = new mongoose.Schema({
 });
 
 mongoose.model('CompetitionResearch', CompetitionResearch);
-mongoose.model('Competitor', CompetitorSchema);
