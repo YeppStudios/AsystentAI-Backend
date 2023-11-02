@@ -28,6 +28,11 @@ const CompetitionResearch = new mongoose.Schema({
       }
     }
   ],
+  title: {
+    type: String,
+    default: "",
+    required: true,
+  },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
