@@ -1,9 +1,34 @@
 const mongoose = require('mongoose');
 
-const CompetitionResearch = new mongoose.Schema({
-  companies: {
-    type: Array,
+
+const CompetitorSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    default: "",
     required: true,
+  },
+  url: {
+    type: String,
+    required: true,
+  },
+  imageUrl: {
+    type: String,
+    required: true,
+  },
+  pageContent: {
+    type: String,
+    default: "",
+  },
+});
+
+
+const CompetitionResearch = new mongoose.Schema({
+  companies: [
+    {CompetitorSchema}
+  ],
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
   },
   strengths: {
     type: Array
