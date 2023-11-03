@@ -1,7 +1,5 @@
 const mongoose = require('mongoose');
 
-
-
 const CompetitionResearch = new mongoose.Schema({
   companies: [
     {
@@ -28,21 +26,14 @@ const CompetitionResearch = new mongoose.Schema({
     default: "",
     required: true,
   },
+  endGoal: {
+    type: String,
+    default: "",
+    required: true,
+  },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-  },
-  strengths: {
-    type: Array
-  },
-  weaknesses: {
-    type: Array
-  },
-  opportunities: {
-    type: Array,
-  },
-  threats: {
-    type: Array,
   },
   timestamp: {
     type: Date,
