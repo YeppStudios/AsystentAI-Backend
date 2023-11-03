@@ -16,7 +16,6 @@ const CompetitionResearch = new mongoose.Schema({
       },
       imageUrl: {
         type: String,
-        required: true,
       },
       pageContent: {
         type: String,
