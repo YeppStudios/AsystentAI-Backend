@@ -17,10 +17,6 @@ const CompetitionResearch = new mongoose.Schema({
       imageUrl: {
         type: String,
       },
-      pageContent: {
-        type: String,
-        default: "",
-      },
       vectorId: {
         type: String,
         default: "",
