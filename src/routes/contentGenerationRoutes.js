@@ -44,10 +44,18 @@ router.post('/completion', requireTokens, async (req, res) => {
       if (user.workspace) {
         const workspace = await Workspace.findById(user.workspace)
         const company = await User.findById(workspace.company[0].toString());
-        company.tokenBalance -= (completion.usage.total_tokens/10).toFixed(0);
+        if (model === "gpt-3.5-turbo" || model === "gpt-3.5-turbo-0613") {
+          company.tokenBalance -= (completion.usage.total_tokens/10).toFixed(0);
+        } else {
+          company.tokenBalance -= completion.usage.total_tokens;
+        }
         await company.save();
       } else {
-        user.tokenBalance -= (completion.usage.total_tokens/10).toFixed(0);
+        if (model === "gpt-3.5-turbo" || model === "gpt-3.5-turbo-0613") {
+          user.tokenBalance -= (completion.usage.total_tokens/10).toFixed(0);
+        } else {
+          user.tokenBalance -= completion.usage.total_tokens;
+        }
       }
 
 
