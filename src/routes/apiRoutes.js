@@ -129,31 +129,30 @@ router.post('/message-stream', requireTokens, async (req, res) => {
             return {role: message.sender,  content: message.text};
         }), { role: "user", content: `${embeddingContext} ${query}`},];
 
-        const completion = await openai.chat.completions.create({
-            model: model,
-            messages,
-            temperature: 0.4,
-            stream: true,
-        }, { responseType: 'stream' });
-        res.set({
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
-        });
-
-        completion.data.on('data', async data => {
-            const lines = data.toString().split('\n').filter(line => line.trim() !== '');
-            for (const line of lines) {
-              const message = line.replace(/^data: /, '');
-              if (message === '[DONE]') {
-                res.write('\n\n');
-                res.end();
-                return;
-              } else {
-                try {
-                  const parsed = JSON.parse(message);
-                  if(parsed.choices[0].finish_reason === "stop"){ //when generating response ends
-                    res.write('\n\n');
+        try {
+            const completionStream = await openai.chat.completions.create({
+                model: model,
+                messages: messages,
+                temperature: 0.4,
+                stream: true,
+            });
+          
+            res.set({
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive'
+            });
+          
+            let response = ""; // Initialize response variable to accumulate text
+          
+            for await (const chunk of completionStream) {
+                if (chunk.choices && chunk.choices[0].delta && chunk.choices[0].delta.content) {
+                    const content = chunk.choices[0].delta.content;
+                    res.write(`data: ${content}\n\n`); // Write the chunk to the stream in SSE format
+                    response += content; // Accumulate the response text
+                }
+          
+                if (chunk.choices && chunk.choices[0].finish_reason === "stop") {
                     outputTokens = estimateTokens(response);
                     inputTokens += estimateTokens(messagesText);
                     inputTokens += estimateTokens(systemPrompt);
@@ -192,7 +191,6 @@ router.post('/message-stream', requireTokens, async (req, res) => {
                             text: response,
                             conversation,
                             sender: "assistant",
-                            contextDocs
                         });
                         await user.save();
                         await userMessage.save();
@@ -205,18 +203,15 @@ router.post('/message-stream', requireTokens, async (req, res) => {
                             await conversation.save();
                         }
                     }
-                    res.end();
-                    return;
-                  } else if(parsed.choices[0].delta.content) {
-                    res.write(`data: ${JSON.stringify(parsed.choices[0].delta)}\n\n`);
-                    response += parsed.choices[0].delta.content
-                  }
-                } catch (error) {
-                  console.error('Could not JSON parse stream message', message, error);
+                    res.write('\n\n'); // End the SSE stream
+                    res.end(); // Close the response
+                    break; // Exit the loop as the completion is done
                 }
-              }
             }
-          });
+          } catch (error) {
+            console.error('Stream error:', error);
+            res.status(500).send('Internal Server Error');
+          }
 
     } catch (error) {
         console.log(error)
