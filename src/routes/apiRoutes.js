@@ -325,7 +325,7 @@ router.post('/message', requireTokens, async (req, res) => {
             sender: "user"
         });
         const assistantResponse = new Message({
-            text: completion.data.choices[0].message.content,
+            text: completion.choices[0].message.content,
             conversation,
             sender: "assistant",
             documents
@@ -343,13 +343,13 @@ router.post('/message', requireTokens, async (req, res) => {
         if (user.workspace) {
             const workspace = await Workspace.findById(user.workspace)
             const company = await User.findById(workspace.company);
-            company.tokenBalance -= completion.data.usage.total_tokens;
+            company.tokenBalance -= completion.usage.total_tokens;
             await company.save();
         } else {
-            user.tokenBalance -= completion.data.usage.total_tokens;
+            user.tokenBalance -= completion.usage.total_tokens;
         }
 
-        return res.status(201).json({ response: completion.data.choices[0].message.content, elixir_used: completion.data.usage.total_tokens, based_on: assistant_id ? assistant.documents.map(doc => doc.title) : [], assistant: assistantName, conversation_id: conversation._id });
+        return res.status(201).json({ response: completion.choices[0].message.content, elixir_used: completion.data.usage.total_tokens, based_on: assistant_id ? assistant.documents.map(doc => doc.title) : [], assistant: assistantName, conversation_id: conversation._id });
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: error.message });
