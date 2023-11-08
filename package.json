@@ -36,6 +36,7 @@
     "openai": "^4.14.2",
     "raw-body": "^2.5.1",
     "request": "^2.88.2",
+    "simple-oauth2": "^5.0.0",
     "stripe": "^11.10.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.3",
