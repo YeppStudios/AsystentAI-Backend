@@ -51,9 +51,9 @@ router.get('/users/:id', requireAuth, async (req, res) => {
 });
 
 // Get a single user
-router.get('/users_test/:id', async (req, res) => {
+router.get('/getUser', async (req, res) => {
   try {
-      const user = await User.findById(req.params.id);
+      const user = await User.findById(req.body.id);
       if (!user) {
           return res.status(404).json({ message: 'User not found' });
       }
