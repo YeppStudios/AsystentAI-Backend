@@ -291,6 +291,7 @@ router.post('/messageAI', requireTokens, async (req, res) => {
           await transaction.save();
         }
 
+        res.end();    
     } catch (error) {
         if (error.response?.status) {
             console.error(error.response.status, error.message);

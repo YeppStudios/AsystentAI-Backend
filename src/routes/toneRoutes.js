@@ -28,7 +28,7 @@ router.post('/save-tone', requireAuth, async (req, res) => {
             prompt,
             owner: req.user._id,
             workspace,
-            base_text,
+            base_text, 
             profile
         });
 

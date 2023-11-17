@@ -40,6 +40,7 @@
     "stripe": "^11.10.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.3",
+    "xml2js": "^0.6.2",
     "yamljs": "^0.3.0"
   },
   "author": "Yepp",
