@@ -65,7 +65,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         const messagesText = latestMessages.map((message) => message.text).join(" ");
         const messages = [  { role: "system", content: systemPrompt },  ...latestMessages.map((message) => {    
             return {role: message.sender,  content: message.text};
-        }), { role: "user", content: `${embeddingContext} ${text}`},];
+        }), { role: "user", content: `Base your response only on the following context and not on your knowledge: "${embeddingContext}" ${text}`},];
 
 
         const completion = await openai.chat.completions.create({

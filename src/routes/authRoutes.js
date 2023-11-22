@@ -51,7 +51,7 @@ router.post('/login', async (req, res) => {
       ban = true;
     }
     await user.comparePassword(password);
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '365d' });
     if (user.workspace) {
       const login = new CompanyLogin({ workspaceId: user.workspace });
       await login.save();
