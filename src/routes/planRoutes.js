@@ -5,7 +5,6 @@ const requireAdmin = require('../middlewares/requireAdmin');
 const requireAuth = require('../middlewares/requireAuth');
 const Plan = mongoose.model('Plan');
 const User = mongoose.model('User');
-const Payment = mongoose.model('Payment');
 const Transaction = mongoose.model('Transaction');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_KEY);

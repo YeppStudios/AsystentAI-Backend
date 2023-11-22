@@ -42,8 +42,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         }
         if (context) {
           embeddingContext = `${context} 
-          This is only some extra context. It doesn't limit your creative capabilities in any way. 
-          Asses wether it is useful and focus on best answering my task/question: `;
+          That was it for the context and this is my task/question for you: `;
         }
         const conversation = await Conversation.findById(req.params.conversationId)
             .populate({
@@ -65,7 +64,7 @@ router.post('/sendMessage/:conversationId', requireTokens, async (req, res) => {
         const messagesText = latestMessages.map((message) => message.text).join(" ");
         const messages = [  { role: "system", content: systemPrompt },  ...latestMessages.map((message) => {    
             return {role: message.sender,  content: message.text};
-        }), { role: "user", content: `Base your response only on the following context and not on your knowledge: "${embeddingContext}" ${text}`},];
+        }), { role: "user", content: `${embeddingContext} ${text}`},];
 
 
         const completion = await openai.chat.completions.create({
