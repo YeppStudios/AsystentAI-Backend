@@ -328,6 +328,9 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
           }
         }
         try {
+          if (user.monthlyTokens !== 0) {
+            user.tokenBalance += user.monthlyTokens;
+          } else {
           if(priceId === "price_1MdbTMFe80Kn2YGG5QDfmjvS") { //Basic Monthly price
             planId = "63f0e6968e1b9d507c38a749";
           } else if (priceId === "price_1MdbUeFe80Kn2YGGRlKvmre4") { //Assistant Monthly price (old)
@@ -368,6 +371,7 @@ router.post('/subscription-checkout-webhook', bodyParser.raw({type: 'application
 
           user.tokenBalance += plan.monthlyTokens;
           user.plan = planId;
+        }
 
           try {
           // add to referrer

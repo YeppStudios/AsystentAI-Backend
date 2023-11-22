@@ -148,6 +148,10 @@ const UserSchema = new mongoose.Schema({
     purchases: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Payment'}],
     transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction'}],
     tokenHistory: [{BalanceSnapshotSchema}],
+    monthlyTokens: {
+        type: Number,
+        default: 0
+    },
     stats: StatsSchema,
     lastSeen: {
         type: Date,

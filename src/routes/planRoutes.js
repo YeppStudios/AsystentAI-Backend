@@ -124,9 +124,12 @@ router.patch('/updateUserPlan/:userId', requireAdmin, async (req, res) => {
                 timestamp: Date.now()
             });
             user.transactions.push(transaction);
-    
-            user.tokenBalance = plan.monthlyTokens;
-    
+            if (plan.monthlyTokens !== req.body.tokens) {
+                user.tokenBalance = req.body.tokens;
+                user.monthlyTokens = req.body.tokens;
+            } else {
+                user.tokenBalance = plan.monthlyTokens;
+            }
             const balanceSnapshot = {
                 timestamp: Date.now(),
                 balance: user.tokenBalance
@@ -169,5 +172,8 @@ router.post('/sendPaymentFailedEmail', requireAdmin, async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
+
+
 
 module.exports = router;
