@@ -105,44 +105,65 @@ router.delete('/deletePlan/:id', requireAdmin, async (req, res) => {
 
 router.patch('/updateUserPlan/:userId', requireAdmin, async (req, res) => {
 
-    const plan = await Plan.findById(req.body.planId);
-
-    if (!plan) {
-        return res.status(404).json({ message: 'Plan not found' });
-    }
     try {
-        User.findByIdAndUpdate(req.params.userId, { $set: { plan: req.body.planId } }, { new: true }, async (err, user) => {
-            if (err) {
-                return res.status(500).send(err);
-            }
-    
-             // Create a new transaction
-             const transaction = new Transaction({
-                value: plan.monthlyTokens,
-                title: `Aktywacja subskrypcji ${plan.name}`,
-                type: 'income',
-                timestamp: Date.now()
+        const plan = await Plan.findById(req.body.planId);
+        if (!plan) {
+            return res.status(404).json({ message: 'Plan not found' });
+        }
+
+        const update = {
+            plan: req.body.planId,
+            // Set default token balance if not provided
+            tokenBalance: req.body.tokens || plan.monthlyTokens,
+        };
+
+        const user = await User.findOneAndUpdate(
+            { _id: req.params.userId },
+            { $set: update },
+            { new: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        try {
+            User.findByIdAndUpdate(req.params.userId, { $set: { plan: req.body.planId } }, { new: true }, async (err, user) => {
+                if (err) {
+                    return res.status(500).send(err);
+                }
+        
+                 // Create a new transaction
+                 const transaction = new Transaction({
+                    value: plan.monthlyTokens,
+                    title: `Subscription activated ${plan.name}`,
+                    type: 'income',
+                    timestamp: Date.now()
+                });
+                // user.transactions.push(transaction);
+                // if (plan.monthlyTokens !== req.body.tokens) {
+                //     user.tokenBalance = req.body.tokens;
+                //     user.monthlyTokens = req.body.tokens;
+                // } else {
+                //     user.tokenBalance = plan.monthlyTokens;
+                // }
+                // const balanceSnapshot = {
+                //     timestamp: Date.now(),
+                //     balance: user.tokenBalance
+                // };
+                // user.tokenHistory.push(balanceSnapshot);
+        
+                await user.save();
+                await transaction.save();
+                return res.json(user);
             });
-            user.transactions.push(transaction);
-            if (plan.monthlyTokens !== req.body.tokens) {
-                user.tokenBalance = req.body.tokens;
-                user.monthlyTokens = req.body.tokens;
-            } else {
-                user.tokenBalance = plan.monthlyTokens;
-            }
-            const balanceSnapshot = {
-                timestamp: Date.now(),
-                balance: user.tokenBalance
-            };
-            user.tokenHistory.push(balanceSnapshot);
-    
-            await user.save();
-            await transaction.save();
-            return res.json(user);
-        });
+        } catch (e) {
+            return res.status(500).json({ message: error.message });
+        }
     } catch (e) {
-        return res.status(500).json({ message: error.message });
+        return res.status(500).json({ message: e.message });
     }
+    
 });
 
 

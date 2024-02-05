@@ -63,6 +63,10 @@ const AssistantSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Workspace',
     },
+    maxReferenceFiles: {
+        type: Number,
+        default: 3
+    }
 });
 
 mongoose.model('Assistant', AssistantSchema);
