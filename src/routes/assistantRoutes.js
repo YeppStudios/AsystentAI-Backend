@@ -11,16 +11,16 @@ const Assistant = mongoose.model('Assistant');
 // CREATE
 router.post('/create-assistant', requireTokens, async (req, res) => {
   const assistant = new Assistant(req.body);
-  if (req.user.workspace && req.user.workspace !== 'undefined') {
-    const workspace = await Workspace.findById(req.user.workspace);
-    const company = await User.findById(workspace.company[0].toString());
-    company.tokenBalance -= 1000
-    company.save();
-  } else {
-    const user = await User.findById(req.user._id);
-    user.tokenBalance -= 1000;
-    user.save();
-  }
+  // if (req.user.workspace && req.user.workspace !== 'undefined') {
+  //   const workspace = await Workspace.findById(req.user.workspace);
+  //   const company = await User.findById(workspace.company[0].toString());
+  //   company.tokenBalance -= 1000
+  //   company.save();
+  // } else {
+  //   const user = await User.findById(req.user._id);
+  //   user.tokenBalance -= 1000;
+  //   user.save();
+  // }
 
   assistant.save()
     .then(() => {
